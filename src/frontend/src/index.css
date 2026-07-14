@@ -96,3 +96,53 @@ button {
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
+
+.measurement-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.measurement-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.measurement-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.measurement-form input {
+  padding: 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.measurement-history {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.history-item {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.history-item p {
+  margin: 0.25rem 0;
+}
+
+@media (max-width: 760px) {
+  .measurement-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.success-message {
+  color: #166534;
+}
+
