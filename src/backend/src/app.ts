@@ -1,6 +1,10 @@
-import express, { type Request, type Response } from "express";
+import express, {
+  type Request,
+  type Response,
+} from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 const app = express();
 
@@ -21,6 +25,6 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 export default app;
-
