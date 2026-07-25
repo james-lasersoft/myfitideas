@@ -1,0 +1,243 @@
+import type { Response } from "express";
+import prisma from "../config/prisma.js";
+import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+
+const SUPPORTED_UNITS = ["oz", "ml"] as const;
+
+type HydrationUnit = (typeof SUPPORTED_UNITS)[number];
+
+function isSupportedUnit(unit: string): unit is HydrationUnit {
+  return SUPPORTED_UNITS.includes(unit as HydrationUnit);
+}
+
+export async function createHydrationEntry(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const { amount, unit = "oz", loggedAt } = req.body;
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Authentication is required.",
+      });
+      return;
+    }
+
+    const numericAmount = Number(amount);
+    const normalizedUnit = String(unit).toLowerCase();
+
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      res.status(400).json({
+        error: "Hydration amount must be a positive number.",
+      });
+      return;
+    }
+
+    if (!isSupportedUnit(normalizedUnit)) {
+      res.status(400).json({
+        error: "Hydration unit must be either oz or ml.",
+      });
+      return;
+    }
+
+    let parsedLoggedAt: Date | undefined;
+
+    if (loggedAt) {
+      parsedLoggedAt = new Date(loggedAt);
+
+      if (Number.isNaN(parsedLoggedAt.getTime())) {
+        res.status(400).json({
+          error: "The hydration date is invalid.",
+        });
+        return;
+      }
+    }
+
+    const hydrationEntry = await prisma.hydration.create({
+      data: {
+        userId,
+        amount: numericAmount,
+        unit: normalizedUnit,
+        ...(parsedLoggedAt ? { loggedAt: parsedLoggedAt } : {}),
+      },
+    });
+
+    res.status(201).json({
+      message: "Hydration entry created successfully.",
+      hydration: hydrationEntry,
+    });
+  } catch (error) {
+    console.error("Create hydration entry error:", error);
+
+    res.status(500).json({
+      error: "Unable to create hydration entry.",
+    });
+  }
+}
+
+export async function getHydrationEntries(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Authentication is required.",
+      });
+      return;
+    }
+
+    const hydrationEntries = await prisma.hydration.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        loggedAt: "desc",
+      },
+    });
+
+    res.status(200).json({
+      hydration: hydrationEntries,
+    });
+  } catch (error) {
+    console.error("Get hydration entries error:", error);
+
+    res.status(500).json({
+      error: "Unable to retrieve hydration entries.",
+    });
+  }
+}
+
+export async function getDailyHydrationTotal(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Authentication is required.",
+      });
+      return;
+    }
+
+    const requestedDate =
+      typeof req.query.date === "string"
+        ? new Date(`${req.query.date}T00:00:00`)
+        : new Date();
+
+    if (Number.isNaN(requestedDate.getTime())) {
+      res.status(400).json({
+        error: "The requested date is invalid.",
+      });
+      return;
+    }
+
+    const startOfDay = new Date(requestedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(requestedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const hydrationEntries = await prisma.hydration.findMany({
+      where: {
+        userId,
+        loggedAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      orderBy: {
+        loggedAt: "asc",
+      },
+    });
+
+    const totalMl = hydrationEntries.reduce((total, entry) => {
+      if (entry.unit.toLowerCase() === "ml") {
+        return total + entry.amount;
+      }
+
+      return total + entry.amount * 29.5735;
+    }, 0);
+
+    res.status(200).json({
+      date: startOfDay.toISOString().slice(0, 10),
+      totalMl: Number(totalMl.toFixed(2)),
+      totalOz: Number((totalMl / 29.5735).toFixed(2)),
+      entries: hydrationEntries,
+    });
+  } catch (error) {
+    console.error("Get daily hydration total error:", error);
+
+    res.status(500).json({
+      error: "Unable to calculate the daily hydration total.",
+    });
+  }
+}
+
+export async function deleteHydrationEntry(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const rawId = req.params.id;
+
+    const id =
+      typeof rawId === "string"
+        ? rawId
+        : Array.isArray(rawId)
+          ? rawId[0]
+          : undefined;
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Authentication is required.",
+      });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({
+        error: "A valid hydration entry ID is required.",
+      });
+      return;
+    }
+
+
+    const existingEntry = await prisma.hydration.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    });
+
+    if (!existingEntry) {
+      res.status(404).json({
+        error: "Hydration entry not found.",
+      });
+      return;
+    }
+
+    await prisma.hydration.delete({
+      where: {
+        id,
+      },
+    });
+
+    res.status(200).json({
+      message: "Hydration entry deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete hydration entry error:", error);
+
+    res.status(500).json({
+      error: "Unable to delete hydration entry.",
+    });
+  }
+}
