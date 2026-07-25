@@ -36,8 +36,11 @@ export default function DashboardPage() {
         <article className="dashboard-card">
           <h2>Body Measurements</h2>
           <p>Record and review body progress over time.</p>
-          <button type="button" disabled>
-            Coming Next
+          <button 
+		type="button" 
+		onClick={() => navigate("/measurements")}
+          >
+            Open Measurements
           </button>
         </article>
 

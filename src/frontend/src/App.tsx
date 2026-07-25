@@ -7,6 +7,7 @@ import {
 import type { ReactNode } from "react";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import MeasurementsPage from "./pages/MeasurementsPage";
 import "./index.css";
 
 function ProtectedRoute({
@@ -35,6 +36,15 @@ export default function App() {
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />
+
+        <Route 
+          path="/measurements" 
+          element={
+            <ProtectedRoute>
+              <MeasurementsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
