@@ -7,12 +7,16 @@ import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import measurementRoutes from "./routes/measurement.routes.js";
 import hydrationRoutes from "./routes/hydration.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/hydration", hydrationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/profile", profileRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({
