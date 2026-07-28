@@ -15,29 +15,63 @@ import {
   type HydrationUnit,
 } from "../services/hydrationService";
 
-function getTodayDate(): string {
-  const now = new Date();
-  const timezoneOffset = now.getTimezoneOffset() * 60_000;
+function getLocalDateValue(date = new Date()): string {
+  const timezoneOffset = date.getTimezoneOffset() * 60_000;
 
-  return new Date(now.getTime() - timezoneOffset)
+  return new Date(date.getTime() - timezoneOffset)
     .toISOString()
     .slice(0, 10);
+}
+
+function getLocalTimeValue(date = new Date()): string {
+  return [
+    date.getHours().toString().padStart(2, "0"),
+    date.getMinutes().toString().padStart(2, "0"),
+  ].join(":");
+}
+
+function createLoggedAt(
+  dateValue: string,
+  timeValue: string
+): string {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const [hours, minutes] = timeValue.split(":").map(Number);
+
+  const loggedAt = new Date(
+    year,
+    month - 1,
+    day,
+    hours,
+    minutes,
+    0,
+    0
+  );
+
+  if (Number.isNaN(loggedAt.getTime())) {
+    throw new Error("Invalid hydration date or time.");
+  }
+
+  return loggedAt.toISOString();
 }
 
 export default function HydrationPage() {
   const navigate = useNavigate();
 
-  const [entries, setEntries] = useState<HydrationEntry[]>(
-    []
-  );
+  const [entries, setEntries] = useState<HydrationEntry[]>([]);
   const [dailyTotal, setDailyTotal] =
     useState<DailyHydrationTotal | null>(null);
 
   const [amount, setAmount] = useState("");
-  const [unit, setUnit] =
-    useState<HydrationUnit>("oz");
-  const [selectedDate, setSelectedDate] =
-    useState(getTodayDate());
+  const [unit, setUnit] = useState<HydrationUnit>("oz");
+  const [summaryDate, setSummaryDate] = useState(
+    getLocalDateValue()
+  );
+  const [entryDate, setEntryDate] = useState(
+    getLocalDateValue()
+  );
+  const [entryTime, setEntryTime] = useState(
+    getLocalTimeValue()
+  );
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -50,13 +84,13 @@ export default function HydrationPage() {
     async (): Promise<void> => {
       const [hydrationEntries, total] = await Promise.all([
         getHydrationEntries(),
-        getDailyHydrationTotal(selectedDate),
+        getDailyHydrationTotal(summaryDate),
       ]);
 
       setEntries(hydrationEntries);
       setDailyTotal(total);
     },
-    [selectedDate]
+    [summaryDate]
   );
 
   useEffect(() => {
@@ -67,7 +101,7 @@ export default function HydrationPage() {
 
     Promise.all([
       getHydrationEntries(),
-      getDailyHydrationTotal(selectedDate),
+      getDailyHydrationTotal(summaryDate),
     ])
       .then(([hydrationEntries, total]) => {
         if (!isCancelled) {
@@ -89,7 +123,7 @@ export default function HydrationPage() {
     return () => {
       isCancelled = true;
     };
-  }, [selectedDate]);
+  }, [summaryDate]);
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
@@ -105,9 +139,12 @@ export default function HydrationPage() {
       !Number.isFinite(numericAmount) ||
       numericAmount <= 0
     ) {
-      setError(
-        "Enter a hydration amount greater than zero."
-      );
+      setError("Enter a hydration amount greater than zero.");
+      return;
+    }
+
+    if (!entryDate || !entryTime) {
+      setError("Select both an entry date and time.");
       return;
     }
 
@@ -117,12 +154,12 @@ export default function HydrationPage() {
       await createHydrationEntry({
         amount: numericAmount,
         unit,
-        loggedAt: new Date().toISOString(),
+        loggedAt: createLoggedAt(entryDate, entryTime),
       });
 
       setAmount("");
+      setSummaryDate(entryDate);
       setMessage("Hydration entry saved successfully.");
-
       await loadHydrationData();
     } catch {
       setError("Unable to save hydration entry.");
@@ -149,7 +186,6 @@ export default function HydrationPage() {
     try {
       await deleteHydrationEntry(id);
       setMessage("Hydration entry deleted successfully.");
-
       await loadHydrationData();
     } catch {
       setError("Unable to delete hydration entry.");
@@ -184,9 +220,10 @@ export default function HydrationPage() {
             Select Date
             <input
               type="date"
-              value={selectedDate}
+              value={summaryDate}
+              max={getLocalDateValue()}
               onChange={(event) =>
-                setSelectedDate(event.target.value)
+                setSummaryDate(event.target.value)
               }
             />
           </label>
@@ -249,6 +286,31 @@ export default function HydrationPage() {
               </select>
             </label>
 
+            <label>
+              Entry Date
+              <input
+                type="date"
+                required
+                value={entryDate}
+                max={getLocalDateValue()}
+                onChange={(event) =>
+                  setEntryDate(event.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Entry Time
+              <input
+                type="time"
+                required
+                value={entryTime}
+                onChange={(event) =>
+                  setEntryTime(event.target.value)
+                }
+              />
+            </label>
+
             {message && (
               <p className="success-message">
                 {message}
@@ -305,9 +367,7 @@ export default function HydrationPage() {
                   type="button"
                   className="delete-button"
                   disabled={deletingId === entry.id}
-                  onClick={() =>
-                    handleDelete(entry.id)
-                  }
+                  onClick={() => handleDelete(entry.id)}
                 >
                   {deletingId === entry.id
                     ? "Deleting..."
