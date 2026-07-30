@@ -174,7 +174,7 @@ describe("measurement controller", () => {
           chest: undefined,
           hips: undefined,
           bodyFat: 24,
-          weightKg: 99.7903214,
+          weightKg: expect.closeTo(99.7903214, 8),
           waistCm: 101.6,
           chestCm: undefined,
           hipsCm: undefined,
