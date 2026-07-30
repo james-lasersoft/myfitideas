@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDashboardSummary, type DashboardSummary } from "../services/dashboardService";
+import {
+  getDashboardSummary,
+  type DashboardSummary,
+} from "../services/dashboardService";
+import { formatMeasurement } from "../utils/measurementFormat";
 
 interface StoredUser {
   firstName: string;
@@ -38,6 +42,18 @@ export default function DashboardPage() {
     navigate("/");
   };
 
+  const weightUnit = summary?.preferredWeightUnit ?? "lb";
+  const hydrationUnit = summary?.preferredHydrationUnit ?? "oz";
+  const primaryWater =
+    hydrationUnit === "ml"
+      ? summary?.todayWaterMl ?? 0
+      : summary?.todayWaterOz ?? 0;
+  const secondaryWaterUnit = hydrationUnit === "ml" ? "oz" : "ml";
+  const secondaryWater =
+    secondaryWaterUnit === "ml"
+      ? summary?.todayWaterMl ?? 0
+      : summary?.todayWaterOz ?? 0;
+
   return (
     <main className="dashboard-page">
       <header className="dashboard-header">
@@ -59,47 +75,44 @@ export default function DashboardPage() {
             <article className="dashboard-card">
               <h2>Current Weight</h2>
               <h1>
-                {summary?.currentWeight !== null
-                  ? `${summary?.currentWeight} lb`
+                {summary?.currentWeight != null
+                  ? `${formatMeasurement(summary.currentWeight, weightUnit)} ${weightUnit}`
                   : "--"}
               </h1>
 
-              {summary?.weightDifference !== null && (
+              {summary?.weightDifference != null && (
                 <p>
-                  {summary?.weightDifference != null && summary.weightDifference > 0 ? "+" : ""}
-                  {summary?.weightDifference ?? 0} lb since last measurement
+                  {summary.weightDifference > 0 ? "+" : ""}
+                  {formatMeasurement(summary.weightDifference, weightUnit)} {weightUnit} since last measurement
                 </p>
               )}
             </article>
 
             <article className="dashboard-card">
               <h2>Today's Water</h2>
-
-              <h1>{summary?.todayWaterOz.toFixed(1)} oz</h1>
-
-              <p>{summary?.todayWaterMl.toFixed(0)} ml</p>
+              <h1>
+                {formatMeasurement(primaryWater, hydrationUnit)} {hydrationUnit}
+              </h1>
+              <p>
+                {formatMeasurement(secondaryWater, secondaryWaterUnit)} {secondaryWaterUnit}
+              </p>
             </article>
 
             <article className="dashboard-card">
               <h2>BMI</h2>
-
               <h1>
-                {summary?.bmi !== null
-                  ? summary?.bmi?.toFixed(1)
+                {summary?.bmi != null
+                  ? formatMeasurement(summary.bmi, "%")
                   : "--"}
               </h1>
-
               <p>{summary?.bmiCategory ?? "Height required"}</p>
             </article>
 
             <article className="dashboard-card">
               <h2>Last Measurement</h2>
-
               <p>
                 {summary?.lastMeasurementDate
-                  ? new Date(
-                      summary.lastMeasurementDate
-                    ).toLocaleDateString()
+                  ? new Date(summary.lastMeasurementDate).toLocaleDateString()
                   : "None"}
               </p>
             </article>
@@ -122,25 +135,17 @@ export default function DashboardPage() {
 
             <article className="dashboard-card">
               <h2>Progress Charts</h2>
-              <button
-                type="button"
-                onClick={() => navigate("/progress")}
-              >
+              <button type="button" onClick={() => navigate("/progress")}>
                 View Progress
               </button>
             </article>
 
             <article className="dashboard-card">
               <h2>Profile</h2>
-
-              <button
-                type="button"
-                onClick={() => navigate("/profile")}
-              >
+              <button type="button" onClick={() => navigate("/profile")}>
                 Open Profile
               </button>
             </article>
-
           </section>
         </>
       )}
