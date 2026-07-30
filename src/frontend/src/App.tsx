@@ -8,6 +8,9 @@ import type { ReactNode } from "react";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import MeasurementsPage from "./pages/MeasurementsPage";
+import HydrationPage from "./pages/HydrationPage";
+import ProfilePage from "./pages/ProfilePage";
+import ProgressChartsPage from "./pages/ProgressChartsPage";
 import "./index.css";
 
 function ProtectedRoute({
@@ -35,8 +38,6 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-
         <Route 
           path="/measurements" 
           element={
@@ -45,6 +46,35 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/hydration"
+          element={
+            <ProtectedRoute>
+              <HydrationPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/progress"
+          element={
+            <ProtectedRoute>
+              <ProgressChartsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
