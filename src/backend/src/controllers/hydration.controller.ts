@@ -105,14 +105,14 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { timeZone: true },
+      select: { timezone: true },
     });
     if (!user) {
       res.status(404).json({ error: "User profile not found." });
       return;
     }
 
-    const timeZone = user.timeZone || "UTC";
+    const timeZone = user.timezone || "UTC";
     const requestedDate =
       typeof req.query.date === "string"
         ? req.query.date
