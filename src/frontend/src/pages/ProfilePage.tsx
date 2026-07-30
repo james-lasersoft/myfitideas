@@ -16,6 +16,7 @@ import {
 
 const POUNDS_TO_KG = 0.45359237;
 const OUNCES_TO_ML = 29.5735295625;
+const INCHES_TO_CM = 2.54;
 
 function convertWeightValue(
   value: string,
@@ -53,14 +54,34 @@ function convertHydrationValue(
   return formatMeasurementInput(converted, toUnit);
 }
 
+function convertLengthValue(
+  value: string,
+  fromUnit: "in" | "cm",
+  toUnit: "in" | "cm"
+): string {
+  if (value.trim() === "" || fromUnit === toUnit) return value;
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return value;
+
+  const converted =
+    fromUnit === "in"
+      ? numericValue * INCHES_TO_CM
+      : numericValue / INCHES_TO_CM;
+
+  return formatMeasurementInput(converted, toUnit);
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [heightCm, setHeightCm] = useState("");
+  const [height, setHeight] = useState("");
   const [preferredWeightUnit, setPreferredWeightUnit] =
     useState<"lb" | "kg">("lb");
+  const [preferredLengthUnit, setPreferredLengthUnit] =
+    useState<"in" | "cm">("in");
   const [preferredHydrationUnit, setPreferredHydrationUnit] =
     useState<"oz" | "ml">("oz");
   const [dailyHydrationGoal, setDailyHydrationGoal] = useState("64");
@@ -75,16 +96,26 @@ export default function ProfilePage() {
     async function loadProfile() {
       try {
         const profile = await getProfile();
+        const heightValue =
+          profile.heightCm === null
+            ? ""
+            : profile.preferredLengthUnit === "cm"
+              ? profile.heightCm
+              : profile.heightCm / INCHES_TO_CM;
 
         setFirstName(profile.firstName);
         setLastName(profile.lastName ?? "");
-        setHeightCm(
-          profile.heightCm !== null
-            ? formatMeasurementInput(profile.heightCm, "cm")
-            : ""
-        );
         setPreferredWeightUnit(profile.preferredWeightUnit);
+        setPreferredLengthUnit(profile.preferredLengthUnit);
         setPreferredHydrationUnit(profile.preferredHydrationUnit);
+        setHeight(
+          heightValue === ""
+            ? ""
+            : formatMeasurementInput(
+                heightValue,
+                profile.preferredLengthUnit
+              )
+        );
         setDailyHydrationGoal(
           formatMeasurementInput(
             profile.dailyHydrationGoal,
@@ -117,6 +148,13 @@ export default function ProfilePage() {
     setPreferredWeightUnit(nextUnit);
   }
 
+  function handleLengthUnitChange(nextUnit: "in" | "cm") {
+    setHeight((currentValue) =>
+      convertLengthValue(currentValue, preferredLengthUnit, nextUnit)
+    );
+    setPreferredLengthUnit(nextUnit);
+  }
+
   function handleHydrationUnitChange(nextUnit: "oz" | "ml") {
     setDailyHydrationGoal((currentValue) =>
       convertHydrationValue(
@@ -140,13 +178,32 @@ export default function ProfilePage() {
     }
 
     const parsedHeight =
-      heightCm.trim() === "" ? null : Number(heightCm);
+      height.trim() === "" ? null : Number(height);
     const parsedHydrationGoal = Number(dailyHydrationGoal);
     const parsedTargetWeight =
       targetWeight.trim() === "" ? null : Number(targetWeight);
 
     if (parsedHeight !== null && !Number.isFinite(parsedHeight)) {
       setError("Height must be a valid number.");
+      return;
+    }
+
+    const heightCm =
+      parsedHeight === null
+        ? null
+        : preferredLengthUnit === "cm"
+          ? parsedHeight
+          : parsedHeight * INCHES_TO_CM;
+
+    if (
+      heightCm !== null &&
+      (heightCm < 50 || heightCm > 300)
+    ) {
+      setError(
+        preferredLengthUnit === "cm"
+          ? "Height must be between 50.0 and 300.0 cm."
+          : "Height must be between 19.7 and 118.1 in."
+      );
       return;
     }
 
@@ -169,8 +226,9 @@ export default function ProfilePage() {
     const input: UpdateProfileInput = {
       firstName: firstName.trim(),
       lastName: lastName.trim() === "" ? null : lastName.trim(),
-      heightCm: parsedHeight,
+      heightCm,
       preferredWeightUnit,
+      preferredLengthUnit,
       preferredHydrationUnit,
       dailyHydrationGoal: parsedHydrationGoal,
       targetWeight: parsedTargetWeight,
@@ -195,6 +253,24 @@ export default function ProfilePage() {
         );
       }
 
+      const updatedHeight =
+        updatedProfile.heightCm === null
+          ? ""
+          : updatedProfile.preferredLengthUnit === "cm"
+            ? updatedProfile.heightCm
+            : updatedProfile.heightCm / INCHES_TO_CM;
+
+      setPreferredWeightUnit(updatedProfile.preferredWeightUnit);
+      setPreferredLengthUnit(updatedProfile.preferredLengthUnit);
+      setPreferredHydrationUnit(updatedProfile.preferredHydrationUnit);
+      setHeight(
+        updatedHeight === ""
+          ? ""
+          : formatMeasurementInput(
+              updatedHeight,
+              updatedProfile.preferredLengthUnit
+            )
+      );
       setDailyHydrationGoal(
         formatMeasurementInput(
           updatedProfile.dailyHydrationGoal,
@@ -225,6 +301,11 @@ export default function ProfilePage() {
       </main>
     );
   }
+
+  const heightMin = preferredLengthUnit === "cm" ? "50" : "19.7";
+  const heightMax = preferredLengthUnit === "cm" ? "300" : "118.1";
+  const heightPlaceholder =
+    preferredLengthUnit === "cm" ? "Example: 187.0" : "Example: 73.6";
 
   return (
     <main className="profile-page">
@@ -270,14 +351,14 @@ export default function ProfilePage() {
               <div className="input-with-unit">
                 <input
                   type="number"
-                  min="50"
-                  max="300"
-                  step={getMeasurementStep("cm")}
-                  value={heightCm}
-                  onChange={(event) => setHeightCm(event.target.value)}
-                  placeholder="Example: 187.0"
+                  min={heightMin}
+                  max={heightMax}
+                  step={getMeasurementStep(preferredLengthUnit)}
+                  value={height}
+                  onChange={(event) => setHeight(event.target.value)}
+                  placeholder={heightPlaceholder}
                 />
-                <span>cm</span>
+                <span>{preferredLengthUnit}</span>
               </div>
             </label>
 
@@ -308,6 +389,21 @@ export default function ProfilePage() {
               >
                 <option value="lb">Pounds (lb)</option>
                 <option value="kg">Kilograms (kg)</option>
+              </select>
+            </label>
+
+            <label>
+              Preferred Length Unit
+              <select
+                value={preferredLengthUnit}
+                onChange={(event) =>
+                  handleLengthUnitChange(
+                    event.target.value as "in" | "cm"
+                  )
+                }
+              >
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
               </select>
             </label>
 
