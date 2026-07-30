@@ -1,6 +1,7 @@
 import {
   type FormEvent,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,19 @@ import "./ProfilePage.css";
 const POUNDS_TO_KG = 0.45359237;
 const OUNCES_TO_ML = 29.5735295625;
 const INCHES_TO_CM = 2.54;
+
+const TIMEZONE_OPTIONS = [
+  "America/Chicago",
+  "America/New_York",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Phoenix",
+  "America/Anchorage",
+  "Pacific/Honolulu",
+  "America/Sao_Paulo",
+  "Europe/Lisbon",
+  "UTC",
+] as const;
 
 function convertWeightValue(
   value: string,
@@ -94,7 +108,11 @@ function UnitToggle<T extends string>({
           <button
             key={option}
             type="button"
-            className={value === option ? "unit-toggle-option active" : "unit-toggle-option"}
+            className={
+              value === option
+                ? "unit-toggle-option active"
+                : "unit-toggle-option"
+            }
             aria-pressed={value === option}
             onClick={() => onChange(option)}
           >
@@ -106,9 +124,39 @@ function UnitToggle<T extends string>({
   );
 }
 
+function FutureFeature({
+  title,
+  description,
+  actionLabel,
+  danger = false,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="future-feature-row">
+      <div>
+        <strong>{title}</strong>
+        <p>{description}</p>
+      </div>
+      <button
+        type="button"
+        className={danger ? "future-action danger" : "future-action"}
+        disabled
+        title="Planned for a future release"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [height, setHeight] = useState("");
@@ -118,6 +166,9 @@ export default function ProfilePage() {
     useState<"in" | "cm">("in");
   const [preferredHydrationUnit, setPreferredHydrationUnit] =
     useState<"oz" | "ml">("oz");
+  const [preferredLanguage, setPreferredLanguage] =
+    useState<"en" | "pt-BR">("en");
+  const [timezone, setTimezone] = useState("America/Chicago");
   const [dailyHydrationGoal, setDailyHydrationGoal] = useState("64");
   const [targetWeight, setTargetWeight] = useState("");
 
@@ -125,6 +176,12 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const initials = useMemo(() => {
+    const firstInitial = firstName.trim().charAt(0);
+    const lastInitial = lastName.trim().charAt(0);
+    return `${firstInitial}${lastInitial}`.toUpperCase() || "U";
+  }, [firstName, lastName]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -137,11 +194,14 @@ export default function ProfilePage() {
               ? profile.heightCm
               : profile.heightCm / INCHES_TO_CM;
 
+        setEmail(profile.email);
         setFirstName(profile.firstName);
         setLastName(profile.lastName ?? "");
         setPreferredWeightUnit(profile.preferredWeightUnit);
         setPreferredLengthUnit(profile.preferredLengthUnit);
         setPreferredHydrationUnit(profile.preferredHydrationUnit);
+        setPreferredLanguage(profile.preferredLanguage);
+        setTimezone(profile.timezone);
         setHeight(
           heightValue === ""
             ? ""
@@ -254,6 +314,8 @@ export default function ProfilePage() {
       preferredWeightUnit,
       preferredLengthUnit,
       preferredHydrationUnit,
+      preferredLanguage,
+      timezone,
       dailyHydrationGoal: parsedHydrationGoal,
       targetWeight: parsedTargetWeight,
     };
@@ -284,9 +346,12 @@ export default function ProfilePage() {
             ? updatedProfile.heightCm
             : updatedProfile.heightCm / INCHES_TO_CM;
 
+      setEmail(updatedProfile.email);
       setPreferredWeightUnit(updatedProfile.preferredWeightUnit);
       setPreferredLengthUnit(updatedProfile.preferredLengthUnit);
       setPreferredHydrationUnit(updatedProfile.preferredHydrationUnit);
+      setPreferredLanguage(updatedProfile.preferredLanguage);
+      setTimezone(updatedProfile.timezone);
       setHeight(
         updatedHeight === ""
           ? ""
@@ -335,9 +400,14 @@ export default function ProfilePage() {
     <main className="profile-page">
       <section className="profile-card">
         <div className="profile-header">
-          <div>
-            <h1>My Profile</h1>
-            <p>Manage your personal details, goals, and preferred units.</p>
+          <div className="profile-identity">
+            <div className="profile-avatar" aria-hidden="true">
+              {initials}
+            </div>
+            <div>
+              <h1>My Profile</h1>
+              <p>Manage your personal details, goals, and preferences.</p>
+            </div>
           </div>
 
           <button
@@ -350,7 +420,10 @@ export default function ProfilePage() {
         </div>
 
         <form className="profile-form" onSubmit={handleSubmit}>
-          <section className="profile-section" aria-labelledby="personal-information-heading">
+          <section
+            className="profile-section"
+            aria-labelledby="personal-information-heading"
+          >
             <h2 id="personal-information-heading">Personal Information</h2>
             <div className="profile-personal-grid">
               <label>
@@ -371,12 +444,31 @@ export default function ProfilePage() {
                   onChange={(event) => setLastName(event.target.value)}
                 />
               </label>
+
+              <label className="profile-email-field">
+                Email Address
+                <input type="email" value={email} readOnly aria-readonly="true" />
+                <small>Email changes will be available in a future release.</small>
+              </label>
+
+              <div className="profile-inline-future">
+                <span>Password</span>
+                <button type="button" className="future-action" disabled>
+                  Change Password
+                </button>
+                <small>Secure password management is planned.</small>
+              </div>
             </div>
           </section>
 
           <div className="profile-preferences-layout">
-            <section className="profile-section preference-column" aria-labelledby="measurement-preferences-heading">
-              <h2 id="measurement-preferences-heading">Measurement Preferences</h2>
+            <section
+              className="profile-section preference-column"
+              aria-labelledby="measurement-preferences-heading"
+            >
+              <h2 id="measurement-preferences-heading">
+                Measurement Preferences
+              </h2>
               <p className="profile-section-description">
                 Click a unit to update the related values immediately.
               </p>
@@ -403,8 +495,13 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            <section className="profile-section values-column" aria-labelledby="goals-measurements-heading">
-              <h2 id="goals-measurements-heading">Goals &amp; Measurements</h2>
+            <section
+              className="profile-section values-column"
+              aria-labelledby="goals-measurements-heading"
+            >
+              <h2 id="goals-measurements-heading">
+                Goals &amp; Measurements
+              </h2>
 
               <div className="profile-values-list">
                 <label>
@@ -457,6 +554,89 @@ export default function ProfilePage() {
               </div>
             </section>
           </div>
+
+          <section
+            className="profile-section"
+            aria-labelledby="localization-heading"
+          >
+            <h2 id="localization-heading">Localization</h2>
+            <div className="profile-localization-grid">
+              <label>
+                Language
+                <select
+                  value={preferredLanguage}
+                  onChange={(event) =>
+                    setPreferredLanguage(event.target.value as "en" | "pt-BR")
+                  }
+                >
+                  <option value="en">English</option>
+                  <option value="pt-BR">Português (Brasil)</option>
+                </select>
+              </label>
+
+              <label>
+                Time Zone
+                <select
+                  value={timezone}
+                  onChange={(event) => setTimezone(event.target.value)}
+                >
+                  {!TIMEZONE_OPTIONS.includes(
+                    timezone as (typeof TIMEZONE_OPTIONS)[number]
+                  ) && <option value={timezone}>{timezone}</option>}
+                  {TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option.replaceAll("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section
+            className="profile-section staged-section"
+            aria-labelledby="future-settings-heading"
+          >
+            <div className="section-heading-row">
+              <div>
+                <h2 id="future-settings-heading">Future Settings</h2>
+                <p className="profile-section-description">
+                  These areas are staged in the profile layout and will be
+                  activated as their features are built.
+                </p>
+              </div>
+              <span className="planned-badge">Planned</span>
+            </div>
+
+            <div className="future-feature-list">
+              <FutureFeature
+                title="Appearance"
+                description="System, light, and dark themes."
+                actionLabel="Choose Theme"
+              />
+              <FutureFeature
+                title="Notifications"
+                description="Hydration, weigh-in, and weekly progress reminders."
+                actionLabel="Manage"
+              />
+              <FutureFeature
+                title="Subscription"
+                description="View the current plan and manage premium features."
+                actionLabel="View Plan"
+              />
+              <FutureFeature
+                title="Export My Data"
+                description="Download a portable copy of profile and tracking data."
+                actionLabel="Export"
+              />
+              <FutureFeature
+                title="Delete Account"
+                description="Permanently remove the account and associated data."
+                actionLabel="Delete"
+                danger
+              />
+            </div>
+          </section>
 
           {error && (
             <p className="form-message error-message">{error}</p>
