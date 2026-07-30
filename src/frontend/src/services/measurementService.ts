@@ -8,6 +8,10 @@ export interface Measurement {
   hips: number | null;
   bodyFat: number | null;
   measurementDate: string;
+  displayUnits?: {
+    weight: "lb" | "kg";
+    length: "in" | "cm";
+  };
 }
 
 export interface CreateMeasurementInput {
