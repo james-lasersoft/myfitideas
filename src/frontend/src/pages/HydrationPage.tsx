@@ -1,6 +1,8 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -14,6 +16,10 @@ import {
   type HydrationEntry,
   type HydrationUnit,
 } from "../services/hydrationService";
+import "./HydrationPage.css";
+
+const HYDRATION_GOAL_KEY = "hydrationGoalOz";
+const DEFAULT_HYDRATION_GOAL_OZ = 64;
 
 function getLocalDateValue(date = new Date()): string {
   const timezoneOffset = date.getTimezoneOffset() * 60_000;
@@ -54,8 +60,34 @@ function createLoggedAt(
   return loggedAt.toISOString();
 }
 
+function getStoredGoal(): number {
+  const storedGoal = Number(localStorage.getItem(HYDRATION_GOAL_KEY));
+
+  return Number.isFinite(storedGoal) && storedGoal > 0
+    ? storedGoal
+    : DEFAULT_HYDRATION_GOAL_OZ;
+}
+
+function getDateGroupLabel(dateKey: string): string {
+  const today = getLocalDateValue();
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = getLocalDateValue(yesterdayDate);
+
+  if (dateKey === today) return "Today";
+  if (dateKey === yesterday) return "Yesterday";
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString([], {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function HydrationPage() {
   const navigate = useNavigate();
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const [entries, setEntries] = useState<HydrationEntry[]>([]);
   const [dailyTotal, setDailyTotal] =
@@ -72,6 +104,10 @@ export default function HydrationPage() {
   const [entryTime, setEntryTime] = useState(
     getLocalTimeValue()
   );
+  const [goalOz, setGoalOz] = useState(getStoredGoal());
+  const [goalInput, setGoalInput] = useState(
+    getStoredGoal().toString()
+  );
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -79,12 +115,36 @@ export default function HydrationPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
+  const [showAddAnother, setShowAddAnother] = useState(false);
+
+  const groupedEntries = useMemo(() => {
+    const sortedEntries = [...entries].sort(
+      (a, b) =>
+        new Date(b.loggedAt).getTime() -
+        new Date(a.loggedAt).getTime()
+    );
+
+    return sortedEntries.reduce<Record<string, HydrationEntry[]>>(
+      (groups, entry) => {
+        const dateKey = getLocalDateValue(new Date(entry.loggedAt));
+        groups[dateKey] ??= [];
+        groups[dateKey].push(entry);
+        return groups;
+      },
+      {}
+    );
+  }, [entries]);
+
+  const goalProgress = Math.min(
+    ((dailyTotal?.totalOz ?? 0) / goalOz) * 100,
+    100
+  );
 
   const loadHydrationData = useCallback(
-    async (): Promise<void> => {
+    async (date = summaryDate): Promise<void> => {
       const [hydrationEntries, total] = await Promise.all([
         getHydrationEntries(),
-        getDailyHydrationTotal(summaryDate),
+        getDailyHydrationTotal(date),
       ]);
 
       setEntries(hydrationEntries);
@@ -125,13 +185,45 @@ export default function HydrationPage() {
     };
   }, [summaryDate]);
 
+  const saveEntry = async (
+    entryAmount: number,
+    entryUnit: HydrationUnit
+  ): Promise<void> => {
+    if (!entryDate || !entryTime) {
+      setError("Select both an entry date and time.");
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await createHydrationEntry({
+        amount: entryAmount,
+        unit: entryUnit,
+        loggedAt: createLoggedAt(entryDate, entryTime),
+      });
+
+      setAmount("");
+      setEntryTime(getLocalTimeValue());
+      setSummaryDate(entryDate);
+      setMessage(
+        `${entryAmount} ${entryUnit} added successfully.`
+      );
+      setShowAddAnother(true);
+      await loadHydrationData(entryDate);
+    } catch {
+      setError("Unable to save hydration entry.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
   ): Promise<void> => {
     event.preventDefault();
-
-    setMessage("");
-    setError("");
 
     const numericAmount = Number(amount);
 
@@ -143,41 +235,43 @@ export default function HydrationPage() {
       return;
     }
 
-    if (!entryDate || !entryTime) {
-      setError("Select both an entry date and time.");
+    await saveEntry(numericAmount, unit);
+  };
+
+  const handleQuickAdd = async (
+    quickAmount: number,
+    quickUnit: HydrationUnit
+  ): Promise<void> => {
+    await saveEntry(quickAmount, quickUnit);
+  };
+
+  const handleAddAnother = (): void => {
+    setMessage("");
+    setShowAddAnother(false);
+    setEntryTime(getLocalTimeValue());
+    amountInputRef.current?.focus();
+  };
+
+  const handleGoalSave = (): void => {
+    const numericGoal = Number(goalInput);
+
+    if (!Number.isFinite(numericGoal) || numericGoal <= 0) {
+      setError("Enter a hydration goal greater than zero.");
       return;
     }
 
-    setIsSaving(true);
-
-    try {
-      await createHydrationEntry({
-        amount: numericAmount,
-        unit,
-        loggedAt: createLoggedAt(entryDate, entryTime),
-      });
-
-      setAmount("");
-      setSummaryDate(entryDate);
-      setMessage("Hydration entry saved successfully.");
-      await loadHydrationData();
-    } catch {
-      setError("Unable to save hydration entry.");
-    } finally {
-      setIsSaving(false);
-    }
+    localStorage.setItem(HYDRATION_GOAL_KEY, numericGoal.toString());
+    setGoalOz(numericGoal);
+    setError("");
+    setMessage("Daily hydration goal updated.");
   };
 
-  const handleDelete = async (
-    id: string
-  ): Promise<void> => {
+  const handleDelete = async (id: string): Promise<void> => {
     const shouldDelete = window.confirm(
       "Delete this hydration entry?"
     );
 
-    if (!shouldDelete) {
-      return;
-    }
+    if (!shouldDelete) return;
 
     setMessage("");
     setError("");
@@ -195,13 +289,11 @@ export default function HydrationPage() {
   };
 
   return (
-    <main className="dashboard-page">
+    <main className="dashboard-page hydration-page">
       <header className="dashboard-header">
         <div>
           <h1>Hydration Tracking</h1>
-          <p>
-            Record water intake and review daily totals.
-          </p>
+          <p>Record water intake and review daily totals.</p>
         </div>
 
         <button
@@ -214,7 +306,7 @@ export default function HydrationPage() {
 
       <section className="hydration-summary">
         <article className="dashboard-card">
-          <h2>Daily Total</h2>
+          <h2>Daily Progress</h2>
 
           <label className="hydration-date-filter">
             Select Date
@@ -232,18 +324,49 @@ export default function HydrationPage() {
             <p>Loading daily total...</p>
           ) : dailyTotal ? (
             <div className="hydration-total">
-              <strong>
-                {dailyTotal.totalOz.toFixed(1)} oz
-              </strong>
-              <span>
-                {dailyTotal.totalMl.toFixed(0)} ml
-              </span>
+              <strong>{dailyTotal.totalOz.toFixed(1)} oz</strong>
+              <span>{dailyTotal.totalMl.toFixed(0)} ml</span>
               <p>
                 {dailyTotal.entries.length}{" "}
                 {dailyTotal.entries.length === 1
                   ? "entry"
                   : "entries"}
               </p>
+
+              <div className="hydration-progress-header">
+                <span>{Math.round(goalProgress)}%</span>
+                <span>Goal: {goalOz} oz</span>
+              </div>
+              <div
+                className="hydration-progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(goalProgress)}
+              >
+                <div
+                  className="hydration-progress-fill"
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
+
+              <div className="hydration-goal-editor">
+                <label>
+                  Daily Goal (oz)
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={goalInput}
+                    onChange={(event) =>
+                      setGoalInput(event.target.value)
+                    }
+                  />
+                </label>
+                <button type="button" onClick={handleGoalSave}>
+                  Update Goal
+                </button>
+              </div>
             </div>
           ) : (
             <p>No hydration total is available.</p>
@@ -253,79 +376,108 @@ export default function HydrationPage() {
         <article className="dashboard-card">
           <h2>Add Water Intake</h2>
 
-          <form
-            className="hydration-form"
-            onSubmit={handleSubmit}
-          >
-            <label>
-              Amount
-              <input
-                type="number"
-                min="0.1"
-                step="0.1"
-                required
-                value={amount}
-                onChange={(event) =>
-                  setAmount(event.target.value)
-                }
-              />
-            </label>
+          <div className="quick-add-section">
+            <span>Quick Add</span>
+            <div className="quick-add-buttons">
+              {[
+                [8, "oz"],
+                [12, "oz"],
+                [16, "oz"],
+                [500, "ml"],
+              ].map(([quickAmount, quickUnit]) => (
+                <button
+                  key={`${quickAmount}-${quickUnit}`}
+                  type="button"
+                  className="quick-add-button"
+                  disabled={isSaving}
+                  onClick={() =>
+                    handleQuickAdd(
+                      Number(quickAmount),
+                      quickUnit as HydrationUnit
+                    )
+                  }
+                >
+                  +{quickAmount} {quickUnit}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <label>
-              Unit
-              <select
-                value={unit}
-                onChange={(event) =>
-                  setUnit(
-                    event.target.value as HydrationUnit
-                  )
-                }
-              >
-                <option value="oz">Ounces</option>
-                <option value="ml">Milliliters</option>
-              </select>
-            </label>
+          <form className="hydration-form" onSubmit={handleSubmit}>
+            <div className="hydration-form-grid">
+              <label>
+                Amount
+                <input
+                  ref={amountInputRef}
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  required
+                  value={amount}
+                  onChange={(event) =>
+                    setAmount(event.target.value)
+                  }
+                />
+              </label>
 
-            <label>
-              Entry Date
-              <input
-                type="date"
-                required
-                value={entryDate}
-                max={getLocalDateValue()}
-                onChange={(event) =>
-                  setEntryDate(event.target.value)
-                }
-              />
-            </label>
+              <label>
+                Unit
+                <select
+                  value={unit}
+                  onChange={(event) =>
+                    setUnit(event.target.value as HydrationUnit)
+                  }
+                >
+                  <option value="oz">Ounces</option>
+                  <option value="ml">Milliliters</option>
+                </select>
+              </label>
 
-            <label>
-              Entry Time
-              <input
-                type="time"
-                required
-                value={entryTime}
-                onChange={(event) =>
-                  setEntryTime(event.target.value)
-                }
-              />
-            </label>
+              <label>
+                Entry Date
+                <input
+                  type="date"
+                  required
+                  value={entryDate}
+                  max={getLocalDateValue()}
+                  onChange={(event) =>
+                    setEntryDate(event.target.value)
+                  }
+                />
+              </label>
+
+              <label>
+                Entry Time
+                <input
+                  type="time"
+                  required
+                  value={entryTime}
+                  onChange={(event) =>
+                    setEntryTime(event.target.value)
+                  }
+                />
+              </label>
+            </div>
 
             {message && (
-              <p className="success-message">
-                {message}
-              </p>
+              <p className="success-message">{message}</p>
             )}
+            {error && <p className="error-message">{error}</p>}
 
-            {error && (
-              <p className="error-message">{error}</p>
-            )}
-
-            <button type="submit" disabled={isSaving}>
-              {isSaving
-                ? "Saving..."
-                : "Save Hydration Entry"}
-            </button>
+            <div className="hydration-form-actions">
+              <button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Hydration Entry"}
+              </button>
+              {showAddAnother && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleAddAnother}
+                >
+                  Add Another
+                </button>
+              )}
+            </div>
           </form>
         </article>
       </section>
@@ -339,42 +491,47 @@ export default function HydrationPage() {
           <p>No hydration entries have been recorded yet.</p>
         ) : (
           <div className="hydration-history">
-            {entries.map((entry) => (
-              <article
-                key={entry.id}
-                className="history-item hydration-history-item"
-              >
-                <div>
-                  <strong>
-                    {entry.amount} {entry.unit}
-                  </strong>
+            {Object.entries(groupedEntries).map(
+              ([dateKey, dateEntries]) => (
+                <section key={dateKey} className="hydration-date-group">
+                  <h3>{getDateGroupLabel(dateKey)}</h3>
+                  <div className="hydration-date-group-items">
+                    {dateEntries.map((entry) => (
+                      <article
+                        key={entry.id}
+                        className="history-item hydration-history-item"
+                      >
+                        <div>
+                          <strong>
+                            {entry.amount} {entry.unit}
+                          </strong>
+                          <p>
+                            {new Date(entry.loggedAt).toLocaleTimeString(
+                              [],
+                              {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </p>
+                        </div>
 
-                  <p>
-                    {new Date(
-                      entry.loggedAt
-                    ).toLocaleDateString()}
-                    {" at "}
-                    {new Date(
-                      entry.loggedAt
-                    ).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  className="delete-button"
-                  disabled={deletingId === entry.id}
-                  onClick={() => handleDelete(entry.id)}
-                >
-                  {deletingId === entry.id
-                    ? "Deleting..."
-                    : "Delete"}
-                </button>
-              </article>
-            ))}
+                        <button
+                          type="button"
+                          className="delete-button"
+                          disabled={deletingId === entry.id}
+                          onClick={() => handleDelete(entry.id)}
+                        >
+                          {deletingId === entry.id
+                            ? "Deleting..."
+                            : "Delete"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )
+            )}
           </div>
         )}
       </section>
