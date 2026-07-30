@@ -146,3 +146,422 @@ button {
   color: #166534;
 }
 
+.hydration-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.hydration-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.hydration-form label,
+.hydration-date-filter {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.hydration-form input,
+.hydration-form select,
+.hydration-date-filter input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #c7c7c7;
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.hydration-total {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1.25rem;
+}
+
+.hydration-total strong {
+  font-size: 2rem;
+}
+
+.hydration-total span {
+  font-size: 1.1rem;
+}
+
+.hydration-total p {
+  margin-bottom: 0;
+}
+
+.hydration-history-card {
+  margin-top: 1.5rem;
+}
+
+.hydration-history {
+  display: grid;
+  gap: 1rem;
+}
+
+.hydration-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hydration-history-item p {
+  margin-bottom: 0;
+}
+
+.delete-button {
+  background: #b42318;
+}
+
+.delete-button:hover {
+  background: #912018;
+}
+
+.delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 700px) {
+  .hydration-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hydration-history-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.profile-page {
+  min-height: 100vh;
+  padding: 2rem;
+  background: #f4f7f8;
+}
+
+.profile-card {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px
+    rgba(0, 0, 0, 0.08);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.profile-header h1 {
+  margin: 0 0 0.5rem;
+}
+
+.profile-header p {
+  margin: 0;
+  color: #5f6b72;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #cbd5da;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.input-with-unit input {
+  flex: 1;
+}
+
+.input-with-unit span {
+  min-width: 2.5rem;
+  color: #5f6b72;
+  font-weight: 600;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.form-message {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.error-message {
+  background: #fdecec;
+  color: #a61b1b;
+}
+
+.success-message {
+  background: #e9f7ef;
+  color: #176b3a;
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid #66757d;
+  color: #334047;
+}
+
+@media (max-width: 700px) {
+  .profile-page {
+    padding: 1rem;
+  }
+
+  .profile-card {
+    padding: 1.25rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.progress-charts-page {
+  width: min(1200px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+
+.progress-charts-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.progress-charts-header h1 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.progress-charts-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.section-eyebrow {
+  color: #2563eb !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart-range-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+}
+
+.chart-range-card h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.chart-range-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.chart-range-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.range-button {
+  padding: 0.6rem 0.9rem;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.range-button:hover {
+  background: #f1f5f9;
+}
+
+.range-button.active {
+  color: #ffffff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.secondary-button {
+  padding: 0.7rem 1rem;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.secondary-button:hover {
+  background: #f8fafc;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-card {
+  min-width: 0;
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+}
+
+.chart-card-wide {
+  grid-column: span 2;
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-card-header h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+}
+
+.chart-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.chart-unit {
+  padding: 0.3rem 0.55rem;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+}
+
+.chart-empty-state {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .progress-charts-header,
+  .chart-range-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card-wide {
+    grid-column: span 1;
+  }
+
+  .secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .progress-charts-page {
+    width: min(100% - 1rem, 1200px);
+    padding-top: 1rem;
+  }
+
+  .chart-range-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .range-button {
+    width: 100%;
+  }
+
+  .chart-card-header {
+    flex-direction: column;
+  }
+
+  .chart-container {
+    height: 280px;
+  }
+}
