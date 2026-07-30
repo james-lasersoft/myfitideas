@@ -9,13 +9,13 @@ import {
   updateProfile,
   type UpdateProfileInput,
 } from "../services/profileService";
+import {
+  formatMeasurementInput,
+  getMeasurementStep,
+} from "../utils/measurementFormat";
 
 const POUNDS_TO_KG = 0.45359237;
 const OUNCES_TO_ML = 29.5735295625;
-
-function formatConvertedValue(value: number): string {
-  return Number(value.toFixed(2)).toString();
-}
 
 function convertWeightValue(
   value: string,
@@ -32,7 +32,7 @@ function convertWeightValue(
       ? numericValue * POUNDS_TO_KG
       : numericValue / POUNDS_TO_KG;
 
-  return formatConvertedValue(converted);
+  return formatMeasurementInput(converted, toUnit);
 }
 
 function convertHydrationValue(
@@ -50,7 +50,7 @@ function convertHydrationValue(
       ? numericValue * OUNCES_TO_ML
       : numericValue / OUNCES_TO_ML;
 
-  return formatConvertedValue(converted);
+  return formatMeasurementInput(converted, toUnit);
 }
 
 export default function ProfilePage() {
@@ -61,12 +61,9 @@ export default function ProfilePage() {
   const [heightCm, setHeightCm] = useState("");
   const [preferredWeightUnit, setPreferredWeightUnit] =
     useState<"lb" | "kg">("lb");
-  const [
-    preferredHydrationUnit,
-    setPreferredHydrationUnit,
-  ] = useState<"oz" | "ml">("oz");
-  const [dailyHydrationGoal, setDailyHydrationGoal] =
-    useState("64");
+  const [preferredHydrationUnit, setPreferredHydrationUnit] =
+    useState<"oz" | "ml">("oz");
+  const [dailyHydrationGoal, setDailyHydrationGoal] = useState("64");
   const [targetWeight, setTargetWeight] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -83,21 +80,23 @@ export default function ProfilePage() {
         setLastName(profile.lastName ?? "");
         setHeightCm(
           profile.heightCm !== null
-            ? String(profile.heightCm)
+            ? formatMeasurementInput(profile.heightCm, "cm")
             : ""
         );
-        setPreferredWeightUnit(
-          profile.preferredWeightUnit
-        );
-        setPreferredHydrationUnit(
-          profile.preferredHydrationUnit
-        );
+        setPreferredWeightUnit(profile.preferredWeightUnit);
+        setPreferredHydrationUnit(profile.preferredHydrationUnit);
         setDailyHydrationGoal(
-          String(profile.dailyHydrationGoal)
+          formatMeasurementInput(
+            profile.dailyHydrationGoal,
+            profile.preferredHydrationUnit
+          )
         );
         setTargetWeight(
           profile.targetWeight !== null
-            ? String(profile.targetWeight)
+            ? formatMeasurementInput(
+                profile.targetWeight,
+                profile.preferredWeightUnit
+              )
             : ""
         );
       } catch (loadError) {
@@ -113,11 +112,7 @@ export default function ProfilePage() {
 
   function handleWeightUnitChange(nextUnit: "lb" | "kg") {
     setTargetWeight((currentValue) =>
-      convertWeightValue(
-        currentValue,
-        preferredWeightUnit,
-        nextUnit
-      )
+      convertWeightValue(currentValue, preferredWeightUnit, nextUnit)
     );
     setPreferredWeightUnit(nextUnit);
   }
@@ -133,9 +128,7 @@ export default function ProfilePage() {
     setPreferredHydrationUnit(nextUnit);
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setMessage("");
@@ -147,22 +140,12 @@ export default function ProfilePage() {
     }
 
     const parsedHeight =
-      heightCm.trim() === ""
-        ? null
-        : Number(heightCm);
-
-    const parsedHydrationGoal =
-      Number(dailyHydrationGoal);
-
+      heightCm.trim() === "" ? null : Number(heightCm);
+    const parsedHydrationGoal = Number(dailyHydrationGoal);
     const parsedTargetWeight =
-      targetWeight.trim() === ""
-        ? null
-        : Number(targetWeight);
+      targetWeight.trim() === "" ? null : Number(targetWeight);
 
-    if (
-      parsedHeight !== null &&
-      !Number.isFinite(parsedHeight)
-    ) {
+    if (parsedHeight !== null && !Number.isFinite(parsedHeight)) {
       setError("Height must be a valid number.");
       return;
     }
@@ -171,29 +154,21 @@ export default function ProfilePage() {
       !Number.isFinite(parsedHydrationGoal) ||
       parsedHydrationGoal <= 0
     ) {
-      setError(
-        "Daily hydration goal must be greater than zero."
-      );
+      setError("Daily hydration goal must be greater than zero.");
       return;
     }
 
     if (
       parsedTargetWeight !== null &&
-      (!Number.isFinite(parsedTargetWeight) ||
-        parsedTargetWeight <= 0)
+      (!Number.isFinite(parsedTargetWeight) || parsedTargetWeight <= 0)
     ) {
-      setError(
-        "Target weight must be greater than zero."
-      );
+      setError("Target weight must be greater than zero.");
       return;
     }
 
     const input: UpdateProfileInput = {
       firstName: firstName.trim(),
-      lastName:
-        lastName.trim() === ""
-          ? null
-          : lastName.trim(),
+      lastName: lastName.trim() === "" ? null : lastName.trim(),
       heightCm: parsedHeight,
       preferredWeightUnit,
       preferredHydrationUnit,
@@ -205,7 +180,6 @@ export default function ProfilePage() {
       setSaving(true);
 
       const updatedProfile = await updateProfile(input);
-
       const storedUser = localStorage.getItem("currentUser");
 
       if (storedUser) {
@@ -222,11 +196,17 @@ export default function ProfilePage() {
       }
 
       setDailyHydrationGoal(
-        String(updatedProfile.dailyHydrationGoal)
+        formatMeasurementInput(
+          updatedProfile.dailyHydrationGoal,
+          updatedProfile.preferredHydrationUnit
+        )
       );
       setTargetWeight(
         updatedProfile.targetWeight !== null
-          ? String(updatedProfile.targetWeight)
+          ? formatMeasurementInput(
+              updatedProfile.targetWeight,
+              updatedProfile.preferredWeightUnit
+            )
           : ""
       );
       setMessage("Profile updated successfully.");
@@ -252,10 +232,7 @@ export default function ProfilePage() {
         <div className="profile-header">
           <div>
             <h1>My Profile</h1>
-            <p>
-              Manage your personal details, goals, and
-              preferred units.
-            </p>
+            <p>Manage your personal details, goals, and preferred units.</p>
           </div>
 
           <button
@@ -267,19 +244,14 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <form
-          className="profile-form"
-          onSubmit={handleSubmit}
-        >
+        <form className="profile-form" onSubmit={handleSubmit}>
           <div className="form-grid">
             <label>
               First Name
               <input
                 type="text"
                 value={firstName}
-                onChange={(event) =>
-                  setFirstName(event.target.value)
-                }
+                onChange={(event) => setFirstName(event.target.value)}
                 required
               />
             </label>
@@ -289,9 +261,7 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={lastName}
-                onChange={(event) =>
-                  setLastName(event.target.value)
-                }
+                onChange={(event) => setLastName(event.target.value)}
               />
             </label>
 
@@ -302,12 +272,10 @@ export default function ProfilePage() {
                   type="number"
                   min="50"
                   max="300"
-                  step="0.1"
+                  step={getMeasurementStep("cm")}
                   value={heightCm}
-                  onChange={(event) =>
-                    setHeightCm(event.target.value)
-                  }
-                  placeholder="Example: 187"
+                  onChange={(event) => setHeightCm(event.target.value)}
+                  placeholder="Example: 187.0"
                 />
                 <span>cm</span>
               </div>
@@ -319,11 +287,9 @@ export default function ProfilePage() {
                 <input
                   type="number"
                   min="1"
-                  step="0.1"
+                  step={getMeasurementStep(preferredWeightUnit)}
                   value={targetWeight}
-                  onChange={(event) =>
-                    setTargetWeight(event.target.value)
-                  }
+                  onChange={(event) => setTargetWeight(event.target.value)}
                   placeholder="Optional"
                 />
                 <span>{preferredWeightUnit}</span>
@@ -356,9 +322,7 @@ export default function ProfilePage() {
                 }
               >
                 <option value="oz">Ounces (oz)</option>
-                <option value="ml">
-                  Milliliters (ml)
-                </option>
+                <option value="ml">Milliliters (ml)</option>
               </select>
             </label>
 
@@ -367,13 +331,11 @@ export default function ProfilePage() {
               <div className="input-with-unit">
                 <input
                   type="number"
-                  min="1"
-                  step="0.1"
+                  min={preferredHydrationUnit === "ml" ? "1" : "0.1"}
+                  step={getMeasurementStep(preferredHydrationUnit)}
                   value={dailyHydrationGoal}
                   onChange={(event) =>
-                    setDailyHydrationGoal(
-                      event.target.value
-                    )
+                    setDailyHydrationGoal(event.target.value)
                   }
                   required
                 />
@@ -383,22 +345,15 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <p className="form-message error-message">
-              {error}
-            </p>
+            <p className="form-message error-message">{error}</p>
           )}
 
           {message && (
-            <p className="form-message success-message">
-              {message}
-            </p>
+            <p className="form-message success-message">{message}</p>
           )}
 
           <div className="profile-actions">
-            <button
-              type="submit"
-              disabled={saving}
-            >
+            <button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save Profile"}
             </button>
           </div>
