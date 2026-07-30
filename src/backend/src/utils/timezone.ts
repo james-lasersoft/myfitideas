@@ -1,6 +1,21 @@
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function getDateParts(date: Date, timeZone: string): Record<string, number> {
+interface DateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+interface DateKeyParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+function getDateParts(date: Date, timeZone: string): DateTimeParts {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
@@ -12,15 +27,59 @@ function getDateParts(date: Date, timeZone: string): Record<string, number> {
     hourCycle: "h23",
   });
 
-  return formatter.formatToParts(date).reduce<Record<string, number>>(
-    (parts, part) => {
-      if (part.type !== "literal") {
-        parts[part.type] = Number(part.value);
-      }
-      return parts;
-    },
-    {}
+  const values = new Map(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
   );
+
+  const year = values.get("year");
+  const month = values.get("month");
+  const day = values.get("day");
+  const hour = values.get("hour");
+  const minute = values.get("minute");
+  const second = values.get("second");
+
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    hour === undefined ||
+    minute === undefined ||
+    second === undefined
+  ) {
+    throw new Error("Unable to determine timezone date parts.");
+  }
+
+  return { year, month, day, hour, minute, second };
+}
+
+function parseDateKey(dateKey: string): DateKeyParts {
+  if (!DATE_KEY_PATTERN.test(dateKey)) {
+    throw new Error("Invalid date key.");
+  }
+
+  const match = DATE_KEY_PATTERN.exec(dateKey);
+  if (!match) {
+    throw new Error("Invalid date key.");
+  }
+
+  const [yearText, monthText, dayText] = dateKey.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+
+  const validationDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    validationDate.getUTCFullYear() !== year ||
+    validationDate.getUTCMonth() !== month - 1 ||
+    validationDate.getUTCDate() !== day
+  ) {
+    throw new Error("Invalid calendar date.");
+  }
+
+  return { year, month, day };
 }
 
 function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
@@ -38,15 +97,11 @@ function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
 }
 
 function zonedMidnightToUtc(dateKey: string, timeZone: string): Date {
-  if (!DATE_KEY_PATTERN.test(dateKey)) {
-    throw new Error("Invalid date key.");
-  }
-
-  const [year, month, day] = dateKey.split("-").map(Number);
+  const { year, month, day } = parseDateKey(dateKey);
   const wallClockAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
 
   let result = new Date(wallClockAsUtc);
-  let offset = getTimeZoneOffsetMs(result, timeZone);
+  const offset = getTimeZoneOffsetMs(result, timeZone);
   result = new Date(wallClockAsUtc - offset);
 
   const correctedOffset = getTimeZoneOffsetMs(result, timeZone);
@@ -58,7 +113,7 @@ function zonedMidnightToUtc(dateKey: string, timeZone: string): Date {
 }
 
 function addCalendarDays(dateKey: string, days: number): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
+  const { year, month, day } = parseDateKey(dateKey);
   const date = new Date(Date.UTC(year, month - 1, day + days));
   return date.toISOString().slice(0, 10);
 }
@@ -74,17 +129,22 @@ export function getDateKeyInTimeZone(
     day: "2-digit",
   });
 
-  const parts = formatter.formatToParts(date).reduce<Record<string, string>>(
-    (values, part) => {
-      if (part.type !== "literal") {
-        values[part.type] = part.value;
-      }
-      return values;
-    },
-    {}
+  const values = new Map(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
   );
 
-  return `${parts.year}-${parts.month}-${parts.day}`;
+  const year = values.get("year");
+  const month = values.get("month");
+  const day = values.get("day");
+
+  if (!year || !month || !day) {
+    throw new Error("Unable to determine timezone date key.");
+  }
+
+  return `${year}-${month}-${day}`;
 }
 
 export function getUtcDayRange(
