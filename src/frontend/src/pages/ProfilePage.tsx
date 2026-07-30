@@ -10,6 +10,49 @@ import {
   type UpdateProfileInput,
 } from "../services/profileService";
 
+const POUNDS_TO_KG = 0.45359237;
+const OUNCES_TO_ML = 29.5735295625;
+
+function formatConvertedValue(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
+
+function convertWeightValue(
+  value: string,
+  fromUnit: "lb" | "kg",
+  toUnit: "lb" | "kg"
+): string {
+  if (value.trim() === "" || fromUnit === toUnit) return value;
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return value;
+
+  const converted =
+    fromUnit === "lb"
+      ? numericValue * POUNDS_TO_KG
+      : numericValue / POUNDS_TO_KG;
+
+  return formatConvertedValue(converted);
+}
+
+function convertHydrationValue(
+  value: string,
+  fromUnit: "oz" | "ml",
+  toUnit: "oz" | "ml"
+): string {
+  if (value.trim() === "" || fromUnit === toUnit) return value;
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return value;
+
+  const converted =
+    fromUnit === "oz"
+      ? numericValue * OUNCES_TO_ML
+      : numericValue / OUNCES_TO_ML;
+
+  return formatConvertedValue(converted);
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
 
@@ -67,6 +110,28 @@ export default function ProfilePage() {
 
     void loadProfile();
   }, []);
+
+  function handleWeightUnitChange(nextUnit: "lb" | "kg") {
+    setTargetWeight((currentValue) =>
+      convertWeightValue(
+        currentValue,
+        preferredWeightUnit,
+        nextUnit
+      )
+    );
+    setPreferredWeightUnit(nextUnit);
+  }
+
+  function handleHydrationUnitChange(nextUnit: "oz" | "ml") {
+    setDailyHydrationGoal((currentValue) =>
+      convertHydrationValue(
+        currentValue,
+        preferredHydrationUnit,
+        nextUnit
+      )
+    );
+    setPreferredHydrationUnit(nextUnit);
+  }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -156,6 +221,14 @@ export default function ProfilePage() {
         );
       }
 
+      setDailyHydrationGoal(
+        String(updatedProfile.dailyHydrationGoal)
+      );
+      setTargetWeight(
+        updatedProfile.targetWeight !== null
+          ? String(updatedProfile.targetWeight)
+          : ""
+      );
       setMessage("Profile updated successfully.");
     } catch (saveError) {
       console.error("Save profile error:", saveError);
@@ -262,7 +335,7 @@ export default function ProfilePage() {
               <select
                 value={preferredWeightUnit}
                 onChange={(event) =>
-                  setPreferredWeightUnit(
+                  handleWeightUnitChange(
                     event.target.value as "lb" | "kg"
                   )
                 }
@@ -277,7 +350,7 @@ export default function ProfilePage() {
               <select
                 value={preferredHydrationUnit}
                 onChange={(event) =>
-                  setPreferredHydrationUnit(
+                  handleHydrationUnitChange(
                     event.target.value as "oz" | "ml"
                   )
                 }
