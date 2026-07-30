@@ -8,13 +8,28 @@ import {
   createMeasurement,
   getMeasurements,
   type CreateMeasurementInput,
+  type LengthUnit,
   type Measurement,
+  type MeasurementDisplayUnits,
+  type WeightUnit,
 } from "../services/measurementService";
+import { getProfile } from "../services/profileService";
+import {
+  formatMeasurement,
+  getMeasurementStep,
+} from "../utils/measurementFormat";
+
+const DEFAULT_DISPLAY_UNITS: MeasurementDisplayUnits = {
+  weight: "lb",
+  length: "in",
+};
 
 export default function MeasurementsPage() {
   const navigate = useNavigate();
 
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [displayUnits, setDisplayUnits] =
+    useState<MeasurementDisplayUnits>(DEFAULT_DISPLAY_UNITS);
   const [weight, setWeight] = useState("");
   const [waist, setWaist] = useState("");
   const [chest, setChest] = useState("");
@@ -33,11 +48,15 @@ export default function MeasurementsPage() {
   useEffect(() => {
     let isCancelled = false;
 
-    getMeasurements()
-      .then((records) => {
-        if (!isCancelled) {
-          setMeasurements(records);
-        }
+    Promise.all([getMeasurements(), getProfile()])
+      .then(([records, profile]) => {
+        if (isCancelled) return;
+
+        setMeasurements(records);
+        setDisplayUnits({
+          weight: profile.preferredWeightUnit,
+          length: profile.preferredLengthUnit,
+        });
       })
       .catch(() => {
         if (!isCancelled) {
@@ -55,14 +74,9 @@ export default function MeasurementsPage() {
     };
   }, []);
 
-  const optionalNumber = (
-    value: string
-  ): number | undefined => {
+  const optionalNumber = (value: string): number | undefined => {
     const trimmedValue = value.trim();
-
-    return trimmedValue === ""
-      ? undefined
-      : Number(trimmedValue);
+    return trimmedValue === "" ? undefined : Number(trimmedValue);
   };
 
   const clearForm = (): void => {
@@ -88,19 +102,29 @@ export default function MeasurementsPage() {
       chest: optionalNumber(chest),
       hips: optionalNumber(hips),
       bodyFat: optionalNumber(bodyFat),
+      weightUnit: displayUnits.weight,
+      lengthUnit: displayUnits.length,
     };
 
     try {
       await createMeasurement(input);
       clearForm();
       setMessage("Measurement saved successfully.");
-
       await refreshMeasurements();
     } catch {
       setError("Unable to save measurement.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const formatOptional = (
+    value: number | null,
+    unit: WeightUnit | LengthUnit | "%"
+  ): string => {
+    return value === null
+      ? "-"
+      : `${formatMeasurement(value, unit)} ${unit}`;
   };
 
   return (
@@ -111,10 +135,7 @@ export default function MeasurementsPage() {
           <p>Record and review your progress.</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate("/dashboard")}
-        >
+        <button type="button" onClick={() => navigate("/dashboard")}>
           Back to Dashboard
         </button>
       </header>
@@ -122,89 +143,73 @@ export default function MeasurementsPage() {
       <section className="measurement-layout">
         <article className="dashboard-card">
           <h2>Add Measurement</h2>
+          <p>
+            Entries use your profile preferences: {displayUnits.weight} for
+            weight and {displayUnits.length} for body measurements.
+          </p>
 
-          <form
-            className="measurement-form"
-            onSubmit={handleSubmit}
-          >
+          <form className="measurement-form" onSubmit={handleSubmit}>
             <label>
-              Weight
+              Weight ({displayUnits.weight})
               <input
                 type="number"
-                step="0.1"
+                step={getMeasurementStep(displayUnits.weight)}
                 min="0"
                 value={weight}
-                onChange={(event) =>
-                  setWeight(event.target.value)
-                }
+                onChange={(event) => setWeight(event.target.value)}
               />
             </label>
 
             <label>
-              Waist
+              Waist ({displayUnits.length})
               <input
                 type="number"
-                step="0.1"
+                step={getMeasurementStep(displayUnits.length)}
                 min="0"
                 value={waist}
-                onChange={(event) =>
-                  setWaist(event.target.value)
-                }
+                onChange={(event) => setWaist(event.target.value)}
               />
             </label>
 
             <label>
-              Chest
+              Chest ({displayUnits.length})
               <input
                 type="number"
-                step="0.1"
+                step={getMeasurementStep(displayUnits.length)}
                 min="0"
                 value={chest}
-                onChange={(event) =>
-                  setChest(event.target.value)
-                }
+                onChange={(event) => setChest(event.target.value)}
               />
             </label>
 
             <label>
-              Hips
+              Hips ({displayUnits.length})
               <input
                 type="number"
-                step="0.1"
+                step={getMeasurementStep(displayUnits.length)}
                 min="0"
                 value={hips}
-                onChange={(event) =>
-                  setHips(event.target.value)
-                }
+                onChange={(event) => setHips(event.target.value)}
               />
             </label>
 
             <label>
-              Body Fat %
+              Body Fat (%)
               <input
                 type="number"
-                step="0.1"
+                step={getMeasurementStep("%")}
                 min="0"
                 max="100"
                 value={bodyFat}
-                onChange={(event) =>
-                  setBodyFat(event.target.value)
-                }
+                onChange={(event) => setBodyFat(event.target.value)}
               />
             </label>
 
-            {message && (
-              <p className="success-message">{message}</p>
-            )}
-
-            {error && (
-              <p className="error-message">{error}</p>
-            )}
+            {message && <p className="success-message">{message}</p>}
+            {error && <p className="error-message">{error}</p>}
 
             <button type="submit" disabled={isSaving}>
-              {isSaving
-                ? "Saving..."
-                : "Save Measurement"}
+              {isSaving ? "Saving..." : "Save Measurement"}
             </button>
           </form>
         </article>
@@ -218,37 +223,34 @@ export default function MeasurementsPage() {
             <p>No measurements have been recorded yet.</p>
           ) : (
             <div className="measurement-history">
-              {measurements.map((measurement) => (
-                <article
-                  key={measurement.id}
-                  className="history-item"
-                >
-                  <strong>
-                    {new Date(
-                      measurement.measurementDate
-                    ).toLocaleDateString()}
-                  </strong>
+              {measurements.map((measurement) => {
+                const units = measurement.displayUnits ?? displayUnits;
 
-                  <p>
-                    Weight: {measurement.weight ?? "-"}
-                  </p>
-                  <p>
-                    Waist: {measurement.waist ?? "-"}
-                  </p>
-                  <p>
-                    Chest: {measurement.chest ?? "-"}
-                  </p>
-                  <p>
-                    Hips: {measurement.hips ?? "-"}
-                  </p>
-                  <p>
-                    Body Fat:{" "}
-                    {measurement.bodyFat !== null
-                      ? `${measurement.bodyFat}%`
-                      : "-"}
-                  </p>
-                </article>
-              ))}
+                return (
+                  <article key={measurement.id} className="history-item">
+                    <strong>
+                      {new Date(
+                        measurement.measurementDate
+                      ).toLocaleDateString()}
+                    </strong>
+                    <p>
+                      Weight: {formatOptional(measurement.weight, units.weight)}
+                    </p>
+                    <p>
+                      Waist: {formatOptional(measurement.waist, units.length)}
+                    </p>
+                    <p>
+                      Chest: {formatOptional(measurement.chest, units.length)}
+                    </p>
+                    <p>
+                      Hips: {formatOptional(measurement.hips, units.length)}
+                    </p>
+                    <p>
+                      Body Fat: {formatOptional(measurement.bodyFat, "%")}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
           )}
         </article>

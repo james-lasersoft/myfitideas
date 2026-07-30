@@ -1,5 +1,13 @@
 import api from "./api";
 
+export type WeightUnit = "lb" | "kg";
+export type LengthUnit = "in" | "cm";
+
+export interface MeasurementDisplayUnits {
+  weight: WeightUnit;
+  length: LengthUnit;
+}
+
 export interface Measurement {
   id: string;
   weight: number | null;
@@ -8,6 +16,7 @@ export interface Measurement {
   hips: number | null;
   bodyFat: number | null;
   measurementDate: string;
+  displayUnits?: MeasurementDisplayUnits;
 }
 
 export interface CreateMeasurementInput {
@@ -16,6 +25,8 @@ export interface CreateMeasurementInput {
   chest?: number;
   hips?: number;
   bodyFat?: number;
+  weightUnit?: WeightUnit;
+  lengthUnit?: LengthUnit;
 }
 
 interface MeasurementListResponse {

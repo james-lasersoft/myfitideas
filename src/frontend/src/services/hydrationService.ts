@@ -20,6 +20,7 @@ export interface CreateHydrationInput {
 
 export interface DailyHydrationTotal {
   date: string;
+  timeZone?: string;
   totalMl: number;
   totalOz: number;
   entries: HydrationEntry[];
@@ -53,10 +54,14 @@ export async function createHydrationEntry(
 export async function getDailyHydrationTotal(
   date?: string
 ): Promise<DailyHydrationTotal> {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const response = await api.get<DailyHydrationTotal>(
     "/api/hydration/daily-total",
     {
-      params: date ? { date } : undefined,
+      params: {
+        ...(date ? { date } : {}),
+        ...(timeZone ? { timeZone } : {}),
+      },
     }
   );
 

@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,18 +11,23 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  firstName    String
-  lastName     String?
-  heightCm                Float?
-  preferredWeightUnit    String   @default("lb")
-  preferredHydrationUnit String   @default("oz")
-  dailyHydrationGoal     Float    @default(64)
-  targetWeight           Float?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                         String   @id @default(uuid())
+  email                      String   @unique
+  passwordHash               String
+  firstName                  String
+  lastName                   String?
+  heightCm                   Float?
+  preferredWeightUnit        String   @default("lb")
+  preferredLengthUnit        String   @default("in")
+  preferredHydrationUnit     String   @default("oz")
+  preferredLanguage          String   @default("en")
+  timezone                   String   @default("UTC")
+  dailyHydrationGoal         Float    @default(64)
+  dailyHydrationGoalMl       Float    @default(1892.7)
+  targetWeight               Float?
+  targetWeightKg             Float?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   measurements  Measurement[]
   hydrationLogs Hydration[]
@@ -40,6 +43,10 @@ model Measurement {
   chest           Float?
   hips            Float?
   bodyFat         Float?
+  weightKg        Float?
+  waistCm         Float?
+  chestCm         Float?
+  hipsCm          Float?
   measurementDate DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -56,6 +63,7 @@ model Hydration {
   userId    String
   amount    Float
   unit      String   @default("oz")
+  amountMl  Float
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
