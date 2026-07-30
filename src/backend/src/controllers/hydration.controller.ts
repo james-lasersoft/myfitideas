@@ -18,6 +18,15 @@ function isSupportedUnit(unit: string): unit is HydrationUnit {
   return SUPPORTED_UNITS.includes(unit as HydrationUnit);
 }
 
+function isValidTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createHydrationEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const userId = req.user?.id;
@@ -112,7 +121,15 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
       return;
     }
 
-    const timeZone = user.timezone || "UTC";
+    const requestedTimeZone =
+      typeof req.query.timeZone === "string" ? req.query.timeZone : undefined;
+
+    if (requestedTimeZone && !isValidTimeZone(requestedTimeZone)) {
+      res.status(400).json({ error: "The requested timezone is invalid." });
+      return;
+    }
+
+    const timeZone = requestedTimeZone ?? user.timezone ?? "UTC";
     const requestedDate =
       typeof req.query.date === "string"
         ? req.query.date
@@ -122,7 +139,7 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
     try {
       dayRange = getUtcDayRange(requestedDate, timeZone);
     } catch {
-      res.status(400).json({ error: "The requested date or profile timezone is invalid." });
+      res.status(400).json({ error: "The requested date or timezone is invalid." });
       return;
     }
 
