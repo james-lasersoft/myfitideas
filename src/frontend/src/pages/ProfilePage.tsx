@@ -13,6 +13,7 @@ import {
   formatMeasurementInput,
   getMeasurementStep,
 } from "../utils/measurementFormat";
+import "./ProfilePage.css";
 
 const POUNDS_TO_KG = 0.45359237;
 const OUNCES_TO_ML = 29.5735295625;
@@ -72,6 +73,39 @@ function convertLengthValue(
   return formatMeasurementInput(converted, toUnit);
 }
 
+interface UnitToggleProps<T extends string> {
+  label: string;
+  value: T;
+  options: readonly [T, T];
+  onChange: (value: T) => void;
+}
+
+function UnitToggle<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: UnitToggleProps<T>) {
+  return (
+    <div className="unit-preference-row">
+      <span className="unit-preference-label">{label}</span>
+      <div className="unit-toggle" role="group" aria-label={label}>
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={value === option ? "unit-toggle-option active" : "unit-toggle-option"}
+            aria-pressed={value === option}
+            onClick={() => onChange(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
 
@@ -111,10 +145,7 @@ export default function ProfilePage() {
         setHeight(
           heightValue === ""
             ? ""
-            : formatMeasurementInput(
-                heightValue,
-                profile.preferredLengthUnit
-              )
+            : formatMeasurementInput(heightValue, profile.preferredLengthUnit)
         );
         setDailyHydrationGoal(
           formatMeasurementInput(
@@ -177,8 +208,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const parsedHeight =
-      height.trim() === "" ? null : Number(height);
+    const parsedHeight = height.trim() === "" ? null : Number(height);
     const parsedHydrationGoal = Number(dailyHydrationGoal);
     const parsedTargetWeight =
       targetWeight.trim() === "" ? null : Number(targetWeight);
@@ -195,10 +225,7 @@ export default function ProfilePage() {
           ? parsedHeight
           : parsedHeight * INCHES_TO_CM;
 
-    if (
-      heightCm !== null &&
-      (heightCm < 50 || heightCm > 300)
-    ) {
+    if (heightCm !== null && (heightCm < 50 || heightCm > 300)) {
       setError(
         preferredLengthUnit === "cm"
           ? "Height must be between 50.0 and 300.0 cm."
@@ -207,10 +234,7 @@ export default function ProfilePage() {
       return;
     }
 
-    if (
-      !Number.isFinite(parsedHydrationGoal) ||
-      parsedHydrationGoal <= 0
-    ) {
+    if (!Number.isFinite(parsedHydrationGoal) || parsedHydrationGoal <= 0) {
       setError("Daily hydration goal must be greater than zero.");
       return;
     }
@@ -326,118 +350,112 @@ export default function ProfilePage() {
         </div>
 
         <form className="profile-form" onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <label>
-              First Name
-              <input
-                type="text"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                required
-              />
-            </label>
-
-            <label>
-              Last Name
-              <input
-                type="text"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-              />
-            </label>
-
-            <label>
-              Height
-              <div className="input-with-unit">
+          <section className="profile-section" aria-labelledby="personal-information-heading">
+            <h2 id="personal-information-heading">Personal Information</h2>
+            <div className="profile-personal-grid">
+              <label>
+                First Name
                 <input
-                  type="number"
-                  min={heightMin}
-                  max={heightMax}
-                  step={getMeasurementStep(preferredLengthUnit)}
-                  value={height}
-                  onChange={(event) => setHeight(event.target.value)}
-                  placeholder={heightPlaceholder}
-                />
-                <span>{preferredLengthUnit}</span>
-              </div>
-            </label>
-
-            <label>
-              Target Weight
-              <div className="input-with-unit">
-                <input
-                  type="number"
-                  min="1"
-                  step={getMeasurementStep(preferredWeightUnit)}
-                  value={targetWeight}
-                  onChange={(event) => setTargetWeight(event.target.value)}
-                  placeholder="Optional"
-                />
-                <span>{preferredWeightUnit}</span>
-              </div>
-            </label>
-
-            <label>
-              Preferred Weight Unit
-              <select
-                value={preferredWeightUnit}
-                onChange={(event) =>
-                  handleWeightUnitChange(
-                    event.target.value as "lb" | "kg"
-                  )
-                }
-              >
-                <option value="lb">Pounds (lb)</option>
-                <option value="kg">Kilograms (kg)</option>
-              </select>
-            </label>
-
-            <label>
-              Preferred Length Unit
-              <select
-                value={preferredLengthUnit}
-                onChange={(event) =>
-                  handleLengthUnitChange(
-                    event.target.value as "in" | "cm"
-                  )
-                }
-              >
-                <option value="in">Inches (in)</option>
-                <option value="cm">Centimeters (cm)</option>
-              </select>
-            </label>
-
-            <label>
-              Preferred Hydration Unit
-              <select
-                value={preferredHydrationUnit}
-                onChange={(event) =>
-                  handleHydrationUnitChange(
-                    event.target.value as "oz" | "ml"
-                  )
-                }
-              >
-                <option value="oz">Ounces (oz)</option>
-                <option value="ml">Milliliters (ml)</option>
-              </select>
-            </label>
-
-            <label>
-              Daily Hydration Goal
-              <div className="input-with-unit">
-                <input
-                  type="number"
-                  min={preferredHydrationUnit === "ml" ? "1" : "0.1"}
-                  step={getMeasurementStep(preferredHydrationUnit)}
-                  value={dailyHydrationGoal}
-                  onChange={(event) =>
-                    setDailyHydrationGoal(event.target.value)
-                  }
+                  type="text"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
                   required
                 />
-                <span>{preferredHydrationUnit}</span>
+              </label>
+
+              <label>
+                Last Name
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                />
+              </label>
+            </div>
+          </section>
+
+          <div className="profile-preferences-layout">
+            <section className="profile-section preference-column" aria-labelledby="measurement-preferences-heading">
+              <h2 id="measurement-preferences-heading">Measurement Preferences</h2>
+              <p className="profile-section-description">
+                Click a unit to update the related values immediately.
+              </p>
+
+              <div className="unit-preference-list">
+                <UnitToggle
+                  label="Weight"
+                  value={preferredWeightUnit}
+                  options={["lb", "kg"]}
+                  onChange={handleWeightUnitChange}
+                />
+                <UnitToggle
+                  label="Length"
+                  value={preferredLengthUnit}
+                  options={["in", "cm"]}
+                  onChange={handleLengthUnitChange}
+                />
+                <UnitToggle
+                  label="Hydration"
+                  value={preferredHydrationUnit}
+                  options={["oz", "ml"]}
+                  onChange={handleHydrationUnitChange}
+                />
               </div>
-            </label>
+            </section>
+
+            <section className="profile-section values-column" aria-labelledby="goals-measurements-heading">
+              <h2 id="goals-measurements-heading">Goals &amp; Measurements</h2>
+
+              <div className="profile-values-list">
+                <label>
+                  Height
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      min={heightMin}
+                      max={heightMax}
+                      step={getMeasurementStep(preferredLengthUnit)}
+                      value={height}
+                      onChange={(event) => setHeight(event.target.value)}
+                      placeholder={heightPlaceholder}
+                    />
+                    <span>{preferredLengthUnit}</span>
+                  </div>
+                </label>
+
+                <label>
+                  Target Weight
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      min="1"
+                      step={getMeasurementStep(preferredWeightUnit)}
+                      value={targetWeight}
+                      onChange={(event) => setTargetWeight(event.target.value)}
+                      placeholder="Optional"
+                    />
+                    <span>{preferredWeightUnit}</span>
+                  </div>
+                </label>
+
+                <label>
+                  Daily Hydration Goal
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      min={preferredHydrationUnit === "ml" ? "1" : "0.1"}
+                      step={getMeasurementStep(preferredHydrationUnit)}
+                      value={dailyHydrationGoal}
+                      onChange={(event) =>
+                        setDailyHydrationGoal(event.target.value)
+                      }
+                      required
+                    />
+                    <span>{preferredHydrationUnit}</span>
+                  </div>
+                </label>
+              </div>
+            </section>
           </div>
 
           {error && (
