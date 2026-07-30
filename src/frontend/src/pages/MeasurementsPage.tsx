@@ -8,17 +8,28 @@ import {
   createMeasurement,
   getMeasurements,
   type CreateMeasurementInput,
+  type LengthUnit,
   type Measurement,
+  type MeasurementDisplayUnits,
+  type WeightUnit,
 } from "../services/measurementService";
+import { getProfile } from "../services/profileService";
 import {
   formatMeasurement,
   getMeasurementStep,
 } from "../utils/measurementFormat";
 
+const DEFAULT_DISPLAY_UNITS: MeasurementDisplayUnits = {
+  weight: "lb",
+  length: "in",
+};
+
 export default function MeasurementsPage() {
   const navigate = useNavigate();
 
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [displayUnits, setDisplayUnits] =
+    useState<MeasurementDisplayUnits>(DEFAULT_DISPLAY_UNITS);
   const [weight, setWeight] = useState("");
   const [waist, setWaist] = useState("");
   const [chest, setChest] = useState("");
@@ -29,11 +40,6 @@ export default function MeasurementsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const displayUnits = measurements[0]?.displayUnits ?? {
-    weight: "lb" as const,
-    length: "in" as const,
-  };
-
   const refreshMeasurements = async (): Promise<void> => {
     const records = await getMeasurements();
     setMeasurements(records);
@@ -42,11 +48,15 @@ export default function MeasurementsPage() {
   useEffect(() => {
     let isCancelled = false;
 
-    getMeasurements()
-      .then((records) => {
-        if (!isCancelled) {
-          setMeasurements(records);
-        }
+    Promise.all([getMeasurements(), getProfile()])
+      .then(([records, profile]) => {
+        if (isCancelled) return;
+
+        setMeasurements(records);
+        setDisplayUnits({
+          weight: profile.preferredWeightUnit,
+          length: profile.preferredLengthUnit,
+        });
       })
       .catch(() => {
         if (!isCancelled) {
@@ -92,6 +102,8 @@ export default function MeasurementsPage() {
       chest: optionalNumber(chest),
       hips: optionalNumber(hips),
       bodyFat: optionalNumber(bodyFat),
+      weightUnit: displayUnits.weight,
+      lengthUnit: displayUnits.length,
     };
 
     try {
@@ -108,9 +120,11 @@ export default function MeasurementsPage() {
 
   const formatOptional = (
     value: number | null,
-    unit: "lb" | "kg" | "in" | "cm" | "%"
+    unit: WeightUnit | LengthUnit | "%"
   ): string => {
-    return value === null ? "-" : `${formatMeasurement(value, unit)} ${unit}`;
+    return value === null
+      ? "-"
+      : `${formatMeasurement(value, unit)} ${unit}`;
   };
 
   return (
@@ -129,6 +143,10 @@ export default function MeasurementsPage() {
       <section className="measurement-layout">
         <article className="dashboard-card">
           <h2>Add Measurement</h2>
+          <p>
+            Entries use your profile preferences: {displayUnits.weight} for
+            weight and {displayUnits.length} for body measurements.
+          </p>
 
           <form className="measurement-form" onSubmit={handleSubmit}>
             <label>
@@ -211,7 +229,9 @@ export default function MeasurementsPage() {
                 return (
                   <article key={measurement.id} className="history-item">
                     <strong>
-                      {new Date(measurement.measurementDate).toLocaleDateString()}
+                      {new Date(
+                        measurement.measurementDate
+                      ).toLocaleDateString()}
                     </strong>
                     <p>
                       Weight: {formatOptional(measurement.weight, units.weight)}
