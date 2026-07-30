@@ -7,6 +7,10 @@ import {
   toMilliliters,
   type HydrationUnit,
 } from "../utils/measurements.js";
+import {
+  getDateKeyInTimeZone,
+  getUtcDayRange,
+} from "../utils/timezone.js";
 
 const SUPPORTED_UNITS = ["oz", "ml"] as const;
 
@@ -99,25 +103,44 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
       return;
     }
 
-    const requestedDate = typeof req.query.date === "string" ? new Date(`${req.query.date}T00:00:00`) : new Date();
-    if (Number.isNaN(requestedDate.getTime())) {
-      res.status(400).json({ error: "The requested date is invalid." });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timeZone: true },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User profile not found." });
       return;
     }
 
-    const startOfDay = new Date(requestedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(requestedDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const timeZone = user.timeZone || "UTC";
+    const requestedDate =
+      typeof req.query.date === "string"
+        ? req.query.date
+        : getDateKeyInTimeZone(new Date(), timeZone);
+
+    let dayRange: { start: Date; endExclusive: Date };
+    try {
+      dayRange = getUtcDayRange(requestedDate, timeZone);
+    } catch {
+      res.status(400).json({ error: "The requested date or profile timezone is invalid." });
+      return;
+    }
 
     const entries = await prisma.hydration.findMany({
-      where: { userId, loggedAt: { gte: startOfDay, lte: endOfDay } },
+      where: {
+        userId,
+        loggedAt: {
+          gte: dayRange.start,
+          lt: dayRange.endExclusive,
+        },
+      },
       orderBy: { loggedAt: "asc" },
     });
     const totalMl = entries.reduce((total, entry) => total + entry.amountMl, 0);
 
     res.status(200).json({
-      date: startOfDay.toISOString().slice(0, 10),
+      date: requestedDate,
+      timeZone,
       totalMl: roundMeasurement(totalMl),
       totalOz: roundMeasurement(fromMilliliters(totalMl, "oz")),
       entries,
