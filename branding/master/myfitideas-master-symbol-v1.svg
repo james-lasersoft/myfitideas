@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">My Fit Ideas master symbol</title>
+  <desc id="desc">Three-leaf growth emblem with a person emerging from a shared stem.</desc>
+  <defs>
+    <linearGradient id="leafTop" x1="0" y1="0" x2="0.88" y2="1">
+      <stop offset="0" stop-color="#86D93D"/>
+      <stop offset="0.45" stop-color="#22A447"/>
+      <stop offset="1" stop-color="#075E33"/>
+    </linearGradient>
+    <linearGradient id="leafSide" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#63C83B"/>
+      <stop offset="0.42" stop-color="#159B45"/>
+      <stop offset="1" stop-color="#064F2D"/>
+    </linearGradient>
+    <linearGradient id="personFill" x1="0" y1="0" x2="0.75" y2="1">
+      <stop offset="0" stop-color="#A8E53E"/>
+      <stop offset="1" stop-color="#73C52B"/>
+    </linearGradient>
+  </defs>
+  <g id="master-symbol" transform="translate(0,10)">
+    <path id="top-leaf" fill="url(#leafTop)" d="M500 70 C620 198 664 335 618 470 C592 548 552 595 500 626 C448 595 408 548 382 470 C336 335 380 198 500 70 Z"/>
+    <path id="left-leaf" fill="url(#leafSide)" d="M82 410 C230 372 377 398 466 506 C500 548 519 600 524 660 C420 718 306 737 202 702 C118 674 68 612 50 514 C46 484 58 447 82 410 Z"/>
+    <path id="right-leaf" fill="url(#leafSide)" d="M918 410 C770 372 623 398 534 506 C500 548 481 600 476 660 C580 718 694 737 798 702 C882 674 932 612 950 514 C954 484 942 447 918 410 Z"/>
+    <g id="person-and-stem" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+      <path id="left-stem-arm" fill="none" d="M494 865 C486 763 470 678 438 612 C407 547 365 504 312 468"/>
+      <path id="right-stem-arm" fill="none" d="M506 865 C514 763 530 678 562 612 C593 547 635 504 688 468"/>
+      <path id="center-stem" fill="none" d="M500 866 C500 782 500 698 500 624"/>
+      <circle id="head" cx="500" cy="430" r="78" fill="url(#personFill)"/>
+    </g>
+    <path id="stem-core" fill="url(#personFill)" d="M483 870 C485 792 475 719 454 655 C438 607 415 563 383 522 C420 548 458 560 500 560 C542 560 580 548 617 522 C585 563 562 607 546 655 C525 719 515 792 517 870 Z"/>
+  </g>
+</svg>
