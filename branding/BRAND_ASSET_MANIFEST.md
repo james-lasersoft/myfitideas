@@ -1,6 +1,6 @@
 # MyFitIdeas Brand Asset Manifest
 
-**Manifest version:** 1.0  
+**Manifest version:** 1.0.1  
 **Last updated:** 2026-07-31  
 **Maintained on:** `feature/phase-2.1-branding`
 
@@ -21,7 +21,7 @@ This manifest is the authoritative inventory of approved and in-progress MyFitId
 
 | Asset | Version | Status | Repository location | Purpose | Notes |
 |---|---:|---|---|---|---|
-| MyFitIdeas Master Symbol | 1.0 | Candidate authoritative source | Pending upload to `branding/master/` | Primary standalone brand symbol | Five positive vector elements; flat fills; production-clean derivative still required |
+| MyFitIdeas Master Symbol | 1.0 | Approved authoritative source | `branding/master/MyFitIdeas_Master_Symbol_v1.0-production.svg` | Primary standalone brand symbol | Five positive vector elements; flat fills; embedded reference raster removed; rendering verified pixel-identical to the approved source |
 | Master Symbol Construction Standard | 1.0 | Approved reference | `branding/construction/MYFITIDEAS_MASTER_SYMBOL_CONSTRUCTION_STANDARD_v1.0.md` | Geometry, ratios, meaning, clear space, and governance | Measurements derived from the 1000 px Inkscape SVG |
 | Canonical Palette | 1.0 | Working canonical | `branding/colors/MYFITIDEAS_CANONICAL_PALETTE_v1.0.md` | Color reference and initial registration record | Subject to final contrast and application testing |
 | Canonical Palette Swatch | 1.0 | Working canonical | `branding/colors/myfitideas-canonical-palette-v1.svg` | Visual color reference | SVG swatch sheet |
@@ -100,6 +100,13 @@ Before marking any SVG or export as Approved:
 - Record checksum and source master version.
 
 ## Change Log
+
+### 1.0.1 - 2026-07-31
+
+- Added the production master symbol at `branding/master/MyFitIdeas_Master_Symbol_v1.0-production.svg`.
+- Removed the hidden embedded reference PNG and unused clipping definition.
+- Verified the production SVG renders pixel-identically to the approved source at 1000 px.
+- Promoted the Master Symbol to Approved authoritative source.
 
 ### 1.0 - 2026-07-31
 
