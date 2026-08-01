@@ -1,0 +1,18 @@
+{
+  "brand": "MyFitIdeas",
+  "release": "Brand v1.0",
+  "colors": {
+    "deepStem": "#1F8B43",
+    "topLeaf": "#48BE30",
+    "growth": "#5FCB3C",
+    "springBud": "#A6E84A",
+    "charcoal": "#263238",
+    "morningDew": "#F5FDF0",
+    "white": "#FFFFFF"
+  },
+  "wordmark": {
+    "source": "Noto Sans Display SemiBold",
+    "production": "Outlined vector paths",
+    "nameStyle": "MyFitIdeas"
+  }
+}
