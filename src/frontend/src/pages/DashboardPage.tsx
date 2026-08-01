@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BrandLogo from "../components/BrandLogo";
 import {
   getDashboardSummary,
   type DashboardSummary,
@@ -57,18 +58,23 @@ export default function DashboardPage() {
   return (
     <main className="dashboard-page">
       <header className="dashboard-header">
-        <div>
-          <h1>My Fit Ideas</h1>
+        <div className="dashboard-brand-block">
+          <BrandLogo className="dashboard-logo" />
           <p>
             {getGreeting()}, {user?.firstName ?? "User"}
           </p>
         </div>
 
-        <button onClick={logout}>Log Out</button>
+        <button className="secondary-button" onClick={logout}>
+          Log Out
+        </button>
       </header>
 
       {loading ? (
-        <p>Loading dashboard...</p>
+        <section className="brand-loading" aria-live="polite">
+          <BrandLogo variant="symbol" className="brand-loading-symbol" />
+          <p>Preparing your dashboard...</p>
+        </section>
       ) : (
         <>
           <section className="dashboard-grid">
@@ -118,7 +124,7 @@ export default function DashboardPage() {
             </article>
           </section>
 
-          <section className="dashboard-grid">
+          <section className="dashboard-grid dashboard-actions-grid">
             <article className="dashboard-card">
               <h2>Measurements</h2>
               <button onClick={() => navigate("/measurements")}>
