@@ -1,0 +1,28 @@
+:root {
+  --mfi-color-deep-stem: #1f8b43;
+  --mfi-color-growth: #5fcb3c;
+  --mfi-color-top-leaf: #48be30;
+  --mfi-color-spring-bud: #a6e84a;
+  --mfi-color-charcoal: #263238;
+  --mfi-color-white: #ffffff;
+  --mfi-color-background: #f5fdf0;
+  --mfi-color-surface: #ffffff;
+  --mfi-color-border: #d9e7d5;
+
+  --mfi-font-display: "Noto Sans Display", "Noto Sans", Arial, sans-serif;
+  --mfi-font-body: "Noto Sans", Arial, sans-serif;
+
+  --mfi-radius-sm: 6px;
+  --mfi-radius-md: 12px;
+  --mfi-radius-lg: 18px;
+
+  --mfi-space-1: 4px;
+  --mfi-space-2: 8px;
+  --mfi-space-3: 12px;
+  --mfi-space-4: 16px;
+  --mfi-space-6: 24px;
+  --mfi-space-8: 32px;
+
+  --mfi-shadow-1: 0 2px 8px rgb(38 50 56 / 8%);
+  --mfi-shadow-2: 0 8px 24px rgb(38 50 56 / 12%);
+}
