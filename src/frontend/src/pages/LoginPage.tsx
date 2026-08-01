@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import BrandLogo from "../components/BrandLogo";
 import api from "../services/api";
 
 interface LoginResponse {
@@ -47,15 +48,19 @@ export default function LoginPage() {
 
   return (
     <main className="auth-page">
-      <section className="auth-card">
-        <h1>My Fit Ideas</h1>
-        <p>Personal Body Progress Tracker</p>
+      <section className="auth-card" aria-labelledby="login-heading">
+        <BrandLogo className="auth-logo" />
+        <div className="auth-intro">
+          <h1 id="login-heading">Welcome back</h1>
+          <p>Continue your body transformation journey.</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <label htmlFor="email">Email</label>
           <input
             id="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -65,6 +70,7 @@ export default function LoginPage() {
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
