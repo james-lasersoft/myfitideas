@@ -1,0 +1,150 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { translations, type SupportedLocale } from "./translations";
+
+const STORAGE_KEY = "myfitideas.locale";
+
+function normalizeLocale(value: string | null | undefined): SupportedLocale {
+  if (value?.toLowerCase().startsWith("pt")) return "pt-BR";
+  return "en-US";
+}
+
+function getInitialLocale(): SupportedLocale {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) return normalizeLocale(stored);
+
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser") ?? "null") as
+      | { preferredLanguage?: string }
+      | null;
+    if (currentUser?.preferredLanguage) {
+      return normalizeLocale(currentUser.preferredLanguage);
+    }
+  } catch {
+    // Ignore malformed cached user data and continue to browser preference.
+  }
+
+  return normalizeLocale(navigator.language);
+}
+
+type LocaleContextValue = {
+  locale: SupportedLocale;
+  setLocale: (locale: SupportedLocale) => void;
+  t: (text: string) => string;
+};
+
+const LocaleContext = createContext<LocaleContextValue | null>(null);
+
+function translateText(text: string, locale: SupportedLocale): string {
+  if (locale === "en-US") return text;
+
+  const leading = text.match(/^\s*/)?.[0] ?? "";
+  const trailing = text.match(/\s*$/)?.[0] ?? "";
+  const core = text.trim();
+  if (!core) return text;
+
+  const direct = translations[locale][core];
+  if (direct) return `${leading}${direct}${trailing}`;
+
+  const replacements: Array<[RegExp, string]> = [
+    [/^Good Morning, (.+)$/, "Bom dia, $1"],
+    [/^Good Afternoon, (.+)$/, "Boa tarde, $1"],
+    [/^Good Evening, (.+)$/, "Boa noite, $1"],
+    [/^Goal: (.+)$/, "Meta: $1"],
+    [/^(\d+) entry$/, "$1 registro"],
+    [/^(\d+) entries$/, "$1 registros"],
+    [/^Weight: (.+)$/, "Peso: $1"],
+    [/^Waist: (.+)$/, "Cintura: $1"],
+    [/^Chest: (.+)$/, "Peitoral: $1"],
+    [/^Hips: (.+)$/, "Quadril: $1"],
+    [/^Body Fat: (.+)$/, "Gordura Corporal: $1"],
+    [/^(.+) since last measurement$/, "$1 desde a última medida"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(core)) {
+      return `${leading}${core.replace(pattern, replacement)}${trailing}`;
+    }
+  }
+
+  return text;
+}
+
+function localizeElement(root: ParentNode, locale: SupportedLocale): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    const parent = node.parentElement;
+    if (!parent || ["SCRIPT", "STYLE", "TEXTAREA"].includes(parent.tagName)) continue;
+    nodes.push(node);
+  }
+
+  for (const node of nodes) {
+    const translated = translateText(node.nodeValue ?? "", locale);
+    if (translated !== node.nodeValue) node.nodeValue = translated;
+  }
+
+  root.querySelectorAll<HTMLElement>("[aria-label], [title], input[placeholder]").forEach((element) => {
+    for (const attribute of ["aria-label", "title", "placeholder"] as const) {
+      const value = element.getAttribute(attribute);
+      if (!value) continue;
+      const translated = translateText(value, locale);
+      if (translated !== value) element.setAttribute(attribute, translated);
+    }
+  });
+}
+
+export function LocaleProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocaleState] = useState<SupportedLocale>(getInitialLocale);
+
+  const setLocale = useCallback((nextLocale: SupportedLocale) => {
+    localStorage.setItem(STORAGE_KEY, nextLocale);
+    document.documentElement.lang = nextLocale;
+    setLocaleState(nextLocale);
+  }, []);
+
+  const t = useCallback(
+    (text: string) => translations[locale][text] ?? text,
+    [locale]
+  );
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    localizeElement(document.body, locale);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
+            const textNode = node as Text;
+            textNode.nodeValue = translateText(textNode.nodeValue ?? "", locale);
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            localizeElement(node as Element, locale);
+          }
+        });
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [locale]);
+
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
+}
+
+export function useLocale(): LocaleContextValue {
+  const context = useContext(LocaleContext);
+  if (!context) throw new Error("useLocale must be used within LocaleProvider");
+  return context;
+}
