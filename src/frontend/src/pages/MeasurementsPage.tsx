@@ -4,6 +4,7 @@ import {
   type FormEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import BrandLogo from "../components/BrandLogo";
 import {
   createMeasurement,
   getMeasurements,
@@ -59,14 +60,10 @@ export default function MeasurementsPage() {
         });
       })
       .catch(() => {
-        if (!isCancelled) {
-          setError("Unable to load measurements.");
-        }
+        if (!isCancelled) setError("Unable to load measurements.");
       })
       .finally(() => {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+        if (!isCancelled) setIsLoading(false);
       });
 
     return () => {
@@ -87,11 +84,8 @@ export default function MeasurementsPage() {
     setBodyFat("");
   };
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>
-  ): Promise<void> => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-
     setMessage("");
     setError("");
     setIsSaving(true);
@@ -121,21 +115,19 @@ export default function MeasurementsPage() {
   const formatOptional = (
     value: number | null,
     unit: WeightUnit | LengthUnit | "%"
-  ): string => {
-    return value === null
-      ? "-"
-      : `${formatMeasurement(value, unit)} ${unit}`;
-  };
+  ): string => value === null ? "-" : `${formatMeasurement(value, unit)} ${unit}`;
 
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <h1>Body Measurements</h1>
-          <p>Record and review your progress.</p>
+    <main className="dashboard-page measurements-page">
+      <header className="dashboard-header page-brand-header">
+        <div className="page-brand-heading">
+          <BrandLogo variant="symbol" className="page-brand-symbol" />
+          <div>
+            <h1>Body Measurements</h1>
+            <p>Record and review your progress.</p>
+          </div>
         </div>
-
-        <button type="button" onClick={() => navigate("/dashboard")}>
+        <button className="secondary-button" type="button" onClick={() => navigate("/dashboard")}>
           Back to Dashboard
         </button>
       </header>
@@ -143,111 +135,33 @@ export default function MeasurementsPage() {
       <section className="measurement-layout">
         <article className="dashboard-card">
           <h2>Add Measurement</h2>
-          <p>
-            Entries use your profile preferences: {displayUnits.weight} for
-            weight and {displayUnits.length} for body measurements.
-          </p>
-
+          <p>Entries use your profile preferences: {displayUnits.weight} for weight and {displayUnits.length} for body measurements.</p>
           <form className="measurement-form" onSubmit={handleSubmit}>
-            <label>
-              Weight ({displayUnits.weight})
-              <input
-                type="number"
-                step={getMeasurementStep(displayUnits.weight)}
-                min="0"
-                value={weight}
-                onChange={(event) => setWeight(event.target.value)}
-              />
-            </label>
-
-            <label>
-              Waist ({displayUnits.length})
-              <input
-                type="number"
-                step={getMeasurementStep(displayUnits.length)}
-                min="0"
-                value={waist}
-                onChange={(event) => setWaist(event.target.value)}
-              />
-            </label>
-
-            <label>
-              Chest ({displayUnits.length})
-              <input
-                type="number"
-                step={getMeasurementStep(displayUnits.length)}
-                min="0"
-                value={chest}
-                onChange={(event) => setChest(event.target.value)}
-              />
-            </label>
-
-            <label>
-              Hips ({displayUnits.length})
-              <input
-                type="number"
-                step={getMeasurementStep(displayUnits.length)}
-                min="0"
-                value={hips}
-                onChange={(event) => setHips(event.target.value)}
-              />
-            </label>
-
-            <label>
-              Body Fat (%)
-              <input
-                type="number"
-                step={getMeasurementStep("%")}
-                min="0"
-                max="100"
-                value={bodyFat}
-                onChange={(event) => setBodyFat(event.target.value)}
-              />
-            </label>
-
+            <label>Weight ({displayUnits.weight})<input type="number" step={getMeasurementStep(displayUnits.weight)} min="0" value={weight} onChange={(event) => setWeight(event.target.value)} /></label>
+            <label>Waist ({displayUnits.length})<input type="number" step={getMeasurementStep(displayUnits.length)} min="0" value={waist} onChange={(event) => setWaist(event.target.value)} /></label>
+            <label>Chest ({displayUnits.length})<input type="number" step={getMeasurementStep(displayUnits.length)} min="0" value={chest} onChange={(event) => setChest(event.target.value)} /></label>
+            <label>Hips ({displayUnits.length})<input type="number" step={getMeasurementStep(displayUnits.length)} min="0" value={hips} onChange={(event) => setHips(event.target.value)} /></label>
+            <label>Body Fat (%)<input type="number" step={getMeasurementStep("%")} min="0" max="100" value={bodyFat} onChange={(event) => setBodyFat(event.target.value)} /></label>
             {message && <p className="success-message">{message}</p>}
             {error && <p className="error-message">{error}</p>}
-
-            <button type="submit" disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save Measurement"}
-            </button>
+            <button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Measurement"}</button>
           </form>
         </article>
 
         <article className="dashboard-card">
           <h2>Measurement History</h2>
-
-          {isLoading ? (
-            <p>Loading measurements...</p>
-          ) : measurements.length === 0 ? (
-            <p>No measurements have been recorded yet.</p>
-          ) : (
+          {isLoading ? <p>Loading measurements...</p> : measurements.length === 0 ? <p>No measurements have been recorded yet.</p> : (
             <div className="measurement-history">
               {measurements.map((measurement) => {
                 const units = measurement.displayUnits ?? displayUnits;
-
                 return (
                   <article key={measurement.id} className="history-item">
-                    <strong>
-                      {new Date(
-                        measurement.measurementDate
-                      ).toLocaleDateString()}
-                    </strong>
-                    <p>
-                      Weight: {formatOptional(measurement.weight, units.weight)}
-                    </p>
-                    <p>
-                      Waist: {formatOptional(measurement.waist, units.length)}
-                    </p>
-                    <p>
-                      Chest: {formatOptional(measurement.chest, units.length)}
-                    </p>
-                    <p>
-                      Hips: {formatOptional(measurement.hips, units.length)}
-                    </p>
-                    <p>
-                      Body Fat: {formatOptional(measurement.bodyFat, "%")}
-                    </p>
+                    <strong>{new Date(measurement.measurementDate).toLocaleDateString()}</strong>
+                    <p>Weight: {formatOptional(measurement.weight, units.weight)}</p>
+                    <p>Waist: {formatOptional(measurement.waist, units.length)}</p>
+                    <p>Chest: {formatOptional(measurement.chest, units.length)}</p>
+                    <p>Hips: {formatOptional(measurement.hips, units.length)}</p>
+                    <p>Body Fat: {formatOptional(measurement.bodyFat, "%")}</p>
                   </article>
                 );
               })}
