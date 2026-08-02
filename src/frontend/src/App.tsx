@@ -1,5 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthorizationProvider } from "./auth/AuthorizationContext";
+import PermissionRoute from "./auth/PermissionRoute";
 import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
@@ -14,6 +16,9 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ProgressChartsPage = lazy(() => import("./pages/ProgressChartsPage"));
 const AdminLandingPage = lazy(() => import("./pages/AdminLandingPage"));
 const TranslationAdminPage = lazy(() => import("./pages/TranslationAdminPage"));
+const UserAdminPage = lazy(() => import("./pages/UserAdminPage"));
+const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
+const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("authToken");
@@ -24,21 +29,30 @@ function ProtectedPage({ children }: { children: ReactNode }) {
   return <ProtectedRoute><Suspense fallback={<PageLoading />}>{children}</Suspense></ProtectedRoute>;
 }
 
+function AuthorizedPage({ permission, children }: { permission: string; children: ReactNode }) {
+  return <ProtectedPage><PermissionRoute permission={permission}>{children}</PermissionRoute></ProtectedPage>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <GlobalControls />
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
-        <Route path="/measurements" element={<ProtectedPage><MeasurementsPage /></ProtectedPage>} />
-        <Route path="/hydration" element={<ProtectedPage><HydrationPage /></ProtectedPage>} />
-        <Route path="/profile" element={<ProtectedPage><ProfilePage /></ProtectedPage>} />
-        <Route path="/progress" element={<ProtectedPage><ProgressChartsPage /></ProtectedPage>} />
-        <Route path="/admin" element={<ProtectedPage><AdminLandingPage /></ProtectedPage>} />
-        <Route path="/admin/translations" element={<ProtectedPage><TranslationAdminPage /></ProtectedPage>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AuthorizationProvider>
+        <GlobalControls />
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
+          <Route path="/measurements" element={<ProtectedPage><MeasurementsPage /></ProtectedPage>} />
+          <Route path="/hydration" element={<ProtectedPage><HydrationPage /></ProtectedPage>} />
+          <Route path="/profile" element={<ProtectedPage><ProfilePage /></ProtectedPage>} />
+          <Route path="/progress" element={<ProtectedPage><ProgressChartsPage /></ProtectedPage>} />
+          <Route path="/admin" element={<AuthorizedPage permission="admin.access"><AdminLandingPage /></AuthorizedPage>} />
+          <Route path="/admin/translations" element={<AuthorizedPage permission="translations.read"><TranslationAdminPage /></AuthorizedPage>} />
+          <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
+          <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
+          <Route path="/admin/audit" element={<AuthorizedPage permission="audit.read"><AuditLogPage /></AuthorizedPage>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthorizationProvider>
     </BrowserRouter>
   );
 }
