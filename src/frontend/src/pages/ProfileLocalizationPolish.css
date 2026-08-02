@@ -1,0 +1,63 @@
+.profile-localization-grid {
+  align-items: end;
+}
+
+.profile-localization-grid > label,
+.profile-localization-grid > .localization-toggle-field {
+  min-width: 0;
+}
+
+.profile-localization-grid > label:first-child {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.profile-localization-grid select,
+.localization-toggle-field .unit-toggle {
+  min-height: 56px;
+}
+
+.localization-toggle-field .unit-toggle {
+  width: 100%;
+  max-width: none;
+}
+
+.profile-localization-grid label,
+.localization-toggle-field {
+  position: relative;
+  padding: 0.85rem;
+  border: 1px solid #dce7df;
+  border-radius: 12px;
+  background: #fbfdfb;
+}
+
+.profile-localization-grid label:hover,
+.localization-toggle-field:hover {
+  border-color: rgba(31, 139, 67, 0.45);
+  box-shadow: 0 5px 14px rgba(31, 139, 67, 0.08);
+}
+
+.profile-localization-grid select:focus-visible {
+  outline: 3px solid rgba(31, 139, 67, 0.2);
+  outline-offset: 2px;
+  border-color: var(--mfi-deep-stem, #1f8b43);
+}
+
+html[data-theme="dark"] .profile-localization-grid label,
+html[data-theme="dark"] .localization-toggle-field {
+  background: #131c16;
+  border-color: #34443a;
+}
+
+html[data-theme="dark"] .profile-localization-grid label:hover,
+html[data-theme="dark"] .localization-toggle-field:hover {
+  border-color: rgba(87, 199, 119, 0.55);
+}
+
+@media (max-width: 700px) {
+  .profile-localization-grid select,
+  .localization-toggle-field .unit-toggle {
+    width: 100%;
+  }
+}
