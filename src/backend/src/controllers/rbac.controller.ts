@@ -5,6 +5,9 @@ import type { AuthorizedRequest } from "../middleware/permission.middleware.js";
 import { getAuthorizationSnapshot } from "../services/authorization.service.js";
 import { writeAuditLog } from "../services/audit.service.js";
 
+const allowedUserStatuses = ["ACTIVE", "INACTIVE", "SUSPENDED"] as const;
+type AllowedUserStatus = (typeof allowedUserStatuses)[number];
+
 function requireActor(req: AuthorizedRequest): string {
   if (!req.user) throw new Error("Authenticated user is required.");
   return req.user.id;
@@ -14,6 +17,18 @@ function organizationId(req: AuthorizedRequest): string {
   const value = req.authorization?.organizationId;
   if (!value) throw new Error("An active organization membership is required.");
   return value;
+}
+
+function requireRouteParam(req: AuthorizedRequest, name: string): string {
+  const value = req.params[name];
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`A valid ${name} route parameter is required.`);
+  }
+  return value;
+}
+
+function isAllowedUserStatus(value: unknown): value is AllowedUserStatus {
+  return typeof value === "string" && allowedUserStatuses.includes(value as AllowedUserStatus);
 }
 
 export async function getMyAuthorization(req: AuthorizedRequest, res: Response): Promise<void> {
@@ -75,9 +90,9 @@ export async function listUsers(req: AuthorizedRequest, res: Response): Promise<
 export async function updateUserStatus(req: AuthorizedRequest, res: Response): Promise<void> {
   const actorUserId = requireActor(req);
   const orgId = organizationId(req);
-  const targetUserId = req.params.userId;
+  const targetUserId = requireRouteParam(req, "userId");
   const status = req.body?.status;
-  if (!["ACTIVE", "INACTIVE", "SUSPENDED"].includes(status)) {
+  if (!isAllowedUserStatus(status)) {
     res.status(400).json({ error: "A valid user status is required." });
     return;
   }
@@ -158,7 +173,8 @@ export async function createRole(req: AuthorizedRequest, res: Response): Promise
 export async function updateRole(req: AuthorizedRequest, res: Response): Promise<void> {
   const actorUserId = requireActor(req);
   const orgId = organizationId(req);
-  const role = await prisma.role.findUnique({ where: { id: req.params.roleId }, include: { permissions: true } });
+  const roleId = requireRouteParam(req, "roleId");
+  const role = await prisma.role.findUnique({ where: { id: roleId }, include: { permissions: true } });
   if (!role || role.organizationId !== orgId) {
     res.status(404).json({ error: "Role was not found." });
     return;
@@ -189,9 +205,12 @@ export async function updateRole(req: AuthorizedRequest, res: Response): Promise
 export async function assignRoles(req: AuthorizedRequest, res: Response): Promise<void> {
   const actorUserId = requireActor(req);
   const orgId = organizationId(req);
-  const targetUserId = req.params.userId;
+  const targetUserId = requireRouteParam(req, "userId");
   const roleIds = Array.isArray(req.body?.roleIds) ? req.body.roleIds.filter((value: unknown): value is string => typeof value === "string") : [];
-  const membership = await prisma.organizationMembership.findUnique({ where: { userId_organizationId: { userId: targetUserId, organizationId: orgId } }, include: { roles: true } });
+  const membership = await prisma.organizationMembership.findUnique({
+    where: { userId_organizationId: { userId: targetUserId, organizationId: orgId } },
+    include: { roles: { include: { role: true } } },
+  });
   if (!membership) {
     res.status(404).json({ error: "User membership was not found." });
     return;
@@ -201,7 +220,16 @@ export async function assignRoles(req: AuthorizedRequest, res: Response): Promis
     await tx.membershipRole.deleteMany({ where: { membershipId: membership.id } });
     if (roles.length) await tx.membershipRole.createMany({ data: roles.map((role) => ({ membershipId: membership.id, roleId: role.id })) });
   });
-  await writeAuditLog({ organizationId: orgId, actorUserId, action: "ROLES_ASSIGNED", targetType: "OrganizationMembership", targetId: membership.id, beforeState: membership.roles, afterState: roles.map((role) => role.key), request: req });
+  await writeAuditLog({
+    organizationId: orgId,
+    actorUserId,
+    action: "ROLES_ASSIGNED",
+    targetType: "OrganizationMembership",
+    targetId: membership.id,
+    beforeState: membership.roles.map(({ role }) => role.key),
+    afterState: roles.map((role) => role.key),
+    request: req,
+  });
   res.json({ membershipId: membership.id, roles: roles.map((role) => ({ id: role.id, key: role.key, name: role.name })) });
 }
 
@@ -239,7 +267,7 @@ export async function listInvitations(req: AuthorizedRequest, res: Response): Pr
 export async function revokeSessions(req: AuthorizedRequest, res: Response): Promise<void> {
   const actorUserId = requireActor(req);
   const orgId = organizationId(req);
-  const targetUserId = req.params.userId;
+  const targetUserId = requireRouteParam(req, "userId");
   const membership = await prisma.organizationMembership.findUnique({ where: { userId_organizationId: { userId: targetUserId, organizationId: orgId } } });
   if (!membership) {
     res.status(404).json({ error: "User membership was not found." });
