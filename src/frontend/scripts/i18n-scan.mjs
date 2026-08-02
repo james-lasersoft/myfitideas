@@ -14,8 +14,19 @@ const messageFunctions = new Set(["setError", "setMessage", "alert", "confirm", 
 const allowedLiterals = new Set(["MyFitIdeas"]);
 const symbolOnlyPattern = /^[×✎◷●—✓←→]+$/;
 
+function decodeEntities(value) {
+  return value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)));
+}
+
 export function normalize(value) {
-  return value.replace(/\s+/g, " ").trim();
+  return decodeEntities(value).replace(/\s+/g, " ").trim();
 }
 
 export function looksUserFacing(value) {
@@ -155,16 +166,15 @@ export function extractCatalog(seedSource) {
   function visit(node) {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "catalog" && node.initializer) {
       const initializer = unwrapExpression(node.initializer);
-      if (ts.isArrayLiteralExpression(initializer)) {
-        for (const rowNode of initializer.elements) {
-          const row = unwrapExpression(rowNode);
-          if (!ts.isArrayLiteralExpression(row) || row.elements.length < 4) continue;
-          const key = literalText(unwrapExpression(row.elements[0]));
-          const source = literalText(unwrapExpression(row.elements[1]));
-          const category = literalText(unwrapExpression(row.elements[2]));
-          const translation = literalText(unwrapExpression(row.elements[3]));
-          if (key && source && category) catalog.set(source, { key, source, category, translation: translation ?? "" });
-        }
+      if (!ts.isArrayLiteralExpression(initializer)) return;
+      for (const row of initializer.elements) {
+        const unwrappedRow = unwrapExpression(row);
+        if (!ts.isArrayLiteralExpression(unwrappedRow) || unwrappedRow.elements.length < 4) continue;
+        const key = literalText(unwrappedRow.elements[0]);
+        const source = literalText(unwrappedRow.elements[1]);
+        const category = literalText(unwrappedRow.elements[2]);
+        const translation = literalText(unwrappedRow.elements[3]);
+        if (key && source && category) catalog.set(normalize(source), { key, source: normalize(source), category, translation: translation ?? "" });
       }
     }
     ts.forEachChild(node, visit);
