@@ -1,5 +1,4 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client"
@@ -8,6 +7,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum TranslationStatus {
+  DRAFT
+  REVIEWED
+  PUBLISHED
 }
 
 model User {
@@ -29,8 +34,9 @@ model User {
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 
-  measurements  Measurement[]
-  hydrationLogs Hydration[]
+  measurements       Measurement[]
+  hydrationLogs      Hydration[]
+  translationChanges TranslationHistory[]
 
   @@map("users")
 }
@@ -73,4 +79,72 @@ model Hydration {
   @@index([userId])
   @@index([userId, loggedAt])
   @@map("hydration_logs")
+}
+
+model Language {
+  id           String             @id @default(uuid())
+  locale       String             @unique
+  displayName  String
+  nativeName   String
+  enabled      Boolean            @default(true)
+  isSource     Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  translations TranslationValue[]
+
+  @@map("languages")
+}
+
+model TranslationKey {
+  id           String             @id @default(uuid())
+  key          String             @unique
+  sourceText   String
+  category     String             @default("general")
+  description  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  translations TranslationValue[]
+  history      TranslationHistory[]
+
+  @@index([category])
+  @@map("translation_keys")
+}
+
+model TranslationValue {
+  id               String            @id @default(uuid())
+  translationKeyId String
+  languageId       String
+  value            String
+  status           TranslationStatus @default(DRAFT)
+  publishedValue   String?
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+  language       Language       @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([translationKeyId, languageId])
+  @@index([languageId, status])
+  @@map("translation_values")
+}
+
+model TranslationHistory {
+  id               String            @id @default(uuid())
+  translationKeyId String
+  languageLocale   String
+  previousValue    String?
+  newValue         String
+  previousStatus   TranslationStatus?
+  newStatus        TranslationStatus
+  action           String
+  changedByUserId  String
+  changedAt        DateTime          @default(now())
+
+  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+  changedBy      User           @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([translationKeyId, changedAt])
+  @@index([changedByUserId, changedAt])
+  @@map("translation_history")
 }
