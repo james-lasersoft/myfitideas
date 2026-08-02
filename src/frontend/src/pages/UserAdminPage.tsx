@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
@@ -17,18 +17,20 @@ export default function UserAdminPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async (query = search) => {
     setLoading(true);
     try {
-      const [userResult, roleResult] = await Promise.all([getAdminUsers(search), getRoles()]);
+      const [userResult, roleResult] = await Promise.all([getAdminUsers(query), getRoles()]);
       setUsers(userResult.items);
       setRoles(roleResult);
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void Promise.resolve().then(() => load(""));
+  }, [load]);
 
   const invite = async () => {
     const result = await createInvitation(email, inviteRole || undefined);
@@ -61,15 +63,15 @@ export default function UserAdminPage() {
       <section className="security-panel">
         <div className="security-toolbar">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search users")} />
-          <Button variant="outline" onClick={() => void load()}>{t("Search")}</Button>
+          <Button variant="outline" onClick={() => void load(search)}>{t("Search")}</Button>
         </div>
         {loading ? <p>{t("Loading users...")}</p> : (
           <div className="security-table-wrap"><table className="security-table"><thead><tr><th>{t("User")}</th><th>{t("Status")}</th><th>{t("Roles")}</th><th>{t("Last login")}</th><th>{t("Actions")}</th></tr></thead><tbody>
             {users.map((item) => (
               <tr key={item.membershipId}>
                 <td><strong>{item.user.firstName} {item.user.lastName ?? ""}</strong><small>{item.user.email}</small></td>
-                <td><select value={item.user.status} onChange={async (event) => { await setUserStatus(item.user.id, event.target.value); await load(); }}><option value="ACTIVE">{t("Active")}</option><option value="INACTIVE">{t("Inactive")}</option><option value="SUSPENDED">{t("Suspended")}</option></select></td>
-                <td><select multiple value={item.roles.map((role) => role.id)} onChange={async (event) => { const roleIds = Array.from(event.target.selectedOptions).map((option) => option.value); await assignUserRoles(item.user.id, roleIds); await load(); }}>{roles.filter((role) => role.isActive).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select></td>
+                <td><select value={item.user.status} onChange={async (event) => { await setUserStatus(item.user.id, event.target.value); await load(search); }}><option value="ACTIVE">{t("Active")}</option><option value="INACTIVE">{t("Inactive")}</option><option value="SUSPENDED">{t("Suspended")}</option></select></td>
+                <td><select multiple value={item.roles.map((role) => role.id)} onChange={async (event) => { const roleIds = Array.from(event.target.selectedOptions).map((option) => option.value); await assignUserRoles(item.user.id, roleIds); await load(search); }}>{roles.filter((role) => role.isActive).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select></td>
                 <td>{item.user.lastLoginAt ? new Date(item.user.lastLoginAt).toLocaleString() : t("Never")}</td>
                 <td><Button variant="outline" size="sm" onClick={async () => { await revokeUserSessions(item.user.id); setMessage(t("Active sessions revoked.")); }}>{t("Revoke Sessions")}</Button></td>
               </tr>
