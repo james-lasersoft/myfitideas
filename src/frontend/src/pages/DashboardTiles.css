@@ -85,6 +85,77 @@
   background: linear-gradient(145deg, #ffffff, #f4faf5);
 }
 
+.dashboard-hydration-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-quick-add {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--mfi-border, #d9e4dc);
+}
+
+.dashboard-quick-add-label {
+  color: var(--mfi-text-muted, #66736b);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-quick-add-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dashboard-quick-add-button {
+  min-height: 42px;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(31, 139, 67, 0.35);
+  border-radius: 10px;
+  color: var(--mfi-deep-stem-dark, #176d34);
+  background: rgba(31, 139, 67, 0.08);
+  box-shadow: none;
+  font-weight: 800;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.dashboard-quick-add-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: #ffffff;
+  background: var(--mfi-deep-stem, #1f8b43);
+  border-color: var(--mfi-deep-stem, #1f8b43);
+}
+
+.dashboard-quick-add-button:focus-visible {
+  outline: 3px solid rgba(31, 139, 67, 0.24);
+  outline-offset: 2px;
+}
+
+.dashboard-quick-add-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.dashboard-quick-add-success,
+.dashboard-quick-add-error {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.dashboard-quick-add-success {
+  color: #176d34;
+}
+
+.dashboard-quick-add-error {
+  color: #b42318;
+}
+
 html[data-theme="dark"] .dashboard-module-tile {
   color: #edf4ef;
   background: #18211b;
@@ -107,6 +178,33 @@ html[data-theme="dark"] .dashboard-module-action {
 
 html[data-theme="dark"] .dashboard-module-tile.admin-module {
   background: linear-gradient(145deg, #18211b, #1d2b21);
+}
+
+html[data-theme="dark"] .dashboard-quick-add {
+  border-top-color: #34443a;
+}
+
+html[data-theme="dark"] .dashboard-quick-add-label {
+  color: #afbeb3;
+}
+
+html[data-theme="dark"] .dashboard-quick-add-button {
+  color: #9ee2af;
+  background: rgba(87, 199, 119, 0.1);
+  border-color: rgba(87, 199, 119, 0.38);
+}
+
+html[data-theme="dark"] .dashboard-quick-add-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--mfi-deep-stem, #1f8b43);
+}
+
+html[data-theme="dark"] .dashboard-quick-add-success {
+  color: #8fe0a6;
+}
+
+html[data-theme="dark"] .dashboard-quick-add-error {
+  color: #ff9b91;
 }
 
 @media (max-width: 600px) {
