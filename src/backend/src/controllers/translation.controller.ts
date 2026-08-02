@@ -14,6 +14,10 @@ function requireUserId(req: AuthenticatedRequest, res: Response): string | null 
   return userId;
 }
 
+function routeParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 export async function listLanguages(req: AuthenticatedRequest, res: Response): Promise<void> {
   if (!requireUserId(req, res)) return;
   const languages = await prisma.language.findMany({ orderBy: [{ isSource: "desc" }, { displayName: "asc" }] });
@@ -55,13 +59,13 @@ export async function saveTranslation(req: AuthenticatedRequest, res: Response):
   const userId = requireUserId(req, res);
   if (!userId) return;
 
-  const keyId = req.params.keyId;
+  const keyId = routeParam(req.params.keyId);
   const locale = typeof req.body.locale === "string" ? req.body.locale : "";
   const value = typeof req.body.value === "string" ? req.body.value.trim() : "";
   const requestedStatus = typeof req.body.status === "string" ? req.body.status : "DRAFT";
 
-  if (!locale || !value || !VALID_STATUSES.includes(requestedStatus as TranslationStatusValue)) {
-    res.status(400).json({ error: "Locale, value, and a valid status are required." });
+  if (!keyId || !locale || !value || !VALID_STATUSES.includes(requestedStatus as TranslationStatusValue)) {
+    res.status(400).json({ error: "Translation key, locale, value, and a valid status are required." });
     return;
   }
 
@@ -122,8 +126,14 @@ export async function saveTranslation(req: AuthenticatedRequest, res: Response):
 
 export async function getTranslationHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
   if (!requireUserId(req, res)) return;
+  const keyId = routeParam(req.params.keyId);
+  if (!keyId) {
+    res.status(400).json({ error: "Translation key is required." });
+    return;
+  }
+
   const history = await prisma.translationHistory.findMany({
-    where: { translationKeyId: req.params.keyId },
+    where: { translationKeyId: keyId },
     include: { changedBy: { select: { id: true, email: true, firstName: true, lastName: true } } },
     orderBy: { changedAt: "desc" },
     take: 50,
@@ -133,7 +143,12 @@ export async function getTranslationHistory(req: AuthenticatedRequest, res: Resp
 
 export async function getPublishedTranslations(req: AuthenticatedRequest, res: Response): Promise<void> {
   if (!requireUserId(req, res)) return;
-  const locale = req.params.locale;
+  const locale = routeParam(req.params.locale);
+  if (!locale) {
+    res.status(400).json({ error: "Locale is required." });
+    return;
+  }
+
   const values = await prisma.translationValue.findMany({
     where: { language: { locale, enabled: true }, publishedValue: { not: null } },
     include: { translationKey: true },
