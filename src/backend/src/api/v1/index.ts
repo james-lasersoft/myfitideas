@@ -6,6 +6,7 @@ import hydrationRoutes from "../../routes/hydration.routes.js";
 import dashboardRoutes from "../../routes/dashboard.routes.js";
 import profileRoutes from "../../routes/profile.routes.js";
 import translationRoutes from "../../routes/translation.routes.js";
+import rbacRoutes from "../../routes/rbac.routes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/hydration", hydrationRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/profile", profileRoutes);
 router.use("/admin/translations", translationRoutes);
+router.use("/admin/rbac", rbacRoutes);
 
 export default router;
