@@ -76,7 +76,12 @@ function translateText(text: string, locale: SupportedLocale): string {
   return text;
 }
 
+function isTranslationExcluded(element: Element | null): boolean {
+  return Boolean(element?.closest('[data-no-translate="true"]'));
+}
+
 function localizeTextNode(node: Text, locale: SupportedLocale): void {
+  if (isTranslationExcluded(node.parentElement)) return;
   if (!originalText.has(node)) originalText.set(node, node.nodeValue ?? "");
   const source = originalText.get(node) ?? "";
   const nextValue = locale === "en-US" ? source : translateText(source, locale);
@@ -84,6 +89,8 @@ function localizeTextNode(node: Text, locale: SupportedLocale): void {
 }
 
 function localizeElement(root: ParentNode, locale: SupportedLocale): void {
+  if (root instanceof Element && isTranslationExcluded(root)) return;
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
@@ -93,6 +100,7 @@ function localizeElement(root: ParentNode, locale: SupportedLocale): void {
   }
 
   root.querySelectorAll<HTMLElement>("[aria-label], [title], input[placeholder]").forEach((element) => {
+    if (isTranslationExcluded(element)) return;
     let saved = originalAttributes.get(element);
     if (!saved) {
       saved = new Map<string, string>();
@@ -146,7 +154,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }
 
     void loadPublishedCatalog();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [locale]);
 
   useEffect(() => {
