@@ -1,8 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import LanguageSelector from "./components/LanguageSelector";
+import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
-import ThemeToggle from "./components/ThemeToggle";
 import LoginPage from "./pages/LoginPage";
 import "./pages/ProfileLocalizationPolish.css";
 import "./index.css";
@@ -27,8 +26,7 @@ function ProtectedPage({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeToggle />
-      <LanguageSelector />
+      <GlobalControls />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
