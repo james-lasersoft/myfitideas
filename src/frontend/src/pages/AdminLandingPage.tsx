@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import Button from "../components/ui/Button";
 import "./Admin.css";
 
 const plannedModules = [
@@ -22,7 +23,7 @@ export default function AdminLandingPage() {
           <h1>Administration Center</h1>
           <p>Manage language content and prepare the operational controls that will be secured by RBAC in the next phase.</p>
         </div>
-        <button className="secondary-button" onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
+        <Button variant="outline" leadingIcon="←" onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
       </header>
 
       <section className="admin-module-grid" aria-label="Administrative modules">
@@ -30,7 +31,7 @@ export default function AdminLandingPage() {
           <span className="module-status ready">Available</span>
           <h2>Translation Management</h2>
           <p>Edit, review, and publish English and Brazilian Portuguese interface content.</p>
-          <button onClick={() => navigate("/admin/translations")}>Open Translation Manager</button>
+          <Button onClick={() => navigate("/admin/translations")}>Open Translation Manager</Button>
         </article>
 
         {plannedModules.map(([title, description]) => (
@@ -38,7 +39,7 @@ export default function AdminLandingPage() {
             <span className="module-status">Planned</span>
             <h2>{title}</h2>
             <p>{description}</p>
-            <button disabled>Coming in RBAC phase</button>
+            <Button variant="outline" disabled>Coming in RBAC phase</Button>
           </article>
         ))}
       </section>
