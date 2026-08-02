@@ -19,6 +19,7 @@ const TranslationAdminPage = lazy(() => import("./pages/TranslationAdminPage"));
 const UserAdminPage = lazy(() => import("./pages/UserAdminPage"));
 const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
+const AcceptInvitationPage = lazy(() => import("./pages/AcceptInvitationPage"));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("authToken");
@@ -40,6 +41,7 @@ export default function App() {
         <GlobalControls />
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/accept-invitation" element={<Suspense fallback={<PageLoading />}><AcceptInvitationPage /></Suspense>} />
           <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
           <Route path="/measurements" element={<ProtectedPage><MeasurementsPage /></ProtectedPage>} />
           <Route path="/hydration" element={<ProtectedPage><HydrationPage /></ProtectedPage>} />
