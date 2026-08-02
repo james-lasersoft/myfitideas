@@ -182,8 +182,6 @@ export default function HydrationPage() {
 
   useEffect(() => {
     let isCancelled = false;
-    setIsLoading(true);
-    setError("");
 
     Promise.all([
       getProfile(),
@@ -332,7 +330,11 @@ export default function HydrationPage() {
               type="date"
               value={summaryDate}
               max={getLocalDateValue()}
-              onChange={(event) => setSummaryDate(event.target.value)}
+              onChange={(event) => {
+                setIsLoading(true);
+                setError("");
+                setSummaryDate(event.target.value);
+              }}
             />
           </label>
 
