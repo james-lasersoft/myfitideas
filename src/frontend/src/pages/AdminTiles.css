@@ -1,0 +1,98 @@
+.admin-module-tile {
+  width: 100%;
+  min-height: 230px;
+  align-items: flex-start;
+  text-align: left;
+  color: var(--mfi-charcoal);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.admin-module-tile:not(:disabled):hover {
+  transform: translateY(-3px);
+  border-color: var(--mfi-deep-stem);
+  background: #fbfefb;
+  box-shadow: 0 14px 30px rgba(31, 139, 67, 0.14);
+}
+
+.admin-module-tile:not(:disabled):focus-visible {
+  outline: 3px solid rgba(31, 139, 67, 0.28);
+  outline-offset: 3px;
+}
+
+.admin-module-title {
+  display: block;
+  color: var(--mfi-charcoal);
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.admin-module-description {
+  display: block;
+  flex: 1;
+  color: var(--mfi-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.admin-module-action {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--mfi-border);
+  color: var(--mfi-deep-stem-dark);
+  font-weight: 800;
+}
+
+.admin-module-tile:not(:disabled) .admin-module-action::after {
+  content: "→";
+  font-size: 1.15rem;
+}
+
+.admin-module-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.admin-module-tile:disabled .admin-module-action {
+  color: var(--mfi-text-muted);
+}
+
+html[data-theme="dark"] .admin-module-tile {
+  color: #edf4ef;
+  background: #18211b;
+  border-color: #34443a;
+}
+
+html[data-theme="dark"] .admin-module-title {
+  color: #f3f8f4;
+}
+
+html[data-theme="dark"] .admin-module-description,
+html[data-theme="dark"] .admin-module-tile:disabled .admin-module-action {
+  color: #afbeb3;
+}
+
+html[data-theme="dark"] .admin-module-tile:not(:disabled):hover {
+  background: #1d2a21;
+  border-color: #57c777;
+}
+
+html[data-theme="dark"] .admin-module-action {
+  border-color: #34443a;
+  color: #7edc98;
+}
+
+@media (max-width: 760px) {
+  .admin-module-tile {
+    min-height: 200px;
+  }
+}
