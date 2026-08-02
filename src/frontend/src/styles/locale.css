@@ -1,0 +1,43 @@
+.language-selector {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+.language-selector select {
+  min-height: 40px;
+  padding: 0.55rem 2.25rem 0.55rem 0.8rem;
+  color: var(--mfi-charcoal);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(31, 139, 67, 0.28);
+  border-radius: var(--mfi-radius-md);
+  box-shadow: var(--mfi-shadow-sm);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.language-selector select:focus-visible {
+  outline: 3px solid rgba(31, 139, 67, 0.2);
+  outline-offset: 2px;
+  border-color: var(--mfi-deep-stem);
+}
+
+.language-selector select:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 700px) {
+  .language-selector {
+    top: 0.65rem;
+    right: 0.65rem;
+  }
+
+  .language-selector select {
+    max-width: 165px;
+    font-size: 0.88rem;
+  }
+}
