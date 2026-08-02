@@ -1,65 +1,59 @@
 import { useNavigate } from "react-router-dom";
+import { useAuthorization } from "../auth/AuthorizationContext";
 import BrandLogo from "../components/BrandLogo";
 import Button from "../components/ui/Button";
+import { useLocale } from "../i18n/LocaleContext";
 import "./Admin.css";
 import "./AdminTiles.css";
 
-const plannedModules = [
-  ["Users", "Manage company and customer accounts."],
-  ["Roles & Permissions", "Configure RBAC roles and effective permissions."],
-  ["Billing Operations", "Review plans, subscriptions, and billing exceptions."],
-  ["Audit Logs", "Review security-sensitive and administrative events."],
-  ["System Settings", "Manage operational configuration and feature controls."],
+interface AdminModule {
+  title: string;
+  description: string;
+  action: string;
+  path: string;
+  permission: string;
+}
+
+const modules: AdminModule[] = [
+  { title: "Translation Management", description: "Edit, review, and publish multilingual interface content.", action: "Open Translation Manager", path: "/admin/translations", permission: "translations.read" },
+  { title: "User Management", description: "Invite users, assign roles, manage account status, and revoke sessions.", action: "Open User Management", path: "/admin/users", permission: "users.read" },
+  { title: "Roles & Permissions", description: "Create organization roles and configure effective permissions.", action: "Open Role Management", path: "/admin/roles", permission: "roles.read" },
+  { title: "Audit Logs", description: "Review security-sensitive and administrative events.", action: "Open Audit Log", path: "/admin/audit", permission: "audit.read" },
 ];
 
 export default function AdminLandingPage() {
   const navigate = useNavigate();
+  const { can } = useAuthorization();
+  const { t } = useLocale();
+  const available = modules.filter((module) => can(module.permission));
 
   return (
     <main className="admin-page">
       <header className="admin-header">
         <div>
           <BrandLogo className="admin-logo" />
-          <p className="admin-eyebrow">Company administration</p>
-          <h1>Administration Center</h1>
-          <p>
-            Manage language content and prepare the operational controls that will be secured by
-            RBAC in the next phase.
-          </p>
+          <p className="admin-eyebrow">{t("Company administration")}</p>
+          <h1>{t("Administration Center")}</h1>
+          <p>{t("Manage users, roles, translations, security activity, and organization controls.")}</p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>
-          Back to Dashboard
-        </Button>
+        <Button variant="outline" onClick={() => navigate("/dashboard")}>{t("Back to Dashboard")}</Button>
       </header>
 
-      <section className="admin-module-grid" aria-label="Administrative modules">
-        <button
-          type="button"
-          className="admin-module-card admin-module-tile active-module"
-          onClick={() => navigate("/admin/translations")}
-          aria-label="Open Translation Manager"
-        >
-          <span className="module-status ready">Available</span>
-          <span className="admin-module-title">Translation Management</span>
-          <span className="admin-module-description">
-            Edit, review, and publish English and Brazilian Portuguese interface content.
-          </span>
-          <span className="admin-module-action">Open Translation Manager</span>
-        </button>
-
-        {plannedModules.map(([title, description]) => (
-          <button
-            type="button"
-            className="admin-module-card admin-module-tile planned-module"
-            key={title}
-            disabled
-          >
-            <span className="module-status">Planned</span>
-            <span className="admin-module-title">{title}</span>
-            <span className="admin-module-description">{description}</span>
-            <span className="admin-module-action">Coming in RBAC phase</span>
+      <section className="admin-module-grid" aria-label={t("Administrative modules")}>
+        {available.map((module) => (
+          <button type="button" className="admin-module-card admin-module-tile active-module" key={module.path} onClick={() => navigate(module.path)} aria-label={t(module.action)}>
+            <span className="module-status ready">{t("Available")}</span>
+            <span className="admin-module-title">{t(module.title)}</span>
+            <span className="admin-module-description">{t(module.description)}</span>
+            <span className="admin-module-action">{t(module.action)}</span>
           </button>
         ))}
+        <button type="button" className="admin-module-card admin-module-tile planned-module" disabled>
+          <span className="module-status">{t("Planned")}</span>
+          <span className="admin-module-title">{t("System Settings")}</span>
+          <span className="admin-module-description">{t("Manage operational configuration and feature controls.")}</span>
+          <span className="admin-module-action">{t("Coming in a future phase")}</span>
+        </button>
       </section>
     </main>
   );
