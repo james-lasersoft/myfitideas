@@ -47,13 +47,25 @@ export const register = async (
       return;
     }
 
+    const organization = await prisma.organization.findUnique({ where: { slug: "myfitideas" } });
+    const freeRole = organization
+      ? await prisma.role.findUnique({ where: { organizationId_key: { organizationId: organization.id, key: "free-user" } } })
+      : null;
+    if (!organization || !freeRole) {
+      res.status(503).json({ error: "Account registration is temporarily unavailable." });
+      return;
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { email, passwordHash, firstName, lastName, status: "ACTIVE" },
-      select: { id: true, email: true, firstName: true, lastName: true, createdAt: true },
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({ data: { email, passwordHash, firstName, lastName, status: "ACTIVE" } });
+      const membership = await tx.organizationMembership.create({ data: { userId: created.id, organizationId: organization.id, status: "ACTIVE" } });
+      await tx.membershipRole.create({ data: { membershipId: membership.id, roleId: freeRole.id } });
+      return created;
     });
 
-    res.status(201).json({ message: "User registered successfully.", user });
+    await writeAuditLog({ organizationId: organization.id, actorUserId: user.id, action: "USER_REGISTERED", targetType: "User", targetId: user.id, request: req });
+    res.status(201).json({ message: "User registered successfully.", user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, createdAt: user.createdAt } });
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({ error: "An unexpected error occurred during registration." });
@@ -85,24 +97,11 @@ export const login = async (
 
     const sessionId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    const token = jwt.sign(
-      { sub: user.id, email: user.email, tokenVersion: user.tokenVersion, sessionId },
-      getJwtSecret(),
-      { expiresIn: "1h" }
-    );
+    const token = jwt.sign({ sub: user.id, email: user.email, tokenVersion: user.tokenVersion, sessionId }, getJwtSecret(), { expiresIn: "1h" });
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
     await prisma.$transaction([
-      prisma.userSession.create({
-        data: {
-          id: sessionId,
-          userId: user.id,
-          tokenHash,
-          userAgent: req.get("user-agent") ?? null,
-          ipAddress: req.ip,
-          expiresAt,
-        },
-      }),
+      prisma.userSession.create({ data: { id: sessionId, userId: user.id, tokenHash, userAgent: req.get("user-agent") ?? null, ipAddress: req.ip, expiresAt } }),
       prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }),
     ]);
 
@@ -112,13 +111,7 @@ export const login = async (
     res.status(200).json({
       message: "Login successful.",
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        mustChangePassword: user.mustChangePassword,
-      },
+      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, mustChangePassword: user.mustChangePassword },
       authorization,
     });
   } catch (error) {
