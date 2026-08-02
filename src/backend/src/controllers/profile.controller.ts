@@ -16,8 +16,14 @@ const WEIGHT_UNITS = ["lb", "kg"] as const;
 const LENGTH_UNITS = ["in", "cm"] as const;
 const HYDRATION_UNITS = ["oz", "ml"] as const;
 const LANGUAGES = ["en", "pt-BR"] as const;
+const DATE_FORMATS = ["LOCALE", "MM_DD_YYYY", "DD_MM_YYYY", "YYYY_MM_DD"] as const;
+const TIME_FORMATS = ["12", "24"] as const;
+const WEEK_STARTS = ["SUNDAY", "MONDAY"] as const;
 
 type Language = (typeof LANGUAGES)[number];
+type DateFormat = (typeof DATE_FORMATS)[number];
+type TimeFormat = (typeof TIME_FORMATS)[number];
+type WeekStart = (typeof WEEK_STARTS)[number];
 
 interface UpdateProfileRequestBody {
   firstName?: string;
@@ -27,6 +33,9 @@ interface UpdateProfileRequestBody {
   preferredLengthUnit?: LengthUnit;
   preferredHydrationUnit?: HydrationUnit;
   preferredLanguage?: Language;
+  preferredDateFormat?: DateFormat;
+  preferredTimeFormat?: TimeFormat;
+  preferredWeekStart?: WeekStart;
   timezone?: string;
   dailyHydrationGoal?: number;
   targetWeight?: number | null;
@@ -51,6 +60,9 @@ function presentProfile(user: {
   preferredLengthUnit: string;
   preferredHydrationUnit: string;
   preferredLanguage: string;
+  preferredDateFormat: string;
+  preferredTimeFormat: string;
+  preferredWeekStart: string;
   timezone: string;
   dailyHydrationGoal: number;
   dailyHydrationGoalMl: number;
@@ -78,6 +90,9 @@ const profileSelect = {
   preferredLengthUnit: true,
   preferredHydrationUnit: true,
   preferredLanguage: true,
+  preferredDateFormat: true,
+  preferredTimeFormat: true,
+  preferredWeekStart: true,
   timezone: true,
   dailyHydrationGoal: true,
   dailyHydrationGoalMl: true,
@@ -147,6 +162,18 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response): P
       res.status(400).json({ error: "Preferred language must be en or pt-BR." });
       return;
     }
+    if (body.preferredDateFormat !== undefined && !DATE_FORMATS.includes(body.preferredDateFormat)) {
+      res.status(400).json({ error: "Preferred date format is not supported." });
+      return;
+    }
+    if (body.preferredTimeFormat !== undefined && !TIME_FORMATS.includes(body.preferredTimeFormat)) {
+      res.status(400).json({ error: "Preferred time format must be 12 or 24." });
+      return;
+    }
+    if (body.preferredWeekStart !== undefined && !WEEK_STARTS.includes(body.preferredWeekStart)) {
+      res.status(400).json({ error: "Preferred week start must be Sunday or Monday." });
+      return;
+    }
     if (body.timezone !== undefined && !isTimeZone(body.timezone)) {
       res.status(400).json({ error: "Timezone must be a valid IANA time-zone identifier." });
       return;
@@ -173,6 +200,9 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response): P
         ...(body.preferredLengthUnit !== undefined ? { preferredLengthUnit: body.preferredLengthUnit } : {}),
         ...(body.preferredHydrationUnit !== undefined ? { preferredHydrationUnit: body.preferredHydrationUnit } : {}),
         ...(body.preferredLanguage !== undefined ? { preferredLanguage: body.preferredLanguage } : {}),
+        ...(body.preferredDateFormat !== undefined ? { preferredDateFormat: body.preferredDateFormat } : {}),
+        ...(body.preferredTimeFormat !== undefined ? { preferredTimeFormat: body.preferredTimeFormat } : {}),
+        ...(body.preferredWeekStart !== undefined ? { preferredWeekStart: body.preferredWeekStart } : {}),
         ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
         ...(body.dailyHydrationGoal !== undefined ? {
           dailyHydrationGoal: body.dailyHydrationGoal,
