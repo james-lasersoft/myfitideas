@@ -53,6 +53,19 @@ function literalText(node) {
   return null;
 }
 
+function unwrapExpression(node) {
+  let current = node;
+  while (
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isParenthesizedExpression(current) ||
+    ts.isSatisfiesExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
 function hasNoTranslateAttribute(node) {
   let current = node;
   while (current) {
@@ -140,14 +153,18 @@ export function extractCatalog(seedSource) {
   const catalog = new Map();
 
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "catalog" && node.initializer && ts.isArrayLiteralExpression(node.initializer)) {
-      for (const row of node.initializer.elements) {
-        if (!ts.isArrayLiteralExpression(row) || row.elements.length < 4) continue;
-        const key = literalText(row.elements[0]);
-        const source = literalText(row.elements[1]);
-        const category = literalText(row.elements[2]);
-        const translation = literalText(row.elements[3]);
-        if (key && source && category) catalog.set(source, { key, source, category, translation: translation ?? "" });
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "catalog" && node.initializer) {
+      const initializer = unwrapExpression(node.initializer);
+      if (ts.isArrayLiteralExpression(initializer)) {
+        for (const rowNode of initializer.elements) {
+          const row = unwrapExpression(rowNode);
+          if (!ts.isArrayLiteralExpression(row) || row.elements.length < 4) continue;
+          const key = literalText(unwrapExpression(row.elements[0]));
+          const source = literalText(unwrapExpression(row.elements[1]));
+          const category = literalText(unwrapExpression(row.elements[2]));
+          const translation = literalText(unwrapExpression(row.elements[3]));
+          if (key && source && category) catalog.set(source, { key, source, category, translation: translation ?? "" });
+        }
       }
     }
     ts.forEachChild(node, visit);
