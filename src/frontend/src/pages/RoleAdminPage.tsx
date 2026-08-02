@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
@@ -18,20 +18,24 @@ export default function RoleAdminPage() {
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [message, setMessage] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [roleData, permissionData] = await Promise.all([getRoles(), getPermissions()]);
     setRoles(roleData);
     setPermissions(permissionData);
-  };
-  useEffect(() => { void load(); }, []);
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, [load]);
 
   const selectedRole = roles.find((role) => role.id === selectedRoleId);
-  useEffect(() => {
-    if (!selectedRole) return;
-    setName(selectedRole.name);
-    setDescription(selectedRole.description ?? "");
-    setSelectedPermissions(selectedRole.permissions);
-  }, [selectedRoleId, selectedRole]);
+  const selectRole = (role: RoleRecord) => {
+    setSelectedRoleId(role.id);
+    setName(role.name);
+    setDescription(role.description ?? "");
+    setSelectedPermissions(role.permissions);
+    setMessage("");
+  };
 
   const grouped = useMemo(() => permissions.reduce<Record<string, PermissionRecord[]>>((groups, permission) => {
     groups[permission.category] ??= [];
@@ -39,12 +43,15 @@ export default function RoleAdminPage() {
     return groups;
   }, {}), [permissions]);
 
-  const reset = () => { setSelectedRoleId(""); setName(""); setDescription(""); setSelectedPermissions([]); };
+  const reset = () => { setSelectedRoleId(""); setName(""); setDescription(""); setSelectedPermissions([]); setMessage(""); };
   const save = async () => {
     if (selectedRole) await updateRole(selectedRole.id, { name, description, permissions: selectedPermissions });
     else await createRole({ name, description, permissions: selectedPermissions });
     setMessage(t("Role saved successfully."));
-    reset();
+    setSelectedRoleId("");
+    setName("");
+    setDescription("");
+    setSelectedPermissions([]);
     await load();
   };
 
@@ -59,7 +66,7 @@ export default function RoleAdminPage() {
         <aside className="security-panel role-list">
           <div className="security-toolbar"><h2>{t("Roles")}</h2><Button size="sm" onClick={reset}>{t("New Role")}</Button></div>
           {roles.map((role) => (
-            <button key={role.id} type="button" className={`role-list-item${selectedRoleId === role.id ? " active" : ""}`} onClick={() => setSelectedRoleId(role.id)}>
+            <button key={role.id} type="button" className={`role-list-item${selectedRoleId === role.id ? " active" : ""}`} onClick={() => selectRole(role)}>
               <strong>{role.name}</strong><span>{role.assignedUsers} {t("assigned users")}</span>{role.isProtected && <small>{t("Protected role")}</small>}
             </button>
           ))}
