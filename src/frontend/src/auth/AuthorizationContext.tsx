@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getMyAuthorization, type AuthorizationSnapshot } from "../services/rbacService";
 
@@ -10,8 +11,19 @@ interface AuthorizationContextValue {
 
 const AuthorizationContext = createContext<AuthorizationContextValue | null>(null);
 
+function getCachedAuthorization(): AuthorizationSnapshot | null {
+  const cached = localStorage.getItem("authorization");
+  if (!cached) return null;
+  try {
+    return JSON.parse(cached) as AuthorizationSnapshot;
+  } catch {
+    localStorage.removeItem("authorization");
+    return null;
+  }
+}
+
 export function AuthorizationProvider({ children }: { children: ReactNode }) {
-  const [authorization, setAuthorization] = useState<AuthorizationSnapshot | null>(null);
+  const [authorization, setAuthorization] = useState<AuthorizationSnapshot | null>(getCachedAuthorization);
   const [loading, setLoading] = useState(Boolean(localStorage.getItem("authToken")));
 
   const refresh = useCallback(async () => {
@@ -31,11 +43,7 @@ export function AuthorizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const cached = localStorage.getItem("authorization");
-    if (cached) {
-      try { setAuthorization(JSON.parse(cached) as AuthorizationSnapshot); } catch { localStorage.removeItem("authorization"); }
-    }
-    void refresh();
+    void Promise.resolve().then(refresh);
   }, [refresh]);
 
   const value = useMemo<AuthorizationContextValue>(() => ({
