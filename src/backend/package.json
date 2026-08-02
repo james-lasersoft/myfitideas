@@ -12,7 +12,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "seed:translations": "tsx prisma/seed-translations.ts && tsx prisma/seed-translations-extra.ts && tsx prisma/seed-translations-dashboard.ts && tsx prisma/seed-translations-dashboard-quick-add.ts",
-    "seed:language": "tsx prisma/seed-language.ts"
+    "seed:language": "tsx prisma/seed-language.ts",
+    "seed:rbac": "tsx prisma/seed-rbac.ts"
   },
   "keywords": [],
   "author": "",
