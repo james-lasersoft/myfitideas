@@ -76,6 +76,29 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* These final overrides intentionally win over generic branded button rules. */
+.profile-page .unit-toggle button.unit-toggle-option:not(.active) {
+  color: var(--mfi-charcoal) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.profile-page .unit-toggle button.unit-toggle-option:not(.active):hover {
+  color: var(--mfi-deep-stem-dark) !important;
+  background: rgba(31, 139, 67, 0.09) !important;
+  box-shadow: none !important;
+}
+
+.profile-page .unit-toggle button.unit-toggle-option.active {
+  color: var(--mfi-white) !important;
+  background: var(--mfi-deep-stem) !important;
+  box-shadow: 0 2px 6px rgba(31, 139, 67, 0.24) !important;
+}
+
+.profile-page .unit-toggle button.unit-toggle-option.active:hover {
+  background: var(--mfi-deep-stem-dark) !important;
+}
+
 @media (max-width: 700px) {
   .language-selector {
     top: 0.65rem;
