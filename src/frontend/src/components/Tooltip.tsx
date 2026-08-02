@@ -1,19 +1,17 @@
 import {
-  cloneElement,
-  isValidElement,
   useId,
   useRef,
   useState,
   type FocusEvent,
   type MouseEvent,
-  type ReactElement,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import "./Tooltip.css";
 
 interface TooltipProps {
   content: string;
-  children: ReactElement;
+  children: ReactNode;
 }
 
 interface TooltipPosition {
@@ -24,11 +22,10 @@ interface TooltipPosition {
 
 export default function Tooltip({ content, children }: TooltipProps) {
   const tooltipId = useId();
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLSpanElement | null>(null);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
 
   function showTooltip(element: HTMLElement) {
-    triggerRef.current = element;
     const rect = element.getBoundingClientRect();
     const placement = rect.top < 72 ? "bottom" : "top";
 
@@ -40,35 +37,30 @@ export default function Tooltip({ content, children }: TooltipProps) {
   }
 
   function hideTooltip() {
-    triggerRef.current = null;
     setPosition(null);
   }
 
-  const child = isValidElement(children)
-    ? cloneElement(children, {
-        "aria-describedby": position ? tooltipId : undefined,
-        onMouseEnter: (event: MouseEvent<HTMLElement>) => {
-          children.props.onMouseEnter?.(event);
-          showTooltip(event.currentTarget);
-        },
-        onMouseLeave: (event: MouseEvent<HTMLElement>) => {
-          children.props.onMouseLeave?.(event);
-          hideTooltip();
-        },
-        onFocus: (event: FocusEvent<HTMLElement>) => {
-          children.props.onFocus?.(event);
-          showTooltip(event.currentTarget);
-        },
-        onBlur: (event: FocusEvent<HTMLElement>) => {
-          children.props.onBlur?.(event);
-          hideTooltip();
-        },
-      })
-    : children;
+  function handleMouseEnter(event: MouseEvent<HTMLSpanElement>) {
+    showTooltip(event.currentTarget);
+  }
+
+  function handleFocus(event: FocusEvent<HTMLSpanElement>) {
+    showTooltip(event.currentTarget);
+  }
 
   return (
     <>
-      {child}
+      <span
+        ref={triggerRef}
+        className="mfi-tooltip-trigger"
+        aria-describedby={position ? tooltipId : undefined}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={hideTooltip}
+        onFocus={handleFocus}
+        onBlur={hideTooltip}
+      >
+        {children}
+      </span>
       {position &&
         createPortal(
           <span
