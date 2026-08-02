@@ -49,6 +49,53 @@ export async function listTranslations(req: AuthenticatedRequest, res: Response)
   res.json({ translations: keys, categories: categories.map((item) => item.category) });
 }
 
+export async function updateSourceText(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const keyId = routeParam(req.params.keyId);
+  const sourceText = typeof req.body.sourceText === "string" ? req.body.sourceText.trim() : "";
+  if (!keyId || !sourceText) {
+    res.status(400).json({ error: "Translation key and English source text are required." });
+    return;
+  }
+
+  const current = await prisma.translationKey.findUnique({ where: { id: keyId } });
+  if (!current) {
+    res.status(404).json({ error: "Translation key not found." });
+    return;
+  }
+  if (current.sourceText === sourceText) {
+    res.json({ message: "English source is unchanged.", translationKey: current });
+    return;
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const translationKey = await tx.translationKey.update({ where: { id: keyId }, data: { sourceText } });
+    await tx.translationValue.updateMany({
+      where: { translationKeyId: keyId, language: { isSource: false } },
+      data: { status: "DRAFT" as never },
+    });
+    await tx.translationHistory.create({
+      data: {
+        translationKeyId: keyId,
+        languageLocale: "en-US",
+        previousValue: current.sourceText,
+        newValue: sourceText,
+        previousStatus: null,
+        newStatus: "PUBLISHED" as never,
+        action: "UPDATE_SOURCE",
+        changedByUserId: userId,
+      },
+    });
+    return translationKey;
+  });
+
+  res.json({
+    message: "English source updated. Existing translations were returned to draft for review.",
+    translationKey: updated,
+  });
+}
+
 export async function saveTranslation(req: AuthenticatedRequest, res: Response): Promise<void> {
   const userId = requireUserId(req, res);
   if (!userId) return;
