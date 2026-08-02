@@ -15,33 +15,238 @@ enum TranslationStatus {
   PUBLISHED
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum AuditResult {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+
 model User {
-  id                         String   @id @default(uuid())
-  email                      String   @unique
+  id                         String     @id @default(uuid())
+  email                      String     @unique
   passwordHash               String
   firstName                  String
   lastName                   String?
+  status                     UserStatus @default(ACTIVE)
+  mustChangePassword         Boolean    @default(false)
+  tokenVersion               Int        @default(0)
+  lastLoginAt                DateTime?
   heightCm                   Float?
-  preferredWeightUnit        String   @default("lb")
-  preferredLengthUnit        String   @default("in")
-  preferredHydrationUnit     String   @default("oz")
-  preferredLanguage          String   @default("en")
-  preferredDateFormat        String   @default("LOCALE")
-  preferredTimeFormat        String   @default("12")
-  preferredWeekStart         String   @default("SUNDAY")
-  timezone                   String   @default("UTC")
-  dailyHydrationGoal         Float    @default(64)
-  dailyHydrationGoalMl       Float    @default(1892.7)
+  preferredWeightUnit        String     @default("lb")
+  preferredLengthUnit        String     @default("in")
+  preferredHydrationUnit     String     @default("oz")
+  preferredLanguage          String     @default("en")
+  preferredDateFormat        String     @default("LOCALE")
+  preferredTimeFormat        String     @default("12")
+  preferredWeekStart         String     @default("SUNDAY")
+  timezone                   String     @default("UTC")
+  dailyHydrationGoal         Float      @default(64)
+  dailyHydrationGoalMl       Float      @default(1892.7)
   targetWeight               Float?
   targetWeightKg             Float?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
 
-  measurements       Measurement[]
-  hydrationLogs      Hydration[]
-  translationChanges TranslationHistory[]
+  measurements          Measurement[]
+  hydrationLogs         Hydration[]
+  translationChanges    TranslationHistory[]
+  memberships           OrganizationMembership[]
+  createdInvitations    Invitation[]             @relation("InvitationCreator")
+  acceptedInvitations   Invitation[]             @relation("InvitationAcceptor")
+  sessions              UserSession[]
+  auditEvents            AuditLog[]               @relation("AuditActor")
 
+  @@index([status])
   @@map("users")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  displayName String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships OrganizationMembership[]
+  roles       Role[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+
+  @@index([isActive])
+  @@map("organizations")
+}
+
+model OrganizationMembership {
+  id             String           @id @default(uuid())
+  userId         String
+  organizationId String
+  status         MembershipStatus @default(ACTIVE)
+  joinedAt       DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roles        MembershipRole[]
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, status])
+  @@index([userId, status])
+  @@map("organization_memberships")
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  organizationId String?
+  key            String
+  name           String
+  description    String?
+  isSystem       Boolean  @default(false)
+  isProtected    Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  memberships  MembershipRole[]
+  invitations  Invitation[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId, isActive])
+  @@index([isSystem])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  category    String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles RolePermission[]
+
+  @@index([category])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model MembershipRole {
+  membershipId String
+  roleId       String
+  assignedAt   DateTime @default(now())
+
+  membership OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([membershipId, roleId])
+  @@index([roleId])
+  @@map("membership_roles")
+}
+
+model Invitation {
+  id               String           @id @default(uuid())
+  organizationId   String
+  email            String
+  roleId           String?
+  tokenHash        String           @unique
+  status           InvitationStatus @default(PENDING)
+  expiresAt        DateTime
+  createdByUserId  String
+  acceptedByUserId String?
+  acceptedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  acceptedBy   User?        @relation("InvitationAcceptor", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([email, status])
+  @@index([expiresAt])
+  @@map("invitations")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  tokenHash    String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  lastSeenAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model AuditLog {
+  id             String      @id @default(uuid())
+  organizationId String?
+  actorUserId    String?
+  action         String
+  targetType     String
+  targetId       String?
+  result         AuditResult @default(SUCCESS)
+  ipAddress      String?
+  userAgent      String?
+  beforeState    Json?
+  afterState     Json?
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor         User?         @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
 }
 
 model Measurement {
