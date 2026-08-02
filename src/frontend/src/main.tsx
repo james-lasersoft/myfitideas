@@ -4,6 +4,7 @@ import './styles/brand-tokens.css'
 import './index.css'
 import './styles/brand-components.css'
 import './styles/all-pages-brand.css'
+import './styles/premium-polish.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
