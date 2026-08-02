@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "extract:i18n": "node scripts/extract-i18n.mjs",
     "validate": "npm run lint && npm run check:i18n && npm run build",
     "preview": "vite preview"
   },
