@@ -105,14 +105,13 @@ export default function TranslationAdminPage() {
   }, [items, missingOnly, sortDirection, sortField]);
 
   const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((current) => Math.min(Math.max(1, current), pageCount));
-  }, [pageCount]);
-
-  const pageStart = filteredItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(page * PAGE_SIZE, filteredItems.length);
-  const pageItems = filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const currentPage = Math.min(Math.max(1, page), pageCount);
+  const pageStart = filteredItems.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, filteredItems.length);
+  const pageItems = filteredItems.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
   const missingCount = items.filter((item) => !(portugueseValue(item)?.value ?? "").trim()).length;
   const allVisibleSelected =
     pageItems.length > 0 && pageItems.every((item) => selectedIds.has(item.id));
@@ -372,29 +371,19 @@ export default function TranslationAdminPage() {
                 </th>
                 <th>Status</th>
                 <th>
-                  <button type="button" onClick={() => toggleSort("key")}>
-                    Key
-                  </button>
+                  <button type="button" onClick={() => toggleSort("key")}>Key</button>
                 </th>
                 <th>
-                  <button type="button" onClick={() => toggleSort("source")}>
-                    English
-                  </button>
+                  <button type="button" onClick={() => toggleSort("source")}>English</button>
                 </th>
                 <th>
-                  <button type="button" onClick={() => toggleSort("target")}>
-                    Portuguese
-                  </button>
+                  <button type="button" onClick={() => toggleSort("target")}>Portuguese</button>
                 </th>
                 <th>
-                  <button type="button" onClick={() => toggleSort("category")}>
-                    Category
-                  </button>
+                  <button type="button" onClick={() => toggleSort("category")}>Category</button>
                 </th>
                 <th>
-                  <button type="button" onClick={() => toggleSort("updated")}>
-                    Updated
-                  </button>
+                  <button type="button" onClick={() => toggleSort("updated")}>Updated</button>
                 </th>
                 <th>Actions</th>
               </tr>
@@ -415,10 +404,7 @@ export default function TranslationAdminPage() {
                         : "Translation is missing";
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={changed ? "translation-row-unsaved" : undefined}
-                  >
+                  <tr key={item.id} className={changed ? "translation-row-unsaved" : undefined}>
                     <td>
                       <input
                         aria-label={`Select ${item.key}`}
@@ -433,9 +419,7 @@ export default function TranslationAdminPage() {
                       </Tooltip>
                       <span className="sr-only">{rowStatus}</span>
                     </td>
-                    <td>
-                      <code>{item.key}</code>
-                    </td>
+                    <td><code>{item.key}</code></td>
                     <td data-no-translate="true">
                       <button
                         type="button"
@@ -466,12 +450,8 @@ export default function TranslationAdminPage() {
                         </button>
                       )}
                     </td>
-                    <td>
-                      <span className="category-pill">{item.category}</span>
-                    </td>
-                    <td>
-                      {current?.updatedAt ? new Date(current.updatedAt).toLocaleDateString() : "—"}
-                    </td>
+                    <td><span className="category-pill">{item.category}</span></td>
+                    <td>{current?.updatedAt ? new Date(current.updatedAt).toLocaleDateString() : "—"}</td>
                     <td>
                       <div className="translation-row-actions">
                         {isEditing ? (
@@ -556,19 +536,19 @@ export default function TranslationAdminPage() {
         <button
           type="button"
           className="secondary-button"
-          disabled={page === 1}
-          onClick={() => setPage((value) => Math.max(1, value - 1))}
+          disabled={currentPage === 1}
+          onClick={() => setPage(Math.max(1, currentPage - 1))}
         >
           Previous
         </button>
         <span>
-          {pageStart}-{pageEnd} of {filteredItems.length} · Page {page} of {pageCount}
+          {pageStart}-{pageEnd} of {filteredItems.length} · Page {currentPage} of {pageCount}
         </span>
         <button
           type="button"
           className="secondary-button"
-          disabled={page === pageCount}
-          onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+          disabled={currentPage === pageCount}
+          onClick={() => setPage(Math.min(pageCount, currentPage + 1))}
         >
           Next
         </button>
@@ -612,9 +592,7 @@ export default function TranslationAdminPage() {
                   {history.map((entry) => (
                     <li key={entry.id}>
                       <strong>{entry.action.replaceAll("_", " ")}</strong>
-                      <span>
-                        {entry.languageLocale} · {entry.newStatus}
-                      </span>
+                      <span>{entry.languageLocale} · {entry.newStatus}</span>
                       <p>{entry.newValue}</p>
                       <small>
                         {new Date(entry.changedAt).toLocaleString()} · {entry.changedBy.firstName}{" "}
