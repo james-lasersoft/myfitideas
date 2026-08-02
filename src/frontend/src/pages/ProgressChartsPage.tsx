@@ -78,7 +78,10 @@ function createLineOptions(
         callbacks: {
           label: (context) => {
             const label = context.dataset.label ?? "Value";
-            return `${label}: ${formatMeasurement(context.parsed.y, unit)}`;
+            const value = context.parsed.y;
+            return value === null
+              ? `${label}: No data`
+              : `${label}: ${formatMeasurement(value, unit)}`;
           },
         },
       },
