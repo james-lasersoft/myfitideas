@@ -1,0 +1,13 @@
+.workspace-page { min-height: 100vh; padding: 2rem; display: grid; place-items: center; }
+.workspace-card { width: min(960px, 100%); padding: clamp(1.5rem, 4vw, 3rem); border-radius: 24px; background: var(--surface, #fff); box-shadow: 0 18px 50px rgba(15, 55, 35, .12); }
+.workspace-logo { max-width: 220px; margin-bottom: 1.5rem; }
+.workspace-eyebrow { margin: 0 0 .35rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-green, #225b3b); }
+.workspace-card h1 { margin: 0 0 .75rem; }
+.workspace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-top: 2rem; }
+.workspace-option { min-height: 240px; padding: 1.5rem; display: flex; flex-direction: column; align-items: flex-start; gap: .8rem; text-align: left; border: 2px solid rgba(34, 91, 59, .22); border-radius: 20px; background: transparent; color: inherit; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.workspace-option:hover, .workspace-option:focus-visible { transform: translateY(-3px); border-color: var(--brand-green, #225b3b); box-shadow: 0 12px 28px rgba(15, 55, 35, .14); }
+.workspace-option strong { font-size: 1.55rem; }
+.workspace-option-status { padding: .3rem .65rem; border-radius: 999px; background: rgba(34, 91, 59, .12); font-size: .8rem; font-weight: 800; text-transform: uppercase; }
+.workspace-option-action { margin-top: auto; font-weight: 800; color: var(--brand-green, #225b3b); }
+.workspace-option-work { background: rgba(34, 91, 59, .045); }
+@media (max-width: 700px) { .workspace-page { padding: 1rem; } .workspace-grid { grid-template-columns: 1fr; } }
