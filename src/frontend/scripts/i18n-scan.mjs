@@ -5,7 +5,10 @@ import ts from "typescript";
 
 export const frontendRoot = process.cwd();
 export const sourceRoot = path.join(frontendRoot, "src");
-export const seedPath = path.resolve(frontendRoot, "../backend/prisma/seed-translations.ts");
+export const seedPaths = [
+  path.resolve(frontendRoot, "../backend/prisma/seed-translations.ts"),
+  path.resolve(frontendRoot, "../backend/prisma/seed-translations-extra.ts"),
+];
 
 const ignoredDirectories = new Set(["node_modules", "dist", "coverage", ".git"]);
 const ignoredFiles = new Set(["translations.ts"]);
@@ -159,7 +162,7 @@ export function scanSource(file, source) {
   return candidates;
 }
 
-export function extractCatalog(seedSource) {
+export function extractCatalog(seedSource, seedPath) {
   const sourceFile = ts.createSourceFile(seedPath, seedSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const catalog = new Map();
 
@@ -185,9 +188,16 @@ export function extractCatalog(seedSource) {
 }
 
 export async function scanProject() {
-  const [seedSource, files] = await Promise.all([fs.readFile(seedPath, "utf8"), collectFiles()]);
-  const catalog = extractCatalog(seedSource);
-  if (catalog.size === 0) throw new Error(`No translation catalog entries were parsed from ${seedPath}`);
+  const [seedSources, files] = await Promise.all([
+    Promise.all(seedPaths.map(async (seedPath) => ({ seedPath, source: await fs.readFile(seedPath, "utf8") }))),
+    collectFiles(),
+  ]);
+
+  const catalog = new Map();
+  for (const { seedPath, source } of seedSources) {
+    for (const [text, entry] of extractCatalog(source, seedPath)) catalog.set(text, entry);
+  }
+  if (catalog.size === 0) throw new Error(`No translation catalog entries were parsed from ${seedPaths.join(", ")}`);
 
   const candidates = [];
   for (const file of files) {
