@@ -1,17 +1,19 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import {
   BrowserRouter,
   Navigate,
   Route,
   Routes,
 } from "react-router-dom";
-import type { ReactNode } from "react";
+import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import MeasurementsPage from "./pages/MeasurementsPage";
-import HydrationPage from "./pages/HydrationPage";
-import ProfilePage from "./pages/ProfilePage";
-import ProgressChartsPage from "./pages/ProgressChartsPage";
 import "./index.css";
+
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const MeasurementsPage = lazy(() => import("./pages/MeasurementsPage"));
+const HydrationPage = lazy(() => import("./pages/HydrationPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const ProgressChartsPage = lazy(() => import("./pages/ProgressChartsPage"));
 
 function ProtectedRoute({
   children,
@@ -23,6 +25,14 @@ function ProtectedRoute({
   return token ? children : <Navigate to="/" replace />;
 }
 
+function ProtectedPage({ children }: { children: ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<PageLoading />}>{children}</Suspense>
+    </ProtectedRoute>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -32,45 +42,45 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedPage>
               <DashboardPage />
-            </ProtectedRoute>
+            </ProtectedPage>
           }
         />
 
-        <Route 
-          path="/measurements" 
+        <Route
+          path="/measurements"
           element={
-            <ProtectedRoute>
+            <ProtectedPage>
               <MeasurementsPage />
-            </ProtectedRoute>
+            </ProtectedPage>
           }
         />
 
         <Route
           path="/hydration"
           element={
-            <ProtectedRoute>
+            <ProtectedPage>
               <HydrationPage />
-            </ProtectedRoute>
+            </ProtectedPage>
           }
         />
 
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <ProtectedPage>
               <ProfilePage />
-            </ProtectedRoute>
+            </ProtectedPage>
           }
         />
 
         <Route
           path="/progress"
           element={
-            <ProtectedRoute>
+            <ProtectedPage>
               <ProgressChartsPage />
-            </ProtectedRoute>
+            </ProtectedPage>
           }
         />
 
