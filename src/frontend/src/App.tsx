@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
+import "./components/ui/Button.css";
 import "./pages/ProfileLocalizationPolish.css";
 import "./index.css";
 
