@@ -1,0 +1,142 @@
+import type { Response } from "express";
+import prisma from "../config/prisma.js";
+import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+
+const VALID_STATUSES = ["DRAFT", "REVIEWED", "PUBLISHED"] as const;
+type TranslationStatusValue = (typeof VALID_STATUSES)[number];
+
+function requireUserId(req: AuthenticatedRequest, res: Response): string | null {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication is required." });
+    return null;
+  }
+  return userId;
+}
+
+export async function listLanguages(req: AuthenticatedRequest, res: Response): Promise<void> {
+  if (!requireUserId(req, res)) return;
+  const languages = await prisma.language.findMany({ orderBy: [{ isSource: "desc" }, { displayName: "asc" }] });
+  res.json({ languages });
+}
+
+export async function listTranslations(req: AuthenticatedRequest, res: Response): Promise<void> {
+  if (!requireUserId(req, res)) return;
+
+  const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+  const category = typeof req.query.category === "string" ? req.query.category.trim() : "";
+  const status = typeof req.query.status === "string" && VALID_STATUSES.includes(req.query.status as TranslationStatusValue)
+    ? req.query.status as TranslationStatusValue
+    : undefined;
+
+  const keys = await prisma.translationKey.findMany({
+    where: {
+      ...(category ? { category } : {}),
+      ...(search ? {
+        OR: [
+          { key: { contains: search, mode: "insensitive" } },
+          { sourceText: { contains: search, mode: "insensitive" } },
+          { translations: { some: { value: { contains: search, mode: "insensitive" } } } },
+        ],
+      } : {}),
+      ...(status ? { translations: { some: { status: status as never } } } : {}),
+    },
+    include: {
+      translations: { include: { language: true }, orderBy: { language: { locale: "asc" } } },
+    },
+    orderBy: [{ category: "asc" }, { key: "asc" }],
+  });
+
+  const categories = await prisma.translationKey.findMany({ select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } });
+  res.json({ translations: keys, categories: categories.map((item) => item.category) });
+}
+
+export async function saveTranslation(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const keyId = req.params.keyId;
+  const locale = typeof req.body.locale === "string" ? req.body.locale : "";
+  const value = typeof req.body.value === "string" ? req.body.value.trim() : "";
+  const requestedStatus = typeof req.body.status === "string" ? req.body.status : "DRAFT";
+
+  if (!locale || !value || !VALID_STATUSES.includes(requestedStatus as TranslationStatusValue)) {
+    res.status(400).json({ error: "Locale, value, and a valid status are required." });
+    return;
+  }
+
+  const [translationKey, language] = await Promise.all([
+    prisma.translationKey.findUnique({ where: { id: keyId } }),
+    prisma.language.findUnique({ where: { locale } }),
+  ]);
+
+  if (!translationKey || !language) {
+    res.status(404).json({ error: "Translation key or language not found." });
+    return;
+  }
+
+  const existing = await prisma.translationValue.findUnique({
+    where: { translationKeyId_languageId: { translationKeyId: keyId, languageId: language.id } },
+  });
+
+  const status = requestedStatus as TranslationStatusValue;
+  const published = status === "PUBLISHED";
+
+  const result = await prisma.$transaction(async (tx) => {
+    const translation = await tx.translationValue.upsert({
+      where: { translationKeyId_languageId: { translationKeyId: keyId, languageId: language.id } },
+      create: {
+        translationKeyId: keyId,
+        languageId: language.id,
+        value,
+        status: status as never,
+        publishedValue: published ? value : null,
+        publishedAt: published ? new Date() : null,
+      },
+      update: {
+        value,
+        status: status as never,
+        ...(published ? { publishedValue: value, publishedAt: new Date() } : {}),
+      },
+      include: { language: true },
+    });
+
+    await tx.translationHistory.create({
+      data: {
+        translationKeyId: keyId,
+        languageLocale: locale,
+        previousValue: existing?.value ?? null,
+        newValue: value,
+        previousStatus: existing?.status ?? null,
+        newStatus: status as never,
+        action: published ? "PUBLISH" : status === "REVIEWED" ? "REVIEW" : "SAVE_DRAFT",
+        changedByUserId: userId,
+      },
+    });
+
+    return translation;
+  });
+
+  res.json({ message: published ? "Translation published." : "Translation saved.", translation: result });
+}
+
+export async function getTranslationHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
+  if (!requireUserId(req, res)) return;
+  const history = await prisma.translationHistory.findMany({
+    where: { translationKeyId: req.params.keyId },
+    include: { changedBy: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    orderBy: { changedAt: "desc" },
+    take: 50,
+  });
+  res.json({ history });
+}
+
+export async function getPublishedTranslations(req: AuthenticatedRequest, res: Response): Promise<void> {
+  if (!requireUserId(req, res)) return;
+  const locale = req.params.locale;
+  const values = await prisma.translationValue.findMany({
+    where: { language: { locale, enabled: true }, publishedValue: { not: null } },
+    include: { translationKey: true },
+  });
+  res.json({ locale, translations: Object.fromEntries(values.map((item) => [item.translationKey.key, item.publishedValue])) });
+}
