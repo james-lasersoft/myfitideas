@@ -30,6 +30,23 @@ export interface TranslationKeyRecord {
   translations: TranslationValueRecord[];
 }
 
+export interface TranslationHistoryRecord {
+  id: string;
+  languageLocale: string;
+  previousValue: string | null;
+  newValue: string;
+  previousStatus: TranslationStatus | null;
+  newStatus: TranslationStatus;
+  action: string;
+  changedAt: string;
+  changedBy: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string | null;
+  };
+}
+
 export async function getTranslations(params?: {
   search?: string;
   category?: string;
@@ -51,4 +68,11 @@ export async function saveTranslation(
     status,
   });
   return response.data.translation;
+}
+
+export async function getTranslationHistory(
+  keyId: string
+): Promise<TranslationHistoryRecord[]> {
+  const response = await api.get(`/api/v1/admin/translations/${keyId}/history`);
+  return response.data.history;
 }
