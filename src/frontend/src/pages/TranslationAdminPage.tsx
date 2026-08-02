@@ -80,28 +80,23 @@ export default function TranslationAdminPage() {
     return [...filtered].sort((left, right) => {
       const leftTranslation = portugueseValue(left);
       const rightTranslation = portugueseValue(right);
-      let comparison = 0;
-
-      switch (sortField) {
-        case "source":
-          comparison = left.sourceText.localeCompare(right.sourceText);
-          break;
-        case "target":
-          comparison = (leftTranslation?.value ?? "").localeCompare(rightTranslation?.value ?? "");
-          break;
-        case "category":
-          comparison = left.category.localeCompare(right.category);
-          break;
-        case "status":
-          comparison = statusLabel(left).localeCompare(statusLabel(right));
-          break;
-        case "updated":
-          comparison = new Date(leftTranslation?.updatedAt ?? 0).getTime() - new Date(rightTranslation?.updatedAt ?? 0).getTime();
-          break;
-        case "key":
-        default:
-          comparison = left.key.localeCompare(right.key);
-      }
+      const comparison = (() => {
+        switch (sortField) {
+          case "source":
+            return left.sourceText.localeCompare(right.sourceText);
+          case "target":
+            return (leftTranslation?.value ?? "").localeCompare(rightTranslation?.value ?? "");
+          case "category":
+            return left.category.localeCompare(right.category);
+          case "status":
+            return statusLabel(left).localeCompare(statusLabel(right));
+          case "updated":
+            return new Date(leftTranslation?.updatedAt ?? 0).getTime() - new Date(rightTranslation?.updatedAt ?? 0).getTime();
+          case "key":
+          default:
+            return left.key.localeCompare(right.key);
+        }
+      })();
 
       return sortDirection === "asc" ? comparison : -comparison;
     });
