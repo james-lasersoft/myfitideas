@@ -1,0 +1,4 @@
+.workspace-switcher { display: inline-flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 700; color: inherit; }
+.workspace-switcher select { min-width: 150px; padding: .5rem .75rem; border: 1px solid rgba(34, 91, 59, .35); border-radius: 999px; background: var(--surface, #fff); color: inherit; font: inherit; cursor: pointer; }
+.workspace-switcher select:focus-visible { outline: 3px solid rgba(34, 91, 59, .22); outline-offset: 2px; }
+@media (max-width: 620px) { .workspace-switcher span { display: none; } .workspace-switcher select { min-width: 130px; } }
