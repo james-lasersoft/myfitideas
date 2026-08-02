@@ -8,11 +8,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import api from "../services/api";
 import { translations, type SupportedLocale } from "./translations";
 
 const STORAGE_KEY = "myfitideas.locale";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
+let publishedCatalog: Record<string, string> = {};
 
 function normalizeLocale(value: string | null | undefined): SupportedLocale {
   if (value?.toLowerCase().startsWith("pt")) return "pt-BR";
@@ -22,16 +24,14 @@ function normalizeLocale(value: string | null | undefined): SupportedLocale {
 function getInitialLocale(): SupportedLocale {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) return normalizeLocale(stored);
-
   try {
     const currentUser = JSON.parse(localStorage.getItem("currentUser") ?? "null") as
       | { preferredLanguage?: string }
       | null;
     if (currentUser?.preferredLanguage) return normalizeLocale(currentUser.preferredLanguage);
   } catch {
-    // Ignore malformed cached user data and continue to browser preference.
+    // Ignore malformed cached user data.
   }
-
   return normalizeLocale(navigator.language);
 }
 
@@ -45,13 +45,12 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 function translateText(text: string, locale: SupportedLocale): string {
   if (locale === "en-US") return text;
-
   const leading = text.match(/^\s*/)?.[0] ?? "";
   const trailing = text.match(/\s*$/)?.[0] ?? "";
   const core = text.trim();
   if (!core) return text;
 
-  const direct = translations[locale][core];
+  const direct = publishedCatalog[core] ?? translations[locale][core];
   if (direct) return `${leading}${direct}${trailing}`;
 
   const replacements: Array<[RegExp, string]> = [
@@ -72,7 +71,6 @@ function translateText(text: string, locale: SupportedLocale): string {
   for (const [pattern, replacement] of replacements) {
     if (pattern.test(core)) return `${leading}${core.replace(pattern, replacement)}${trailing}`;
   }
-
   return text;
 }
 
@@ -98,7 +96,6 @@ function localizeElement(root: ParentNode, locale: SupportedLocale): void {
       saved = new Map<string, string>();
       originalAttributes.set(element, saved);
     }
-
     for (const attribute of ["aria-label", "title", "placeholder"] as const) {
       const current = element.getAttribute(attribute);
       if (!current) continue;
@@ -111,6 +108,7 @@ function localizeElement(root: ParentNode, locale: SupportedLocale): void {
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<SupportedLocale>(getInitialLocale);
+  const [catalogRevision, setCatalogRevision] = useState(0);
 
   const setLocale = useCallback((nextLocale: SupportedLocale) => {
     localStorage.setItem(STORAGE_KEY, nextLocale);
@@ -118,7 +116,36 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setLocaleState(nextLocale);
   }, []);
 
-  const t = useCallback((text: string) => translations[locale][text] ?? text, [locale]);
+  const t = useCallback(
+    (text: string) => publishedCatalog[text] ?? translations[locale][text] ?? text,
+    [locale, catalogRevision]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const token = localStorage.getItem("authToken");
+
+    async function loadPublishedCatalog() {
+      publishedCatalog = {};
+      if (locale !== "en-US" && token) {
+        try {
+          const response = await api.get<{ translations: Record<string, string> }>(
+            `/api/v1/admin/translations/published/${locale}`
+          );
+          if (!cancelled) publishedCatalog = response.data.translations;
+        } catch (error) {
+          console.warn("Unable to load published translations; using bundled fallback.", error);
+        }
+      }
+      if (!cancelled) {
+        setCatalogRevision((value) => value + 1);
+        localizeElement(document.body, locale);
+      }
+    }
+
+    void loadPublishedCatalog();
+    return () => { cancelled = true; };
+  }, [locale]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -127,18 +154,15 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            localizeTextNode(node as Text, locale);
-          } else if (node.nodeType === Node.ELEMENT_NODE) {
-            localizeElement(node as Element, locale);
-          }
+          if (node.nodeType === Node.TEXT_NODE) localizeTextNode(node as Text, locale);
+          else if (node.nodeType === Node.ELEMENT_NODE) localizeElement(node as Element, locale);
         });
       }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [locale]);
+  }, [locale, catalogRevision]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
