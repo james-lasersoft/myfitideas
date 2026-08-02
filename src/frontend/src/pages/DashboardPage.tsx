@@ -6,11 +6,54 @@ import {
   type DashboardSummary,
 } from "../services/dashboardService";
 import { formatMeasurement } from "../utils/measurementFormat";
+import "./DashboardTiles.css";
 
 interface StoredUser {
   firstName: string;
   email: string;
 }
+
+interface DashboardModule {
+  title: string;
+  description: string;
+  action: string;
+  path: string;
+  admin?: boolean;
+}
+
+const dashboardModules: DashboardModule[] = [
+  {
+    title: "Measurements",
+    description: "Record weight, body measurements, and body-fat progress.",
+    action: "Open Measurements",
+    path: "/measurements",
+  },
+  {
+    title: "Hydration",
+    description: "Log water intake, update your daily goal, and review history.",
+    action: "Open Hydration",
+    path: "/hydration",
+  },
+  {
+    title: "Progress Charts",
+    description: "Review trends across weight, hydration, and body measurements.",
+    action: "View Progress",
+    path: "/progress",
+  },
+  {
+    title: "Profile",
+    description: "Manage personal details, goals, units, and localization preferences.",
+    action: "Open Profile",
+    path: "/profile",
+  },
+  {
+    title: "Administration",
+    description: "Manage translations and future company controls.",
+    action: "Open Administration",
+    path: "/admin",
+    admin: true,
+  },
+];
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -124,42 +167,23 @@ export default function DashboardPage() {
             </article>
           </section>
 
-          <section className="dashboard-grid dashboard-actions-grid">
-            <article className="dashboard-card">
-              <h2>Measurements</h2>
-              <button onClick={() => navigate("/measurements")}>
-                Open Measurements
+          <section className="dashboard-grid dashboard-actions-grid" aria-label="Dashboard modules">
+            {dashboardModules.map((module) => (
+              <button
+                key={module.path}
+                type="button"
+                className={`dashboard-module-tile${module.admin ? " admin-module" : ""}`}
+                onClick={() => navigate(module.path)}
+              >
+                <span className="dashboard-module-status">Available</span>
+                <h2>{module.title}</h2>
+                <p>{module.description}</p>
+                <span className="dashboard-module-action">
+                  <span>{module.action}</span>
+                  <span className="dashboard-module-arrow" aria-hidden="true">→</span>
+                </span>
               </button>
-            </article>
-
-            <article className="dashboard-card">
-              <h2>Hydration</h2>
-              <button onClick={() => navigate("/hydration")}>
-                Open Hydration
-              </button>
-            </article>
-
-            <article className="dashboard-card">
-              <h2>Progress Charts</h2>
-              <button type="button" onClick={() => navigate("/progress")}>
-                View Progress
-              </button>
-            </article>
-
-            <article className="dashboard-card">
-              <h2>Profile</h2>
-              <button type="button" onClick={() => navigate("/profile")}>
-                Open Profile
-              </button>
-            </article>
-
-            <article className="dashboard-card admin-dashboard-card">
-              <h2>Administration</h2>
-              <p>Manage translations and future company controls.</p>
-              <button type="button" onClick={() => navigate("/admin")}>
-                Open Administration
-              </button>
-            </article>
+            ))}
           </section>
         </>
       )}
