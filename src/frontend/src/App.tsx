@@ -4,6 +4,7 @@ import LanguageSelector from "./components/LanguageSelector";
 import PageLoading from "./components/PageLoading";
 import ThemeToggle from "./components/ThemeToggle";
 import LoginPage from "./pages/LoginPage";
+import "./pages/ProfileLocalizationPolish.css";
 import "./index.css";
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
