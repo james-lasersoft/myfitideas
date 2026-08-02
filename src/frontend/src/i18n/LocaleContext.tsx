@@ -58,6 +58,7 @@ function translateText(text: string, locale: SupportedLocale): string {
     [/^Good Afternoon, (.+)$/, "Boa tarde, $1"],
     [/^Good Evening, (.+)$/, "Boa noite, $1"],
     [/^Goal: (.+)$/, "Meta: $1"],
+    [/^Daily Goal \((.+)\)$/, "Meta Diária ($1)"],
     [/^(\d+) entry$/, "$1 registro"],
     [/^(\d+) entries$/, "$1 registros"],
     [/^Weight: (.+)$/, "Peso: $1"],
@@ -117,11 +118,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (text: string) => {
-      void catalogRevision;
-      return publishedCatalog[text] ?? translations[locale][text] ?? text;
-    },
-    [locale, catalogRevision]
+    (text: string) => publishedCatalog[text] ?? translations[locale][text] ?? text,
+    [locale]
   );
 
   useEffect(() => {
