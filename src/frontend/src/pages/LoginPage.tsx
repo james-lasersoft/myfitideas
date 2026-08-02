@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import api from "../services/api";
+import { readWorkspaceSelection, requiresDailyChoice, workspacePath } from "../workspaces/workspace";
 
 interface LoginResponse {
   message: string;
@@ -39,7 +40,14 @@ export default function LoginPage() {
       localStorage.setItem("authToken", response.data.token);
       localStorage.setItem("currentUser", JSON.stringify(response.data.user));
       if (response.data.authorization) localStorage.setItem("authorization", JSON.stringify(response.data.authorization));
-      navigate("/dashboard");
+
+      const hasOrganizationWorkspace = response.data.authorization?.permissions.includes("admin.access") ?? false;
+      const remembered = readWorkspaceSelection();
+      const destination = requiresDailyChoice(hasOrganizationWorkspace)
+        ? "/workspace"
+        : workspacePath(hasOrganizationWorkspace && remembered ? remembered.workspace : "personal");
+
+      navigate(destination, { replace: true });
       window.location.reload();
     } catch {
       setError("Login failed. Please verify your email and password.");
