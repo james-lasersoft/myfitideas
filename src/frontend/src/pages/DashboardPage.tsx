@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import {
   getDashboardSummary,
   type DashboardSummary,
 } from "../services/dashboardService";
+import {
+  createHydrationEntry,
+  type HydrationUnit,
+} from "../services/hydrationService";
 import { formatMeasurement } from "../utils/measurementFormat";
 import "./DashboardTiles.css";
 
@@ -20,6 +24,13 @@ interface DashboardModule {
   path: string;
   admin?: boolean;
 }
+
+interface RememberedEntry {
+  amount: number;
+  unit: HydrationUnit;
+}
+
+const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
 
 const dashboardModules: DashboardModule[] = [
   {
@@ -63,6 +74,31 @@ function getGreeting(): string {
   return "Good Evening";
 }
 
+function getRememberedEntry(): RememberedEntry | null {
+  try {
+    const raw = localStorage.getItem(LAST_MANUAL_ENTRY_KEY);
+    if (!raw) return null;
+
+    const value = JSON.parse(raw) as Partial<RememberedEntry>;
+    if (
+      typeof value.amount !== "number" ||
+      !Number.isFinite(value.amount) ||
+      value.amount <= 0 ||
+      (value.unit !== "oz" && value.unit !== "ml")
+    ) {
+      return null;
+    }
+
+    return { amount: value.amount, unit: value.unit };
+  } catch {
+    return null;
+  }
+}
+
+function quickAddKey(entry: RememberedEntry): string {
+  return `${entry.amount}-${entry.unit}`;
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
 
@@ -73,6 +109,9 @@ export default function DashboardPage() {
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quickAddBusy, setQuickAddBusy] = useState<string | null>(null);
+  const [quickAddMessage, setQuickAddMessage] = useState("");
+  const [quickAddError, setQuickAddError] = useState("");
 
   useEffect(() => {
     getDashboardSummary()
@@ -97,6 +136,42 @@ export default function DashboardPage() {
     secondaryWaterUnit === "ml"
       ? summary?.todayWaterMl ?? 0
       : summary?.todayWaterOz ?? 0;
+
+  const quickAddOptions = useMemo<RememberedEntry[]>(() => {
+    const defaults =
+      hydrationUnit === "ml"
+        ? [250, 350, 500].map((amount) => ({ amount, unit: "ml" as const }))
+        : [8, 12, 16].map((amount) => ({ amount, unit: "oz" as const }));
+    const remembered = getRememberedEntry();
+
+    if (!remembered || defaults.some((entry) => quickAddKey(entry) === quickAddKey(remembered))) {
+      return defaults;
+    }
+
+    return [...defaults, remembered];
+  }, [hydrationUnit]);
+
+  const handleQuickAdd = async (entry: RememberedEntry): Promise<void> => {
+    const key = quickAddKey(entry);
+    setQuickAddBusy(key);
+    setQuickAddMessage("");
+    setQuickAddError("");
+
+    try {
+      await createHydrationEntry({
+        amount: entry.amount,
+        unit: entry.unit,
+        loggedAt: new Date().toISOString(),
+      });
+      const refreshedSummary = await getDashboardSummary();
+      setSummary(refreshedSummary);
+      setQuickAddMessage("Hydration entry added.");
+    } catch {
+      setQuickAddError("Unable to save hydration entry.");
+    } finally {
+      setQuickAddBusy(null);
+    }
+  };
 
   return (
     <main className="dashboard-page">
@@ -137,7 +212,7 @@ export default function DashboardPage() {
               )}
             </article>
 
-            <article className="dashboard-card">
+            <article className="dashboard-card dashboard-hydration-card">
               <h2>Today's Water</h2>
               <h1>
                 {formatMeasurement(primaryWater, hydrationUnit)} {hydrationUnit}
@@ -145,6 +220,28 @@ export default function DashboardPage() {
               <p>
                 {formatMeasurement(secondaryWater, secondaryWaterUnit)} {secondaryWaterUnit}
               </p>
+
+              <div className="dashboard-quick-add" aria-label="Quick add hydration">
+                <span className="dashboard-quick-add-label">Quick Add</span>
+                <div className="dashboard-quick-add-buttons">
+                  {quickAddOptions.map((entry) => {
+                    const key = quickAddKey(entry);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className="dashboard-quick-add-button"
+                        disabled={quickAddBusy !== null}
+                        onClick={() => void handleQuickAdd(entry)}
+                      >
+                        {quickAddBusy === key ? "Adding..." : `+${entry.amount} ${entry.unit}`}
+                      </button>
+                    );
+                  })}
+                </div>
+                {quickAddMessage && <p className="dashboard-quick-add-success" role="status">{quickAddMessage}</p>}
+                {quickAddError && <p className="dashboard-quick-add-error" role="alert">{quickAddError}</p>}
+              </div>
             </article>
 
             <article className="dashboard-card">
