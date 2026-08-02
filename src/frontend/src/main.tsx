@@ -5,10 +5,14 @@ import './index.css'
 import './styles/brand-components.css'
 import './styles/all-pages-brand.css'
 import './styles/premium-polish.css'
+import './styles/locale.css'
+import { LocaleProvider } from './i18n/LocaleContext'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <LocaleProvider>
+      <App />
+    </LocaleProvider>
   </StrictMode>,
 )
