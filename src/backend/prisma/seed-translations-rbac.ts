@@ -1,0 +1,80 @@
+import "dotenv/config";
+import prisma from "../src/config/prisma.js";
+
+const catalog = [
+  ["rbac.accessDenied", "Access denied", "rbac", "Acesso negado"],
+  ["rbac.accessDeniedDescription", "Your account does not have permission to open this page.", "rbac", "Sua conta não tem permissão para abrir esta página."],
+  ["rbac.adminDescription", "Manage users, roles, translations, security activity, and organization controls.", "rbac", "Gerencie usuários, funções, traduções, atividades de segurança e controles da organização."],
+  ["rbac.userManagement", "User Management", "rbac", "Gerenciamento de Usuários"],
+  ["rbac.userModuleDescription", "Invite users, assign roles, manage account status, and revoke sessions.", "rbac", "Convide usuários, atribua funções, gerencie o status da conta e revogue sessões."],
+  ["rbac.openUsers", "Open User Management", "rbac", "Abrir Gerenciamento de Usuários"],
+  ["rbac.rolesPermissions", "Roles & Permissions", "rbac", "Funções e Permissões"],
+  ["rbac.rolesModuleDescription", "Create organization roles and configure effective permissions.", "rbac", "Crie funções da organização e configure permissões efetivas."],
+  ["rbac.openRoles", "Open Role Management", "rbac", "Abrir Gerenciamento de Funções"],
+  ["rbac.auditLogs", "Audit Logs", "rbac", "Registros de Auditoria"],
+  ["rbac.auditModuleDescription", "Review security-sensitive and administrative events.", "rbac", "Revise eventos administrativos e relacionados à segurança."],
+  ["rbac.openAudit", "Open Audit Log", "rbac", "Abrir Registro de Auditoria"],
+  ["rbac.translationDescription", "Edit, review, and publish multilingual interface content.", "rbac", "Edite, revise e publique conteúdo multilíngue da interface."],
+  ["rbac.futurePhase", "Coming in a future phase", "rbac", "Disponível em uma fase futura"],
+  ["rbac.usersEyebrow", "Administration / Users", "rbac", "Administração / Usuários"],
+  ["rbac.usersDescription", "Invite users, assign roles, control account status, and revoke active sessions.", "rbac", "Convide usuários, atribua funções, controle o status da conta e revogue sessões ativas."],
+  ["rbac.inviteUser", "Invite User", "rbac", "Convidar Usuário"],
+  ["rbac.emailAddress", "Email address", "rbac", "Endereço de e-mail"],
+  ["rbac.selectRole", "Select role", "rbac", "Selecionar função"],
+  ["rbac.createInvitation", "Create Invitation", "rbac", "Criar Convite"],
+  ["rbac.invitationCreated", "Invitation created. Copy the secure link below.", "rbac", "Convite criado. Copie o link seguro abaixo."],
+  ["rbac.copyLink", "Copy Link", "rbac", "Copiar Link"],
+  ["rbac.searchUsers", "Search users", "rbac", "Pesquisar usuários"],
+  ["rbac.loadingUsers", "Loading users...", "rbac", "Carregando usuários..."],
+  ["rbac.user", "User", "rbac", "Usuário"],
+  ["rbac.roles", "Roles", "rbac", "Funções"],
+  ["rbac.lastLogin", "Last login", "rbac", "Último acesso"],
+  ["rbac.active", "Active", "rbac", "Ativo"],
+  ["rbac.inactive", "Inactive", "rbac", "Inativo"],
+  ["rbac.suspended", "Suspended", "rbac", "Suspenso"],
+  ["rbac.never", "Never", "rbac", "Nunca"],
+  ["rbac.revokeSessions", "Revoke Sessions", "rbac", "Revogar Sessões"],
+  ["rbac.sessionsRevoked", "Active sessions revoked.", "rbac", "Sessões ativas revogadas."],
+  ["rbac.rolesEyebrow", "Administration / Roles", "rbac", "Administração / Funções"],
+  ["rbac.roleManagement", "Role Management", "rbac", "Gerenciamento de Funções"],
+  ["rbac.roleDescription", "Create reusable roles and assign permissions by functional area.", "rbac", "Crie funções reutilizáveis e atribua permissões por área funcional."],
+  ["rbac.newRole", "New Role", "rbac", "Nova Função"],
+  ["rbac.assignedUsers", "assigned users", "rbac", "usuários atribuídos"],
+  ["rbac.protectedRole", "Protected role", "rbac", "Função protegida"],
+  ["rbac.editRole", "Edit Role", "rbac", "Editar Função"],
+  ["rbac.createRole", "Create Role", "rbac", "Criar Função"],
+  ["rbac.roleName", "Role name", "rbac", "Nome da função"],
+  ["rbac.description", "Description", "rbac", "Descrição"],
+  ["rbac.saveRole", "Save Role", "rbac", "Salvar Função"],
+  ["rbac.roleSaved", "Role saved successfully.", "rbac", "Função salva com sucesso."],
+  ["rbac.auditEyebrow", "Administration / Audit", "rbac", "Administração / Auditoria"],
+  ["rbac.auditLog", "Audit Log", "rbac", "Registro de Auditoria"],
+  ["rbac.auditDescription", "Review security-sensitive and administrative activity.", "rbac", "Revise atividades administrativas e relacionadas à segurança."],
+  ["rbac.time", "Time", "rbac", "Horário"],
+  ["rbac.actor", "Actor", "rbac", "Responsável"],
+  ["rbac.action", "Action", "rbac", "Ação"],
+  ["rbac.target", "Target", "rbac", "Alvo"],
+  ["rbac.result", "Result", "rbac", "Resultado"],
+  ["rbac.system", "System", "rbac", "Sistema"],
+  ["rbac.invalidInvitation", "Invitation is invalid or expired.", "rbac", "O convite é inválido ou expirou."],
+  ["rbac.acceptFailed", "Unable to accept the invitation.", "rbac", "Não foi possível aceitar o convite."],
+  ["rbac.invitationAccepted", "Invitation accepted", "rbac", "Convite aceito"],
+  ["rbac.accountReady", "Your account is ready. You can now sign in.", "rbac", "Sua conta está pronta. Agora você pode entrar."],
+  ["rbac.goSignIn", "Go to Sign In", "rbac", "Ir para Entrar"],
+  ["rbac.join", "Join MyFitIdeas", "rbac", "Entrar no MyFitIdeas"],
+  ["rbac.lastName", "Last Name", "rbac", "Sobrenome"],
+  ["rbac.acceptInvitation", "Accept Invitation", "rbac", "Aceitar Convite"],
+] as const;
+
+async function main() {
+  const english = await prisma.language.findUniqueOrThrow({ where: { locale: "en-US" } });
+  const portuguese = await prisma.language.findUniqueOrThrow({ where: { locale: "pt-BR" } });
+  for (const [key, sourceText, category, ptBr] of catalog) {
+    const translationKey = await prisma.translationKey.upsert({ where: { key }, update: { category }, create: { key, sourceText, category } });
+    const currentSource = translationKey.sourceText;
+    await prisma.translationValue.upsert({ where: { translationKeyId_languageId: { translationKeyId: translationKey.id, languageId: english.id } }, update: { value: currentSource, status: "PUBLISHED", publishedValue: currentSource }, create: { translationKeyId: translationKey.id, languageId: english.id, value: currentSource, status: "PUBLISHED", publishedValue: currentSource, publishedAt: new Date() } });
+    await prisma.translationValue.upsert({ where: { translationKeyId_languageId: { translationKeyId: translationKey.id, languageId: portuguese.id } }, update: {}, create: { translationKeyId: translationKey.id, languageId: portuguese.id, value: ptBr, status: "PUBLISHED", publishedValue: ptBr, publishedAt: new Date() } });
+  }
+}
+
+main().then(() => prisma.$disconnect()).catch(async (error) => { console.error(error); await prisma.$disconnect(); process.exit(1); });
