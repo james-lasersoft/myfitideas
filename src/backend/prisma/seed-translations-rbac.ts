@@ -15,6 +15,8 @@ const catalog = [
   ["rbac.auditModuleDescription", "Review security-sensitive and administrative events.", "rbac", "Revise eventos administrativos e relacionados à segurança."],
   ["rbac.openAudit", "Open Audit Log", "rbac", "Abrir Registro de Auditoria"],
   ["rbac.translationDescription", "Edit, review, and publish multilingual interface content.", "rbac", "Edite, revise e publique conteúdo multilíngue da interface."],
+  ["rbac.systemSettings", "System Settings", "rbac", "Configurações do Sistema"],
+  ["rbac.systemSettingsDescription", "Manage operational configuration and feature controls.", "rbac", "Gerencie a configuração operacional e os controles de recursos."],
   ["rbac.futurePhase", "Coming in a future phase", "rbac", "Disponível em uma fase futura"],
   ["rbac.usersEyebrow", "Administration / Users", "rbac", "Administração / Usuários"],
   ["rbac.usersDescription", "Invite users, assign roles, control account status, and revoke active sessions.", "rbac", "Convide usuários, atribua funções, controle o status da conta e revogue sessões ativas."],
