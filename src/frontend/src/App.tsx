@@ -5,6 +5,7 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
+import LanguageSelector from "./components/LanguageSelector";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
 import "./index.css";
@@ -36,6 +37,7 @@ function ProtectedPage({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <LanguageSelector />
       <Routes>
         <Route path="/" element={<LoginPage />} />
 
