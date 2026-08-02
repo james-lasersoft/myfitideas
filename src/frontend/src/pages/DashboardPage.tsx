@@ -152,6 +152,14 @@ export default function DashboardPage() {
                 Open Profile
               </button>
             </article>
+
+            <article className="dashboard-card admin-dashboard-card">
+              <h2>Administration</h2>
+              <p>Manage translations and future company controls.</p>
+              <button type="button" onClick={() => navigate("/admin")}>
+                Open Administration
+              </button>
+            </article>
           </section>
         </>
       )}
