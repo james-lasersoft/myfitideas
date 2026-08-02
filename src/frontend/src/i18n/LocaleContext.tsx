@@ -58,6 +58,7 @@ function translateText(text: string, locale: SupportedLocale): string {
     [/^Good Afternoon, (.+)$/, "Boa tarde, $1"],
     [/^Good Evening, (.+)$/, "Boa noite, $1"],
     [/^Goal: (.+)$/, "Meta: $1"],
+    [/^Daily Goal \($/, "Meta Diária ("],
     [/^Daily Goal \((.+)\)$/, "Meta Diária ($1)"],
     [/^(\d+) entry$/, "$1 registro"],
     [/^(\d+) entries$/, "$1 registros"],
