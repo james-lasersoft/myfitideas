@@ -117,7 +117,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (text: string) => publishedCatalog[text] ?? translations[locale][text] ?? text,
+    (text: string) => {
+      void catalogRevision;
+      return publishedCatalog[text] ?? translations[locale][text] ?? text;
+    },
     [locale, catalogRevision]
   );
 
