@@ -39,12 +39,12 @@ export interface TranslationHistoryRecord {
   newStatus: TranslationStatus;
   action: string;
   changedAt: string;
-  changedBy: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string | null;
-  };
+  changedBy: { id: string; email: string; firstName: string; lastName: string | null };
+}
+
+export async function getLanguages(): Promise<LanguageRecord[]> {
+  const response = await api.get<{ languages: LanguageRecord[] }>("/api/v1/admin/translations/languages");
+  return response.data.languages;
 }
 
 export async function getTranslations(params?: {
@@ -54,6 +54,14 @@ export async function getTranslations(params?: {
 }): Promise<{ translations: TranslationKeyRecord[]; categories: string[] }> {
   const response = await api.get("/api/v1/admin/translations", { params });
   return response.data;
+}
+
+export async function updateSourceText(
+  keyId: string,
+  sourceText: string
+): Promise<TranslationKeyRecord> {
+  const response = await api.put(`/api/v1/admin/translations/${keyId}/source`, { sourceText });
+  return response.data.translationKey;
 }
 
 export async function saveTranslation(
@@ -70,9 +78,7 @@ export async function saveTranslation(
   return response.data.translation;
 }
 
-export async function getTranslationHistory(
-  keyId: string
-): Promise<TranslationHistoryRecord[]> {
+export async function getTranslationHistory(keyId: string): Promise<TranslationHistoryRecord[]> {
   const response = await api.get(`/api/v1/admin/translations/${keyId}/history`);
   return response.data.history;
 }
