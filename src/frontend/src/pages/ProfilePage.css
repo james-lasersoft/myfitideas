@@ -46,7 +46,8 @@
 
 .profile-personal-grid label,
 .profile-values-list label,
-.profile-localization-grid label {
+.profile-localization-grid label,
+.localization-toggle-field {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -113,6 +114,11 @@
   border: 1px solid rgba(31, 139, 67, 0.28);
   border-radius: 10px;
   background: #eef5f0;
+}
+
+.localization-toggle-field .unit-toggle {
+  align-self: flex-start;
+  width: min(100%, 220px);
 }
 
 .profile-page .unit-toggle .unit-toggle-option {
@@ -252,7 +258,8 @@
   }
 
   .unit-toggle,
-  .future-action {
+  .future-action,
+  .localization-toggle-field .unit-toggle {
     width: 100%;
   }
 
