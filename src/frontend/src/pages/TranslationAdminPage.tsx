@@ -2,19 +2,34 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import {
+  getTranslationHistory,
   getTranslations,
   saveTranslation,
+  type TranslationHistoryRecord,
   type TranslationKeyRecord,
   type TranslationStatus,
 } from "../services/translationAdminService";
 import "./Admin.css";
 
+type SortField = "key" | "source" | "target" | "category" | "status" | "updated";
+type SortDirection = "asc" | "desc";
+
+const PAGE_SIZE = 25;
+
 function portugueseValue(item: TranslationKeyRecord) {
   return item.translations.find((value) => value.language.locale === "pt-BR");
 }
 
-type SortField = "key" | "category" | "status" | "updatedAt";
-type SortDirection = "asc" | "desc";
+function statusLabel(item: TranslationKeyRecord): TranslationStatus | "MISSING" {
+  return portugueseValue(item)?.status ?? "MISSING";
+}
+
+function statusIcon(status: TranslationStatus | "MISSING") {
+  if (status === "PUBLISHED") return "●";
+  if (status === "REVIEWED") return "●";
+  if (status === "DRAFT") return "●";
+  return "●";
+}
 
 export default function TranslationAdminPage() {
   const navigate = useNavigate();
@@ -23,10 +38,18 @@ export default function TranslationAdminPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState<TranslationStatus | "">("");
+  const [missingOnly, setMissingOnly] = useState(false);
   const [sortField, setSortField] = useState<SortField>("key");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [page, setPage] = useState(1);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [historyItem, setHistoryItem] = useState<TranslationKeyRecord | null>(null);
+  const [history, setHistory] = useState<TranslationHistoryRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -38,78 +61,84 @@ export default function TranslationAdminPage() {
         .then((result) => {
           setItems(result.translations);
           setCategories(result.categories);
-          setDrafts(
-            Object.fromEntries(
-              result.translations.map((item) => [
-                item.id,
-                portugueseValue(item)?.value ?? "",
-              ])
-            )
-          );
+          setDrafts(Object.fromEntries(result.translations.map((item) => [item.id, portugueseValue(item)?.value ?? ""])));
+          setSelectedIds(new Set());
+          setPage(1);
           setError("");
         })
         .catch(() => setError("Unable to load translations."))
         .finally(() => setLoading(false));
     }, 200);
-
     return () => window.clearTimeout(timer);
   }, [search, category, status]);
 
-  const missingCount = useMemo(
-    () => items.filter((item) => !portugueseValue(item)?.value.trim()).length,
-    [items]
-  );
+  const filteredItems = useMemo(() => {
+    const filtered = missingOnly
+      ? items.filter((item) => !(portugueseValue(item)?.value ?? "").trim())
+      : items;
 
-  const sortedItems = useMemo(() => {
-    return [...items].sort((left, right) => {
+    return [...filtered].sort((left, right) => {
       const leftTranslation = portugueseValue(left);
       const rightTranslation = portugueseValue(right);
+      let comparison = 0;
 
-      let leftValue = "";
-      let rightValue = "";
-
-      if (sortField === "key") {
-        leftValue = left.key;
-        rightValue = right.key;
-      } else if (sortField === "category") {
-        leftValue = left.category;
-        rightValue = right.category;
-      } else if (sortField === "status") {
-        leftValue = leftTranslation?.status ?? "MISSING";
-        rightValue = rightTranslation?.status ?? "MISSING";
-      } else {
-        leftValue = leftTranslation?.updatedAt ?? "";
-        rightValue = rightTranslation?.updatedAt ?? "";
+      switch (sortField) {
+        case "source":
+          comparison = left.sourceText.localeCompare(right.sourceText);
+          break;
+        case "target":
+          comparison = (leftTranslation?.value ?? "").localeCompare(rightTranslation?.value ?? "");
+          break;
+        case "category":
+          comparison = left.category.localeCompare(right.category);
+          break;
+        case "status":
+          comparison = statusLabel(left).localeCompare(statusLabel(right));
+          break;
+        case "updated":
+          comparison = new Date(leftTranslation?.updatedAt ?? 0).getTime() - new Date(rightTranslation?.updatedAt ?? 0).getTime();
+          break;
+        case "key":
+        default:
+          comparison = left.key.localeCompare(right.key);
       }
-
-      const comparison = leftValue.localeCompare(rightValue, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
 
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [items, sortDirection, sortField]);
+  }, [items, missingOnly, sortDirection, sortField]);
 
-  function changeSort(nextField: SortField) {
-    if (nextField === sortField) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
-      return;
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const pageItems = filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const missingCount = items.filter((item) => !(portugueseValue(item)?.value ?? "").trim()).length;
+  const allVisibleSelected = pageItems.length > 0 && pageItems.every((item) => selectedIds.has(item.id));
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) setSortDirection((direction) => direction === "asc" ? "desc" : "asc");
+    else {
+      setSortField(field);
+      setSortDirection("asc");
     }
-
-    setSortField(nextField);
-    setSortDirection("asc");
   }
 
-  function sortIndicator(field: SortField) {
-    if (field !== sortField) return "";
-    return sortDirection === "asc" ? " ▲" : " ▼";
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
-  async function persist(
-    item: TranslationKeyRecord,
-    nextStatus: TranslationStatus
-  ) {
+  function togglePageSelection() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) pageItems.forEach((item) => next.delete(item.id));
+      else pageItems.forEach((item) => next.add(item.id));
+      return next;
+    });
+  }
+
+  async function persist(item: TranslationKeyRecord, nextStatus: TranslationStatus) {
     const value = drafts[item.id]?.trim() ?? "";
     if (!value) {
       setError("Enter a Portuguese translation before saving.");
@@ -119,40 +148,57 @@ export default function TranslationAdminPage() {
     setBusyKey(item.id);
     setError("");
     setMessage("");
-
     try {
-      const saved = await saveTranslation(
-        item.id,
-        "pt-BR",
-        value,
-        nextStatus
-      );
-
-      setItems((current) =>
-        current.map((entry) =>
-          entry.id === item.id
-            ? {
-                ...entry,
-                translations: [
-                  ...entry.translations.filter(
-                    (translation) => translation.language.locale !== "pt-BR"
-                  ),
-                  saved,
-                ],
-              }
-            : entry
-        )
-      );
-
-      setMessage(
-        nextStatus === "PUBLISHED"
-          ? "Translation published successfully."
-          : "Translation draft saved successfully."
-      );
+      const saved = await saveTranslation(item.id, "pt-BR", value, nextStatus);
+      setItems((current) => current.map((entry) => entry.id === item.id
+        ? { ...entry, translations: [...entry.translations.filter((translation) => translation.language.locale !== "pt-BR"), saved] }
+        : entry));
+      setEditingId(null);
+      setMessage(nextStatus === "PUBLISHED" ? "Translation published successfully." : "Translation draft saved successfully.");
     } catch {
       setError("Unable to save the translation.");
     } finally {
       setBusyKey(null);
+    }
+  }
+
+  async function publishSelected() {
+    const selected = items.filter((item) => selectedIds.has(item.id));
+    const publishable = selected.filter((item) => (drafts[item.id] ?? "").trim());
+    if (!publishable.length) {
+      setError("Select at least one row with a Portuguese translation.");
+      return;
+    }
+
+    setBulkBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      for (const item of publishable) {
+        const saved = await saveTranslation(item.id, "pt-BR", drafts[item.id].trim(), "PUBLISHED");
+        setItems((current) => current.map((entry) => entry.id === item.id
+          ? { ...entry, translations: [...entry.translations.filter((translation) => translation.language.locale !== "pt-BR"), saved] }
+          : entry));
+      }
+      setSelectedIds(new Set());
+      setMessage(`${publishable.length} translation${publishable.length === 1 ? "" : "s"} published successfully.`);
+    } catch {
+      setError("Unable to publish all selected translations.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function openHistory(item: TranslationKeyRecord) {
+    setHistoryItem(item);
+    setHistory([]);
+    setHistoryLoading(true);
+    try {
+      setHistory(await getTranslationHistory(item.id));
+    } catch {
+      setError("Unable to load translation history.");
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -163,192 +209,110 @@ export default function TranslationAdminPage() {
           <BrandLogo className="admin-logo" />
           <p className="admin-eyebrow">Administration / Translations</p>
           <h1>Translation Management</h1>
-          <p>
-            English is the canonical source. Edit Portuguese drafts, review
-            them, and publish approved wording.
-          </p>
+          <p>English is the canonical source. Edit Portuguese drafts, review them, and publish approved wording.</p>
         </div>
-        <button
-          className="secondary-button"
-          onClick={() => navigate("/admin")}
-        >
-          Back to Admin
-        </button>
+        <button className="secondary-button" onClick={() => navigate("/admin")}>Back to Admin</button>
       </header>
 
       <section className="translation-toolbar">
-        <label>
-          Search
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Key or text"
-          />
-        </label>
-        <label>
-          Category
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            <option value="">All categories</option>
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Status
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as TranslationStatus | "")
-            }
-          >
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="REVIEWED">Reviewed</option>
-            <option value="PUBLISHED">Published</option>
-          </select>
-        </label>
-        <div className="translation-summary">
-          <strong>{items.length}</strong>
-          <span>keys</span>
-          <strong>{missingCount}</strong>
-          <span>missing</span>
-        </div>
+        <label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Key or text" /></label>
+        <label>Category<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">All categories</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+        <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as TranslationStatus | "")}><option value="">All statuses</option><option value="DRAFT">Draft</option><option value="REVIEWED">Reviewed</option><option value="PUBLISHED">Published</option></select></label>
+        <label className="translation-check"><input type="checkbox" checked={missingOnly} onChange={(event) => { setMissingOnly(event.target.checked); setPage(1); }} />Missing only</label>
+        <div className="translation-summary"><strong>{filteredItems.length}</strong><span>keys</span><strong>{missingCount}</strong><span>missing</span></div>
+      </section>
+
+      <section className="translation-bulk-bar">
+        <span>{selectedIds.size} selected</span>
+        <button type="button" disabled={!selectedIds.size || bulkBusy} onClick={() => void publishSelected()}>{bulkBusy ? "Publishing..." : "Publish selected"}</button>
       </section>
 
       {message && <p className="form-message success-message">{message}</p>}
       {error && <p className="form-message error-message">{error}</p>}
 
-      {loading ? (
-        <p className="admin-loading">Loading translation catalog...</p>
-      ) : (
-        <section className="translation-table-card">
-          <div className="translation-table-scroll">
-            <table className="translation-table">
-              <thead>
-                <tr>
-                  <th>
-                    <button type="button" onClick={() => changeSort("key")}>
-                      Key{sortIndicator("key")}
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      onClick={() => changeSort("category")}
-                    >
-                      Category{sortIndicator("category")}
-                    </button>
-                  </th>
-                  <th>English</th>
-                  <th>Português (Brasil)</th>
-                  <th>
-                    <button
-                      type="button"
-                      onClick={() => changeSort("status")}
-                    >
-                      Status{sortIndicator("status")}
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      onClick={() => changeSort("updatedAt")}
-                    >
-                      Updated{sortIndicator("updatedAt")}
-                    </button>
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedItems.map((item) => {
-                  const current = portugueseValue(item);
-                  const changed =
-                    (drafts[item.id] ?? "") !== (current?.value ?? "");
-                  const currentStatus = current?.status ?? "MISSING";
-
-                  return (
-                    <tr key={item.id} className={changed ? "has-changes" : ""}>
-                      <td className="translation-key-cell">
-                        <code>{item.key}</code>
-                      </td>
-                      <td>
-                        <span className="translation-category">
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="translation-source-cell">
-                        {item.sourceText}
-                      </td>
-                      <td className="translation-editor-cell">
-                        <textarea
-                          aria-label={`Portuguese translation for ${item.key}`}
-                          value={drafts[item.id] ?? ""}
-                          onChange={(event) =>
-                            setDrafts((values) => ({
-                              ...values,
-                              [item.id]: event.target.value,
-                            }))
-                          }
-                          rows={2}
-                        />
-                        {changed && (
-                          <span className="unsaved-indicator">
-                            Unsaved changes
-                          </span>
+      {loading ? <p className="admin-loading">Loading translation catalog...</p> : (
+        <section className="translation-table-wrap">
+          <table className="translation-table">
+            <thead>
+              <tr>
+                <th><input aria-label="Select visible rows" type="checkbox" checked={allVisibleSelected} onChange={togglePageSelection} /></th>
+                <th>Status</th>
+                <th><button type="button" onClick={() => toggleSort("key")}>Key</button></th>
+                <th><button type="button" onClick={() => toggleSort("source")}>English</button></th>
+                <th><button type="button" onClick={() => toggleSort("target")}>Portuguese</button></th>
+                <th><button type="button" onClick={() => toggleSort("category")}>Category</button></th>
+                <th><button type="button" onClick={() => toggleSort("updated")}>Updated</button></th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((item) => {
+                const current = portugueseValue(item);
+                const changed = (drafts[item.id] ?? "") !== (current?.value ?? "");
+                const rowStatus = statusLabel(item);
+                const isEditing = editingId === item.id;
+                return (
+                  <tr key={item.id} className={changed ? "translation-row-unsaved" : undefined}>
+                    <td><input aria-label={`Select ${item.key}`} type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelected(item.id)} /></td>
+                    <td><span className={`translation-dot ${rowStatus.toLowerCase()}`}>{statusIcon(rowStatus)}</span><span className="sr-only">{rowStatus}</span></td>
+                    <td><code>{item.key}</code></td>
+                    <td>{item.sourceText}</td>
+                    <td className="translation-target-cell">
+                      {isEditing ? (
+                        <textarea autoFocus value={drafts[item.id] ?? ""} onChange={(event) => setDrafts((values) => ({ ...values, [item.id]: event.target.value }))} rows={2} />
+                      ) : (
+                        <button type="button" className="translation-text-button" onClick={() => setEditingId(item.id)}>{drafts[item.id]?.trim() || "Missing translation"}</button>
+                      )}
+                    </td>
+                    <td><span className="category-pill">{item.category}</span></td>
+                    <td>{current?.updatedAt ? new Date(current.updatedAt).toLocaleDateString() : "—"}</td>
+                    <td>
+                      <div className="translation-row-actions">
+                        {isEditing ? (
+                          <>
+                            <button type="button" className="secondary-button" disabled={busyKey === item.id || !changed} onClick={() => void persist(item, "DRAFT")}>Save</button>
+                            <button type="button" disabled={busyKey === item.id} onClick={() => void persist(item, "PUBLISHED")}>Publish</button>
+                            <button type="button" className="icon-button" onClick={() => { setDrafts((values) => ({ ...values, [item.id]: current?.value ?? "" })); setEditingId(null); }} aria-label="Cancel editing">×</button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" className="icon-button" onClick={() => setEditingId(item.id)} aria-label={`Edit ${item.key}`}>✎</button>
+                            <button type="button" className="icon-button" onClick={() => void openHistory(item)} aria-label={`View history for ${item.key}`}>◷</button>
+                          </>
                         )}
-                      </td>
-                      <td>
-                        <span
-                          className={`translation-status ${currentStatus.toLowerCase()}`}
-                        >
-                          {currentStatus}
-                        </span>
-                      </td>
-                      <td className="translation-updated-cell">
-                        {current?.updatedAt
-                          ? new Date(current.updatedAt).toLocaleString()
-                          : "Not yet translated"}
-                      </td>
-                      <td>
-                        <div className="translation-table-actions">
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            disabled={busyKey === item.id || !changed}
-                            onClick={() => void persist(item, "DRAFT")}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busyKey === item.id}
-                            onClick={() => void persist(item, "PUBLISHED")}
-                          >
-                            Publish
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {!sortedItems.length && (
-            <div className="admin-empty">
-              <h2>No translations found</h2>
-              <p>Adjust the search or filters.</p>
-            </div>
-          )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {!pageItems.length && <div className="admin-empty"><h2>No translations found</h2><p>Adjust the search or filters.</p></div>}
         </section>
+      )}
+
+      <nav className="translation-pagination" aria-label="Translation pages">
+        <button type="button" className="secondary-button" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
+        <span>Page {page} of {pageCount}</span>
+        <button type="button" className="secondary-button" disabled={page === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next</button>
+      </nav>
+
+      {historyItem && (
+        <div className="translation-drawer-backdrop" onClick={() => setHistoryItem(null)}>
+          <aside className="translation-drawer" onClick={(event) => event.stopPropagation()} aria-label="Translation history">
+            <div className="translation-drawer-header">
+              <div><p className="admin-eyebrow">Translation history</p><h2>{historyItem.key}</h2></div>
+              <button type="button" className="icon-button" onClick={() => setHistoryItem(null)} aria-label="Close history">×</button>
+            </div>
+            <section><h3>English source</h3><p>{historyItem.sourceText}</p></section>
+            <section><h3>Portuguese</h3><p>{drafts[historyItem.id] || "No translation yet"}</p></section>
+            <section><h3>History</h3>
+              {historyLoading ? <p>Loading history...</p> : history.length ? (
+                <ol className="translation-history-list">{history.map((entry) => <li key={entry.id}><strong>{entry.action.replaceAll("_", " ")}</strong><span>{entry.newStatus}</span><p>{entry.newValue}</p><small>{new Date(entry.changedAt).toLocaleString()} · {entry.changedBy.firstName} {entry.changedBy.lastName ?? ""}</small></li>)}</ol>
+              ) : <p>No history recorded yet.</p>}
+            </section>
+          </aside>
+        </div>
       )}
     </main>
   );
