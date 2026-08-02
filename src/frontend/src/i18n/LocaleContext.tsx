@@ -10,6 +10,8 @@ import {
 import { translations, type SupportedLocale } from "./translations";
 
 const STORAGE_KEY = "myfitideas.locale";
+const originalText = new WeakMap<Text, string>();
+const originalAttributes = new WeakMap<Element, Map<string, string>>();
 
 function normalizeLocale(value: string | null | undefined): SupportedLocale {
   if (value?.toLowerCase().startsWith("pt")) return "pt-BR";
@@ -24,9 +26,7 @@ function getInitialLocale(): SupportedLocale {
     const currentUser = JSON.parse(localStorage.getItem("currentUser") ?? "null") as
       | { preferredLanguage?: string }
       | null;
-    if (currentUser?.preferredLanguage) {
-      return normalizeLocale(currentUser.preferredLanguage);
-    }
+    if (currentUser?.preferredLanguage) return normalizeLocale(currentUser.preferredLanguage);
   } catch {
     // Ignore malformed cached user data and continue to browser preference.
   }
@@ -69,36 +69,41 @@ function translateText(text: string, locale: SupportedLocale): string {
   ];
 
   for (const [pattern, replacement] of replacements) {
-    if (pattern.test(core)) {
-      return `${leading}${core.replace(pattern, replacement)}${trailing}`;
-    }
+    if (pattern.test(core)) return `${leading}${core.replace(pattern, replacement)}${trailing}`;
   }
 
   return text;
 }
 
+function localizeTextNode(node: Text, locale: SupportedLocale): void {
+  if (!originalText.has(node)) originalText.set(node, node.nodeValue ?? "");
+  const source = originalText.get(node) ?? "";
+  const nextValue = locale === "en-US" ? source : translateText(source, locale);
+  if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
+}
+
 function localizeElement(root: ParentNode, locale: SupportedLocale): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     const parent = node.parentElement;
     if (!parent || ["SCRIPT", "STYLE", "TEXTAREA"].includes(parent.tagName)) continue;
-    nodes.push(node);
-  }
-
-  for (const node of nodes) {
-    const translated = translateText(node.nodeValue ?? "", locale);
-    if (translated !== node.nodeValue) node.nodeValue = translated;
+    localizeTextNode(node, locale);
   }
 
   root.querySelectorAll<HTMLElement>("[aria-label], [title], input[placeholder]").forEach((element) => {
+    let saved = originalAttributes.get(element);
+    if (!saved) {
+      saved = new Map<string, string>();
+      originalAttributes.set(element, saved);
+    }
+
     for (const attribute of ["aria-label", "title", "placeholder"] as const) {
-      const value = element.getAttribute(attribute);
-      if (!value) continue;
-      const translated = translateText(value, locale);
-      if (translated !== value) element.setAttribute(attribute, translated);
+      const current = element.getAttribute(attribute);
+      if (!current) continue;
+      if (!saved.has(attribute)) saved.set(attribute, current);
+      const source = saved.get(attribute) ?? current;
+      element.setAttribute(attribute, locale === "en-US" ? source : translateText(source, locale));
     }
   });
 }
@@ -112,10 +117,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setLocaleState(nextLocale);
   }, []);
 
-  const t = useCallback(
-    (text: string) => translations[locale][text] ?? text,
-    [locale]
-  );
+  const t = useCallback((text: string) => translations[locale][text] ?? text, [locale]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -124,9 +126,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
-            const textNode = node as Text;
-            textNode.nodeValue = translateText(textNode.nodeValue ?? "", locale);
+          if (node.nodeType === Node.TEXT_NODE) {
+            localizeTextNode(node as Text, locale);
           } else if (node.nodeType === Node.ELEMENT_NODE) {
             localizeElement(node as Element, locale);
           }
@@ -139,7 +140,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
-
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
