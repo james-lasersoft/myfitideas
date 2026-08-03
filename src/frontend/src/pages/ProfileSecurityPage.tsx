@@ -13,6 +13,16 @@ interface TrustedDevice {
   expiresAt: string;
 }
 
+interface ActiveSession {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  refreshExpiresAt: string | null;
+  current: boolean;
+}
+
 function deviceLabel(userAgent: string | null): string {
   if (!userAgent) return "Unknown device";
   if (userAgent.includes("Edg/")) return "Microsoft Edge";
@@ -26,22 +36,28 @@ export default function ProfileSecurityPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadDevices = async () => {
+  const loadSecurityData = async () => {
     try {
-      const response = await api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices");
-      setDevices(response.data.devices);
+      const [deviceResponse, sessionResponse] = await Promise.all([
+        api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices"),
+        api.get<{ sessions: ActiveSession[] }>("/api/auth/security/sessions"),
+      ]);
+      setDevices(deviceResponse.data.devices);
+      setSessions(sessionResponse.data.sessions);
+      setError("");
     } catch {
-      setError(t("Unable to load trusted devices."));
+      setError(t("Unable to load account security information."));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { void loadDevices(); }, []);
+  useEffect(() => { void loadSecurityData(); }, []);
 
   const revokeDevice = async (id: string) => {
     await api.delete(`/api/auth/security/devices/${id}`);
@@ -49,9 +65,29 @@ export default function ProfileSecurityPage() {
     setMessage(t("Trusted device removed."));
   };
 
+  const revokeSession = async (session: ActiveSession) => {
+    if (session.current && !window.confirm(t("End this current session and sign out?"))) return;
+    await api.delete(`/api/auth/security/sessions/${session.id}`);
+    if (session.current) {
+      localStorage.clear();
+      window.location.assign("/");
+      return;
+    }
+    setSessions((current) => current.filter((item) => item.id !== session.id));
+    setMessage(t("Session ended."));
+  };
+
+  const revokeOtherSessions = async () => {
+    if (!window.confirm(t("Sign out every other active session?"))) return;
+    await api.post("/api/auth/security/sessions/revoke-others");
+    setSessions((current) => current.filter((session) => session.current));
+    setDevices([]);
+    setMessage(t("All other sessions and trusted devices were revoked."));
+  };
+
   const resetMfa = async () => {
     if (!window.confirm(t("Reset MFA and revoke all sessions? You will enroll again at the next login."))) return;
-    await api.post("/api/auth/security/reset-mfa");
+    await api.post("/api/auth/security/mfa/reset");
     localStorage.clear();
     window.location.assign("/");
   };
@@ -70,6 +106,23 @@ export default function ProfileSecurityPage() {
 
         {error && <p className="form-message error-message">{error}</p>}
         {message && <p className="form-message success-message">{message}</p>}
+
+        <section className="security-section">
+          <div className="security-section-heading">
+            <div><h2>{t("Active Sessions")}</h2><p>{t("Browsers and devices currently signed in to your account.")}</p></div>
+            <button type="button" className="secondary-button" onClick={() => void revokeOtherSessions()}>{t("Sign Out Other Sessions")}</button>
+          </div>
+          {loading ? <p>{t("Loading active sessions...")}</p> : sessions.length === 0 ? <p>{t("No active sessions were found.")}</p> : (
+            <div className="security-device-list">
+              {sessions.map((session) => (
+                <article className="security-device" key={session.id}>
+                  <div><strong>{deviceLabel(session.userAgent)} {session.current ? `(${t("Current session")})` : ""}</strong><p>{session.ipAddress ?? t("IP address unavailable")}</p><small>{t("Last used")}: {new Date(session.lastSeenAt).toLocaleString()}</small></div>
+                  <button type="button" className={session.current ? "danger-button" : "secondary-button"} onClick={() => void revokeSession(session)}>{session.current ? t("Sign Out") : t("End Session")}</button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="security-section">
           <div className="security-section-heading">
