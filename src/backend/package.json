@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "seed:translations": "tsx prisma/seed-translations.ts && tsx prisma/seed-translations-extra.ts && tsx prisma/seed-translations-dashboard.ts && tsx prisma/seed-translations-dashboard-quick-add.ts && tsx prisma/seed-translations-rbac.ts && tsx prisma/seed-translations-workspaces.ts && tsx prisma/seed-translations-system-operations.ts && tsx prisma/seed-translations-guardrails.ts",
     "seed:language": "tsx prisma/seed-language.ts",
-    "seed:rbac": "tsx prisma/seed-rbac-v2.ts"
+    "seed:rbac": "tsx prisma/seed-rbac-v2.ts && tsx prisma/seed-security-entitlements.ts",
+    "seed:security": "tsx prisma/seed-security-entitlements.ts"
   },
   "keywords": [],
   "author": "",
