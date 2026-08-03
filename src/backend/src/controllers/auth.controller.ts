@@ -264,7 +264,7 @@ export const revokeTrustedDevice = async (req: AuthenticatedRequest, res: Respon
 export const resetMfa = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
   await prisma.$transaction([
-    prisma.user.update({ where: { id: req.user.id }, data: { mfaEnabled: false, mfaSecretEncrypted: null, mfaRecoveryCodeHashes: null, tokenVersion: { increment: 1 } } }),
+    prisma.user.update({ where: { id: req.user.id }, data: { mfaEnabled: false, mfaSecretEncrypted: null, mfaRecoveryCodeHashes: [], tokenVersion: { increment: 1 } } }),
     prisma.userSession.updateMany({ where: { userId: req.user.id }, data: { revokedAt: new Date(), refreshTokenHash: null } }),
   ]);
   clearTrustedDeviceCookie(res);
