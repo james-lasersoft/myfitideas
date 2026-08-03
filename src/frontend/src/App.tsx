@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthorizationProvider } from "./auth/AuthorizationContext";
 import PermissionRoute from "./auth/PermissionRoute";
+import SuperAdminRoute from "./auth/SuperAdminRoute";
 import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
@@ -21,6 +22,7 @@ const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const AcceptInvitationPage = lazy(() => import("./pages/AcceptInvitationPage"));
 const WorkspaceChooserPage = lazy(() => import("./pages/WorkspaceChooserPage"));
+const SystemOperationsPage = lazy(() => import("./pages/SystemOperationsPage"));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("authToken");
@@ -54,6 +56,7 @@ export default function App() {
           <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
           <Route path="/admin/audit" element={<AuthorizedPage permission="audit.read"><AuditLogPage /></AuthorizedPage>} />
+          <Route path="/system-operations" element={<ProtectedPage><SuperAdminRoute><SystemOperationsPage /></SuperAdminRoute></ProtectedPage>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthorizationProvider>
