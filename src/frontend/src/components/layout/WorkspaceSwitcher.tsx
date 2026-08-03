@@ -16,17 +16,32 @@ export default function WorkspaceSwitcher() {
   const current: WorkspaceId = location.pathname.startsWith("/admin") ? "organization" : "personal";
 
   const changeWorkspace = (workspace: WorkspaceId) => {
+    if (workspace === current) return;
     rememberWorkspace(workspace);
     navigate(workspacePath(workspace));
   };
 
   return (
-    <label className="workspace-switcher">
-      <span>{t("Workspace")}</span>
-      <select value={current} onChange={(event) => changeWorkspace(event.target.value as WorkspaceId)} aria-label={t("Switch workspace")}>
-        <option value="personal">{t("My Health")}</option>
-        <option value="organization">{t("MyFitIdeas Work")}</option>
-      </select>
-    </label>
+    <div className="workspace-switcher" role="group" aria-label={t("Switch workspace")}>
+      <span className="workspace-switcher-label">{t("Workspace")}</span>
+      <div className="workspace-segmented-control">
+        <button
+          type="button"
+          className={current === "personal" ? "active" : ""}
+          aria-pressed={current === "personal"}
+          onClick={() => changeWorkspace("personal")}
+        >
+          {t("My Health")}
+        </button>
+        <button
+          type="button"
+          className={current === "organization" ? "active" : ""}
+          aria-pressed={current === "organization"}
+          onClick={() => changeWorkspace("organization")}
+        >
+          {t("MyFitIdeas Work")}
+        </button>
+      </div>
+    </div>
   );
 }
