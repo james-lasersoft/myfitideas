@@ -55,7 +55,9 @@ function hotp(secret: string, counter: number): string {
   const counterBuffer = Buffer.alloc(8);
   counterBuffer.writeBigUInt64BE(BigInt(counter));
   const digest = crypto.createHmac("sha1", base32Decode(secret)).update(counterBuffer).digest();
-  const offset = digest[digest.length - 1] & 0x0f;
+  const lastByte = digest.at(-1);
+  if (lastByte === undefined) throw new Error("Unable to generate MFA code.");
+  const offset = lastByte & 0x0f;
   const code = ((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).toString().padStart(6, "0");
   return code;
 }
