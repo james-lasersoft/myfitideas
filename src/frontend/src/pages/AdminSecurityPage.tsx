@@ -25,31 +25,44 @@ export default function AdminSecurityPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadUsers = async () => {
-    try {
-      const response = await api.get<{ users: SecurityUser[] }>("/api/v1/admin/security/users");
-      setUsers(response.data.users);
-    } catch {
-      setError(t("Unable to load security operations."));
-    } finally {
-      setLoading(false);
-    }
+  const refreshUsers = async (): Promise<void> => {
+    const response = await api.get<{ users: SecurityUser[] }>("/api/v1/admin/security/users");
+    setUsers(response.data.users);
   };
 
-  useEffect(() => { void loadUsers(); }, []);
+  useEffect(() => {
+    let active = true;
+
+    void api.get<{ users: SecurityUser[] }>("/api/v1/admin/security/users")
+      .then((response) => {
+        if (!active) return;
+        setUsers(response.data.users);
+        setError("");
+      })
+      .catch(() => {
+        if (active) setError(t("Unable to load security operations."));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const resetMfa = async (user: SecurityUser) => {
     if (!window.confirm(t("Reset MFA and revoke all sessions for this user?"))) return;
     await api.post(`/api/v1/admin/security/users/${user.id}/reset-mfa`);
     setMessage(t("User MFA was reset and all sessions were revoked."));
-    await loadUsers();
+    await refreshUsers();
   };
 
   const revokeSessions = async (user: SecurityUser) => {
     if (!window.confirm(t("Revoke all active sessions for this user?"))) return;
     await api.post(`/api/v1/admin/security/users/${user.id}/revoke-sessions`);
     setMessage(t("All user sessions were revoked."));
-    await loadUsers();
+    await refreshUsers();
   };
 
   return (
