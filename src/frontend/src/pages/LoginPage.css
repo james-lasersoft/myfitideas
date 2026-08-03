@@ -52,8 +52,36 @@
   margin-top: 0.65rem;
 }
 
+.mfa-recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.mfa-recovery-codes code {
+  display: block;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  overflow-wrap: anywhere;
+  color: #26343a;
+  background: #f4f8f4;
+  border: 1px solid #d8e3da;
+  border-radius: 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+}
+
 @media (max-width: 520px) {
   .mfa-qr-code {
     padding: 0.6rem;
+  }
+
+  .mfa-recovery-codes {
+    grid-template-columns: 1fr;
   }
 }
