@@ -1,4 +1,5 @@
 import axios from "axios";
+import { QRCodeSVG } from "qrcode.react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
@@ -147,9 +148,23 @@ export default function LoginPage() {
           {mode === "enroll" && (
             <div className="mfa-enrollment-details">
               <p>Open your authenticator app and add this setup key:</p>
-              <code data-no-translate="true">{mfaSecret}</code>
-              <p>Authenticator setup URI:</p>
-              <code data-no-translate="true">{otpAuthUri}</code>
+              {otpAuthUri && (
+                <div className="mfa-qr-code" role="img" aria-label="Authenticator setup URI:">
+                  <QRCodeSVG
+                    value={otpAuthUri}
+                    size={220}
+                    level="M"
+                    marginSize={2}
+                    bgColor="#ffffff"
+                    fgColor="#1f2937"
+                  />
+                </div>
+              )}
+              <code className="mfa-setup-key" data-no-translate="true">{mfaSecret}</code>
+              <details className="mfa-uri-details">
+                <summary>Authenticator setup URI:</summary>
+                <code data-no-translate="true">{otpAuthUri}</code>
+              </details>
             </div>
           )}
 
