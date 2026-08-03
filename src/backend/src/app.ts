@@ -15,44 +15,32 @@ import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js"
 import { openApiDocument } from "./openapi.js";
 
 const app = express();
+const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.disable("x-powered-by");
-app.use(cors());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 app.use(requestContext);
 
 app.get("/", (_req: Request, res: Response) => {
-  res.json({
-    message: "My Fit Ideas API is running",
-    apiVersion: "v1",
-    documentation: "/api/docs/openapi.json",
-  });
+  res.json({ message: "My Fit Ideas API is running", apiVersion: "v1", documentation: "/api/docs/openapi.json" });
 });
 
 app.get("/health", (_req: Request, res: Response) => {
-  res.json({
-    status: "OK",
-    environment: process.env.NODE_ENV ?? "development",
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ status: "OK", environment: process.env.NODE_ENV ?? "development", timestamp: new Date().toISOString() });
 });
 
-app.get("/api/docs/openapi.json", (_req: Request, res: Response) => {
-  res.json(openApiDocument);
-});
-
-// Versioned contract for all new web and mobile client development.
+app.get("/api/docs/openapi.json", (_req: Request, res: Response) => { res.json(openApiDocument); });
 app.use("/api/v1", v1Routes);
-
-// Legacy routes remain available during migration so the current web client
-// continues to work. They can be removed only after all clients use /api/v1.
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/measurements", measurementRoutes);
 app.use("/api/hydration", hydrationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/profile", profileRoutes);
-
 app.use(notFoundHandler);
 app.use(errorHandler);
 
