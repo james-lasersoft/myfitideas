@@ -70,15 +70,7 @@ function UnitToggle<T extends string>({ label, value, options, onChange }: UnitT
       <span className="unit-preference-label">{label}</span>
       <div className="unit-toggle" role="group" aria-label={label}>
         {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            className={value === option ? "unit-toggle-option active" : "unit-toggle-option"}
-            aria-pressed={value === option}
-            onClick={() => onChange(option)}
-          >
-            {option}
-          </button>
+          <button key={option} type="button" className={value === option ? "unit-toggle-option active" : "unit-toggle-option"} aria-pressed={value === option} onClick={() => onChange(option)}>{option}</button>
         ))}
       </div>
     </div>
@@ -139,91 +131,48 @@ export default function ProfilePage() {
       } catch (loadError) {
         console.error("Load profile error:", loadError);
         setError("Unable to load your profile.");
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     }
     void loadProfile();
   }, []);
 
-  function handleWeightUnitChange(nextUnit: "lb" | "kg") {
-    setTargetWeight((currentValue) => convertWeightValue(currentValue, preferredWeightUnit, nextUnit));
-    setPreferredWeightUnit(nextUnit);
-  }
-
-  function handleLengthUnitChange(nextUnit: "in" | "cm") {
-    setHeight((currentValue) => convertLengthValue(currentValue, preferredLengthUnit, nextUnit));
-    setPreferredLengthUnit(nextUnit);
-  }
-
-  function handleHydrationUnitChange(nextUnit: "oz" | "ml") {
-    setDailyHydrationGoal((currentValue) => convertHydrationValue(currentValue, preferredHydrationUnit, nextUnit));
-    setPreferredHydrationUnit(nextUnit);
-  }
+  function handleWeightUnitChange(nextUnit: "lb" | "kg") { setTargetWeight((currentValue) => convertWeightValue(currentValue, preferredWeightUnit, nextUnit)); setPreferredWeightUnit(nextUnit); }
+  function handleLengthUnitChange(nextUnit: "in" | "cm") { setHeight((currentValue) => convertLengthValue(currentValue, preferredLengthUnit, nextUnit)); setPreferredLengthUnit(nextUnit); }
+  function handleHydrationUnitChange(nextUnit: "oz" | "ml") { setDailyHydrationGoal((currentValue) => convertHydrationValue(currentValue, preferredHydrationUnit, nextUnit)); setPreferredHydrationUnit(nextUnit); }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     setError("");
     if (!firstName.trim()) { setError("First name is required."); return; }
-
     const parsedHeight = height.trim() === "" ? null : Number(height);
     const parsedHydrationGoal = Number(dailyHydrationGoal);
     const parsedTargetWeight = targetWeight.trim() === "" ? null : Number(targetWeight);
     if (parsedHeight !== null && !Number.isFinite(parsedHeight)) { setError("Height must be a valid number."); return; }
     const heightCm = parsedHeight === null ? null : preferredLengthUnit === "cm" ? parsedHeight : parsedHeight * INCHES_TO_CM;
-    if (heightCm !== null && (heightCm < 50 || heightCm > 300)) {
-      setError(preferredLengthUnit === "cm" ? "Height must be between 50.0 and 300.0 cm." : "Height must be between 19.7 and 118.1 in.");
-      return;
-    }
+    if (heightCm !== null && (heightCm < 50 || heightCm > 300)) { setError(preferredLengthUnit === "cm" ? "Height must be between 50.0 and 300.0 cm." : "Height must be between 19.7 and 118.1 in."); return; }
     if (!Number.isFinite(parsedHydrationGoal) || parsedHydrationGoal <= 0) { setError("Daily hydration goal must be greater than zero."); return; }
     if (parsedTargetWeight !== null && (!Number.isFinite(parsedTargetWeight) || parsedTargetWeight <= 0)) { setError("Target weight must be greater than zero."); return; }
 
-    const input: UpdateProfileInput = {
-      firstName: firstName.trim(), lastName: lastName.trim() === "" ? null : lastName.trim(), heightCm,
-      preferredWeightUnit, preferredLengthUnit, preferredHydrationUnit, preferredLanguage,
-      preferredDateFormat, preferredTimeFormat, preferredWeekStart, timezone,
-      dailyHydrationGoal: parsedHydrationGoal, targetWeight: parsedTargetWeight,
-    };
-
+    const input: UpdateProfileInput = { firstName: firstName.trim(), lastName: lastName.trim() === "" ? null : lastName.trim(), heightCm, preferredWeightUnit, preferredLengthUnit, preferredHydrationUnit, preferredLanguage, preferredDateFormat, preferredTimeFormat, preferredWeekStart, timezone, dailyHydrationGoal: parsedHydrationGoal, targetWeight: parsedTargetWeight };
     try {
       setSaving(true);
       const updatedProfile = await updateProfile(input);
       const storedUser = localStorage.getItem("currentUser");
       if (storedUser) {
         const currentUser = JSON.parse(storedUser);
-        localStorage.setItem("currentUser", JSON.stringify({
-          ...currentUser,
-          firstName: updatedProfile.firstName,
-          lastName: updatedProfile.lastName,
-          preferredDateFormat: updatedProfile.preferredDateFormat,
-          preferredTimeFormat: updatedProfile.preferredTimeFormat,
-          preferredWeekStart: updatedProfile.preferredWeekStart,
-          timezone: updatedProfile.timezone,
-        }));
+        localStorage.setItem("currentUser", JSON.stringify({ ...currentUser, firstName: updatedProfile.firstName, lastName: updatedProfile.lastName, preferredDateFormat: updatedProfile.preferredDateFormat, preferredTimeFormat: updatedProfile.preferredTimeFormat, preferredWeekStart: updatedProfile.preferredWeekStart, timezone: updatedProfile.timezone }));
       }
       const updatedHeight = updatedProfile.heightCm === null ? "" : updatedProfile.preferredLengthUnit === "cm" ? updatedProfile.heightCm : updatedProfile.heightCm / INCHES_TO_CM;
-      setEmail(updatedProfile.email);
-      setPreferredWeightUnit(updatedProfile.preferredWeightUnit);
-      setPreferredLengthUnit(updatedProfile.preferredLengthUnit);
-      setPreferredHydrationUnit(updatedProfile.preferredHydrationUnit);
-      setPreferredLanguage(updatedProfile.preferredLanguage);
-      setPreferredDateFormat(updatedProfile.preferredDateFormat);
-      setPreferredTimeFormat(updatedProfile.preferredTimeFormat);
-      setPreferredWeekStart(updatedProfile.preferredWeekStart);
-      setTimezone(updatedProfile.timezone);
+      setEmail(updatedProfile.email); setPreferredWeightUnit(updatedProfile.preferredWeightUnit); setPreferredLengthUnit(updatedProfile.preferredLengthUnit); setPreferredHydrationUnit(updatedProfile.preferredHydrationUnit); setPreferredLanguage(updatedProfile.preferredLanguage); setPreferredDateFormat(updatedProfile.preferredDateFormat); setPreferredTimeFormat(updatedProfile.preferredTimeFormat); setPreferredWeekStart(updatedProfile.preferredWeekStart); setTimezone(updatedProfile.timezone);
       setHeight(updatedHeight === "" ? "" : formatMeasurementInput(updatedHeight, updatedProfile.preferredLengthUnit));
       setDailyHydrationGoal(formatMeasurementInput(updatedProfile.dailyHydrationGoal, updatedProfile.preferredHydrationUnit));
       setTargetWeight(updatedProfile.targetWeight !== null ? formatMeasurementInput(updatedProfile.targetWeight, updatedProfile.preferredWeightUnit) : "");
       setMessage("Profile updated successfully.");
-    } catch (saveError) {
-      console.error("Save profile error:", saveError);
-      setError("Unable to update your profile.");
-    } finally { setSaving(false); }
+    } catch (saveError) { console.error("Save profile error:", saveError); setError("Unable to update your profile."); } finally { setSaving(false); }
   }
 
   if (loading) return <main className="profile-page"><p>Loading profile...</p></main>;
-
   const heightMin = preferredLengthUnit === "cm" ? "50" : "19.7";
   const heightMax = preferredLengthUnit === "cm" ? "300" : "118.1";
   const heightPlaceholder = preferredLengthUnit === "cm" ? "Example: 187.0" : "Example: 73.6";
@@ -244,6 +193,7 @@ export default function ProfilePage() {
               <label>Last Name<input type="text" value={lastName} onChange={(event) => setLastName(event.target.value)} /></label>
               <label className="profile-email-field">Email Address<input type="email" value={email} readOnly aria-readonly="true" /><small>Email changes will be available in a future release.</small></label>
               <div className="profile-inline-future"><span>Password</span><button type="button" className="future-action" disabled>Change Password</button><small>Secure password management is planned.</small></div>
+              <div className="profile-inline-future"><span>Account Security</span><button type="button" className="future-action" onClick={() => navigate("/profile/security")}>Open Security Center</button><small>Manage MFA, trusted devices, and account access.</small></div>
             </div>
           </section>
 
@@ -251,13 +201,8 @@ export default function ProfilePage() {
             <section className="profile-section preference-column" aria-labelledby="measurement-preferences-heading">
               <h2 id="measurement-preferences-heading">Measurement Preferences</h2>
               <p className="profile-section-description">Click a unit to update the related values immediately.</p>
-              <div className="unit-preference-list">
-                <UnitToggle label="Weight" value={preferredWeightUnit} options={["lb", "kg"]} onChange={handleWeightUnitChange} />
-                <UnitToggle label="Length" value={preferredLengthUnit} options={["in", "cm"]} onChange={handleLengthUnitChange} />
-                <UnitToggle label="Hydration" value={preferredHydrationUnit} options={["oz", "ml"]} onChange={handleHydrationUnitChange} />
-              </div>
+              <div className="unit-preference-list"><UnitToggle label="Weight" value={preferredWeightUnit} options={["lb", "kg"]} onChange={handleWeightUnitChange} /><UnitToggle label="Length" value={preferredLengthUnit} options={["in", "cm"]} onChange={handleLengthUnitChange} /><UnitToggle label="Hydration" value={preferredHydrationUnit} options={["oz", "ml"]} onChange={handleHydrationUnitChange} /></div>
             </section>
-
             <section className="profile-section values-column" aria-labelledby="goals-measurements-heading">
               <h2 id="goals-measurements-heading">Goals &amp; Measurements</h2>
               <div className="profile-values-list">
@@ -282,7 +227,6 @@ export default function ProfilePage() {
           <section className="profile-section staged-section" aria-labelledby="future-settings-heading">
             <div className="section-heading-row"><div><h2 id="future-settings-heading">Future Settings</h2><p className="profile-section-description">These areas are staged in the profile layout and will be activated as their features are built.</p></div><span className="planned-badge">Planned</span></div>
             <div className="future-feature-list">
-              <FutureFeature title="Appearance" description="System, light, and dark themes." actionLabel="Choose Theme" />
               <FutureFeature title="Notifications" description="Hydration, weigh-in, and weekly progress reminders." actionLabel="Manage" />
               <FutureFeature title="Subscription" description="View the current plan and manage premium features." actionLabel="View Plan" />
               <FutureFeature title="Export My Data" description="Download a portable copy of profile and tracking data." actionLabel="Export" />
