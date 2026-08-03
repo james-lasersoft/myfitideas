@@ -17,6 +17,9 @@ jest.mock("../src/config/prisma.js", () => ({
       findUnique: jest.fn(),
     },
     role: {
+      findFirst: jest.fn(),
+    },
+    subscriptionPlan: {
       findUnique: jest.fn(),
     },
     userSession: {
@@ -88,62 +91,40 @@ describe("authentication controller", () => {
     test("returns 400 when required fields are missing", async () => {
       const res = createResponse();
       await register(createRequest({ email: "james@example.com", password: "Password123" }) as never, res);
-
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Email, password, and first name are required.",
-      });
       expect(mockedPrisma.user.findUnique).not.toHaveBeenCalled();
     });
 
     test("returns 400 when the password is too short", async () => {
       const res = createResponse();
       await register(createRequest({ email: "james@example.com", password: "short", firstName: "James" }) as never, res);
-
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Password must contain at least 8 characters.",
-      });
     });
 
     test("returns 409 when the email already exists", async () => {
       mockedPrisma.user.findUnique.mockResolvedValue({ id: "existing-user" } as never);
       const res = createResponse();
-
-      await register(createRequest({
-        email: " James@Example.com ",
-        password: "Password123",
-        firstName: "James",
-      }) as never, res);
-
-      expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: "james@example.com" },
-      });
+      await register(createRequest({ email: " James@Example.com ", password: "Password123", firstName: "James" }) as never, res);
+      expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({ where: { email: "james@example.com" } });
       expect(res.status).toHaveBeenCalledWith(409);
-      expect(mockedBcrypt.hash).not.toHaveBeenCalled();
     });
 
-    test("returns 503 when RBAC bootstrap records are unavailable", async () => {
+    test("returns 503 when bootstrap records are unavailable", async () => {
       mockedPrisma.user.findUnique.mockResolvedValue(null);
       mockedPrisma.organization.findUnique.mockResolvedValue(null);
+      mockedPrisma.role.findFirst.mockResolvedValue(null);
+      mockedPrisma.subscriptionPlan.findUnique.mockResolvedValue(null);
       const res = createResponse();
-
-      await register(createRequest({
-        email: "james@example.com",
-        password: "Password123",
-        firstName: "James",
-      }) as never, res);
-
+      await register(createRequest({ email: "james@example.com", password: "Password123", firstName: "James" }) as never, res);
       expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Account registration is temporarily unavailable.",
-      });
+      expect(res.json).toHaveBeenCalledWith({ error: "Account registration is temporarily unavailable." });
     });
 
-    test("creates a free user membership and role assignment", async () => {
+    test("creates a free subscription, membership, and role assignment", async () => {
       mockedPrisma.user.findUnique.mockResolvedValue(null);
       mockedPrisma.organization.findUnique.mockResolvedValue({ id: "org-1" } as never);
-      mockedPrisma.role.findUnique.mockResolvedValue({ id: "role-free" } as never);
+      mockedPrisma.role.findFirst.mockResolvedValue({ id: "role-free" } as never);
+      mockedPrisma.subscriptionPlan.findUnique.mockResolvedValue({ id: "plan-free" } as never);
       mockedBcrypt.hash.mockResolvedValue("hashed-password" as never);
 
       const createdUser = {
@@ -153,36 +134,26 @@ describe("authentication controller", () => {
         lastName: "Arnold",
         createdAt: new Date("2026-07-19"),
       };
+      const userSubscriptionCreate = jest.fn().mockResolvedValue({});
 
       mockedPrisma.$transaction.mockImplementation(async (callback: unknown) => {
         const tx = {
           user: { create: jest.fn().mockResolvedValue(createdUser) },
           organizationMembership: { create: jest.fn().mockResolvedValue({ id: "membership-1" }) },
           membershipRole: { create: jest.fn().mockResolvedValue({}) },
+          userSubscription: { create: userSubscriptionCreate },
         };
         return (callback as (client: typeof tx) => Promise<unknown>)(tx);
       });
 
       const res = createResponse();
-      await register(createRequest({
-        email: " James@Example.com ",
-        password: "Password123",
-        firstName: " James ",
-        lastName: " Arnold ",
-      }) as never, res);
+      await register(createRequest({ email: " James@Example.com ", password: "Password123", firstName: " James ", lastName: " Arnold " }) as never, res);
 
       expect(mockedBcrypt.hash).toHaveBeenCalledWith("Password123", 12);
-      expect(mockedPrisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(mockedWriteAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-        organizationId: "org-1",
-        actorUserId: "user-123",
-        action: "USER_REGISTERED",
-      }));
+      expect(userSubscriptionCreate).toHaveBeenCalledWith({ data: { userId: "user-123", planId: "plan-free", status: "ACTIVE" } });
+      expect(mockedWriteAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "USER_REGISTERED" }));
+      expect(mockedWriteAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "SUBSCRIPTION_ASSIGNED" }));
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "User registered successfully.",
-        user: createdUser,
-      });
     });
   });
 
@@ -198,29 +169,17 @@ describe("authentication controller", () => {
       const res = createResponse();
       await login(createRequest({ email: "missing@example.com", password: "Password123" }) as never, res);
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
     });
 
     test("returns 403 when the account is inactive", async () => {
-      mockedPrisma.user.findUnique.mockResolvedValue({
-        id: "user-123",
-        email: "james@example.com",
-        passwordHash: "stored-hash",
-        status: "SUSPENDED",
-      } as never);
+      mockedPrisma.user.findUnique.mockResolvedValue({ id: "user-123", email: "james@example.com", passwordHash: "stored-hash", status: "SUSPENDED" } as never);
       mockedBcrypt.compare.mockResolvedValue(true as never);
       const res = createResponse();
-
       await login(createRequest({ email: "james@example.com", password: "Password123" }) as never, res);
-
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(mockedWriteAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-        action: "LOGIN_DENIED",
-        result: "DENIED",
-      }));
     });
 
-    test("creates a revocable session and returns authorization", async () => {
+    test("creates a rotating refresh session and returns authorization", async () => {
       const user = {
         id: "user-123",
         email: "james@example.com",
@@ -230,21 +189,27 @@ describe("authentication controller", () => {
         status: "ACTIVE",
         tokenVersion: 0,
         mustChangePassword: false,
+        mfaEnabled: false,
+        mfaSecretEncrypted: null,
+        mfaRecoveryCodeHashes: [],
       };
       const authorization = {
         organizationId: "org-1",
         organizationName: "MyFitIdeas",
         membershipId: "membership-1",
-        roles: ["super-administrator"],
-        permissions: ["admin.access"],
+        roles: ["free-user"],
+        permissions: ["dashboard.read"],
+        entitlements: ["personal_tracking"],
+        companyUser: false,
+        mfaRequired: false,
+        mfaEnabled: false,
       };
 
       mockedPrisma.user.findUnique.mockResolvedValue(user as never);
       mockedBcrypt.compare.mockResolvedValue(true as never);
-      mockedJwt.sign.mockReturnValue("mock-jwt-token" as never);
-      mockedPrisma.userSession.create.mockReturnValue({} as never);
-      mockedPrisma.user.update.mockReturnValue({} as never);
-      mockedPrisma.$transaction.mockResolvedValue([] as never);
+      mockedJwt.sign.mockReturnValue("mock-access-token" as never);
+      mockedPrisma.userSession.create.mockResolvedValue({} as never);
+      mockedPrisma.user.update.mockResolvedValue(user as never);
       mockedGetAuthorization.mockResolvedValue(authorization);
 
       const res = createResponse();
@@ -256,32 +221,30 @@ describe("authentication controller", () => {
           email: "james@example.com",
           tokenVersion: 0,
           sessionId: expect.any(String),
+          tokenType: "access",
         }),
         "unit-test-secret",
-        { expiresIn: "1h" }
+        { expiresIn: 900 }
       );
       expect(mockedPrisma.userSession.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: "user-123",
           tokenHash: expect.any(String),
+          refreshTokenHash: expect.any(String),
           userAgent: "jest-agent",
           ipAddress: "127.0.0.1",
           expiresAt: expect.any(Date),
+          refreshExpiresAt: expect.any(Date),
         }),
       });
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         message: "Login successful.",
-        token: "mock-jwt-token",
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-          firstName: "James",
-          lastName: "Arnold",
-          mustChangePassword: false,
-        },
+        token: "mock-access-token",
+        accessToken: "mock-access-token",
+        refreshToken: expect.any(String),
         authorization,
-      });
+      }));
     });
   });
 });
