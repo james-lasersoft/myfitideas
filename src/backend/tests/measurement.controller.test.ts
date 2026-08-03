@@ -15,6 +15,7 @@ jest.mock("../src/config/prisma.js", () => ({
     },
     measurement: {
       create: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
     },
   },
@@ -57,6 +58,7 @@ describe("measurement controller", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedPrisma.user.findUnique.mockResolvedValue(mockUser as never);
+    mockedPrisma.measurement.findFirst.mockResolvedValue(null);
   });
 
   describe("createMeasurement", () => {
@@ -166,6 +168,21 @@ describe("measurement controller", () => {
       expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-123" },
       });
+      expect(mockedPrisma.measurement.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-123",
+          measurementDate: { lte: new Date("2026-07-19") },
+        },
+        orderBy: { measurementDate: "desc" },
+        select: {
+          weightKg: true,
+          waistCm: true,
+          chestCm: true,
+          hipsCm: true,
+          bodyFat: true,
+          measurementDate: true,
+        },
+      });
       expect(mockedPrisma.measurement.create).toHaveBeenCalledWith({
         data: {
           userId: "user-123",
@@ -186,6 +203,7 @@ describe("measurement controller", () => {
       expect(res.json).toHaveBeenCalledWith({
         message: "Measurement saved successfully.",
         measurement: savedMeasurement,
+        warnings: [],
       });
     });
 
@@ -216,6 +234,11 @@ describe("measurement controller", () => {
         }),
       });
       expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Measurement saved successfully.",
+        measurement: { id: "metric-001" },
+        warnings: [],
+      });
     });
   });
 
