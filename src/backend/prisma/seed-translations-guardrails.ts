@@ -16,6 +16,8 @@ const catalog = [
   ["guardrails.futureHydration", "Hydration entries cannot be dated in the future.", "guardrails", "Os registros de hidratação não podem ter data futura."],
   ["guardrails.hydrationMaximum", "A single hydration entry cannot exceed 128 oz or 3,785 ml.", "guardrails", "Um único registro de hidratação não pode exceder 128 oz ou 3.785 ml."],
   ["guardrails.confirmHydration", "Please confirm this unusual hydration entry.", "guardrails", "Confirme este registro incomum de hidratação."],
+  ["guardrails.saveHydrationAnyway", "Save this hydration entry anyway?", "guardrails", "Salvar este registro de hidratação mesmo assim?"],
+  ["guardrails.hydrationReview", "Hydration entry was not saved. Review the amount and unit.", "guardrails", "O registro de hidratação não foi salvo. Revise a quantidade e a unidade."],
   ["guardrails.duplicateHydration", "A matching hydration entry was logged within 30 seconds.", "guardrails", "Um registro de hidratação correspondente foi lançado nos últimos 30 segundos."],
   ["guardrails.dailyHydration", "This entry would raise the daily total above 256 oz or 7,570 ml.", "guardrails", "Este registro elevaria o total diário acima de 256 oz ou 7.570 ml."],
   ["guardrails.largeHydration", "This single entry is more than 150% of your daily hydration goal.", "guardrails", "Este único registro representa mais de 150% da sua meta diária de hidratação."],
