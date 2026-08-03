@@ -20,6 +20,7 @@ const catalog = [
   ["ops.emailProviders", "Console and Amazon SES providers are planned", "operations", "Os provedores Console e Amazon SES estão planejados"],
   ["ops.developerTools", "Developer Tools", "operations", "Ferramentas de Desenvolvimento"],
   ["ops.localControls", "Local browser controls", "operations", "Controles locais do navegador"],
+  ["ops.superAdministrator", "Super Administrator", "operations", "Super Administrador"],
   ["ops.superAdminOnly", "Super Admin Only", "operations", "Somente Super Administrador"],
   ["ops.resetWorkspace", "Reset Workspace Selection", "operations", "Redefinir Seleção de Espaço"],
   ["ops.resetWorkspaceDescription", "Show the daily workspace chooser again.", "operations", "Mostrar novamente o seletor diário de espaço."],
