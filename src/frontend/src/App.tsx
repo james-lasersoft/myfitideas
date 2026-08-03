@@ -14,8 +14,10 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MeasurementsPage = lazy(() => import("./pages/MeasurementsPage"));
 const HydrationPage = lazy(() => import("./pages/HydrationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const ProfileSecurityPage = lazy(() => import("./pages/ProfileSecurityPage"));
 const ProgressChartsPage = lazy(() => import("./pages/ProgressChartsPage"));
 const AdminLandingPage = lazy(() => import("./pages/AdminLandingPage"));
+const AdminSecurityPage = lazy(() => import("./pages/AdminSecurityPage"));
 const TranslationAdminPage = lazy(() => import("./pages/TranslationAdminPage"));
 const UserAdminPage = lazy(() => import("./pages/UserAdminPage"));
 const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
@@ -50,8 +52,10 @@ export default function App() {
           <Route path="/measurements" element={<ProtectedPage><MeasurementsPage /></ProtectedPage>} />
           <Route path="/hydration" element={<ProtectedPage><HydrationPage /></ProtectedPage>} />
           <Route path="/profile" element={<ProtectedPage><ProfilePage /></ProtectedPage>} />
+          <Route path="/profile/security" element={<ProtectedPage><ProfileSecurityPage /></ProtectedPage>} />
           <Route path="/progress" element={<ProtectedPage><ProgressChartsPage /></ProtectedPage>} />
           <Route path="/admin" element={<AuthorizedPage permission="admin.access"><AdminLandingPage /></AuthorizedPage>} />
+          <Route path="/admin/security" element={<AuthorizedPage permission="system.operations"><AdminSecurityPage /></AuthorizedPage>} />
           <Route path="/admin/translations" element={<AuthorizedPage permission="translations.read"><TranslationAdminPage /></AuthorizedPage>} />
           <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
