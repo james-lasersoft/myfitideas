@@ -7,6 +7,7 @@ interface RetryConfig extends InternalAxiosRequestConfig {
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const api = axios.create({
   baseURL,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -21,10 +22,11 @@ let refreshPromise: Promise<string> | null = null;
 async function rotateTokens(): Promise<string> {
   const refreshToken = localStorage.getItem("refreshToken");
   if (!refreshToken) throw new Error("No refresh token is available.");
-  const response = await axios.post<{
-    accessToken: string;
-    refreshToken: string;
-  }>(`${baseURL}/api/auth/refresh`, { refreshToken });
+  const response = await axios.post<{ accessToken: string; refreshToken: string }>(
+    `${baseURL}/api/auth/refresh`,
+    { refreshToken },
+    { withCredentials: true }
+  );
   localStorage.setItem("authToken", response.data.accessToken);
   localStorage.setItem("refreshToken", response.data.refreshToken);
   return response.data.accessToken;
