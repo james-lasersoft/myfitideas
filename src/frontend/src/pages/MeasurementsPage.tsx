@@ -78,7 +78,7 @@ export default function MeasurementsPage() {
         return `${issue.field}: ${issue.message}${elapsed}`;
       }).join("\n");
       const confirmed = window.confirm(`${guardrail.message}\n\n${details}\n\nSave this entry as confirmed?`);
-      if (!confirmed) throw new Error("ENTRY_REVIEW_REQUESTED");
+      if (!confirmed) throw new Error("ENTRY_REVIEW_REQUESTED", { cause: caught });
       await createMeasurement({ ...input, confirmAnomaly: true });
     }
   };
