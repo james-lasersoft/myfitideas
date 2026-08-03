@@ -58,7 +58,7 @@ export async function createHydrationEntry(input: CreateHydrationInput): Promise
     if (data.code !== "HYDRATION_CONFIRMATION_REQUIRED") throw error;
     const details = (data.issues ?? []).map((issue) => issue.message).join("\n");
     const confirmed = window.confirm(`${data.error ?? "Please confirm this unusual hydration entry."}\n\n${details}\n\nSave this hydration entry anyway?`);
-    if (!confirmed) throw new Error("HYDRATION_REVIEW_REQUESTED");
+    if (!confirmed) throw new Error("HYDRATION_REVIEW_REQUESTED", { cause: error });
     return postHydration({ ...input, confirmAnomaly: true });
   }
 }
