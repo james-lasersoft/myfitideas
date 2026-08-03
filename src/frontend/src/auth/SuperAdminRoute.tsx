@@ -7,7 +7,7 @@ export default function SuperAdminRoute({ children }: { children: ReactNode }) {
   const { authorization, loading } = useAuthorization();
 
   if (loading) return <PageLoading />;
-  if (!authorization?.roles.includes("super-administrator")) return <Navigate to="/access-denied" replace />;
+  if (!authorization?.roles.includes("super-administrator")) return <Navigate to="/admin" replace />;
 
   return children;
 }
