@@ -8,6 +8,7 @@ interface JwtPayload {
   email: string;
   tokenVersion?: number;
   sessionId?: string;
+  tokenType?: string;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -40,6 +41,10 @@ export const authenticateToken = async (
 
   try {
     const decoded = jwt.verify(token, secret) as JwtPayload;
+    if (decoded.tokenType && decoded.tokenType !== "access") {
+      res.status(401).json({ error: "Invalid authentication token type." });
+      return;
+    }
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
       select: { id: true, email: true, status: true, tokenVersion: true },
