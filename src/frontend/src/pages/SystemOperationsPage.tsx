@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthorization } from "../auth/AuthorizationContext";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
+import api from "../services/api";
 import "./SystemOperationsPage.css";
 
 const workspaceKey = "myfitideas.workspace.selection";
@@ -14,6 +15,7 @@ export default function SystemOperationsPage() {
   const { authorization } = useAuthorization();
   const { locale, t } = useLocale();
   const [message, setMessage] = useState("");
+  const [isResettingMfa, setIsResettingMfa] = useState(false);
 
   const environment = import.meta.env.MODE.toUpperCase();
   const details = useMemo(() => ({
@@ -42,6 +44,7 @@ export default function SystemOperationsPage() {
 
   const clearSession = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("authorization");
     localStorage.removeItem(workspaceKey);
@@ -49,11 +52,20 @@ export default function SystemOperationsPage() {
   };
 
   const clearLocalSettings = () => {
-    const preservedKeys = new Set<string>();
-    Object.keys(localStorage).forEach((key) => {
-      if (!preservedKeys.has(key)) localStorage.removeItem(key);
-    });
+    Object.keys(localStorage).forEach((key) => localStorage.removeItem(key));
     window.location.assign("/");
+  };
+
+  const resetMyMfa = async (): Promise<void> => {
+    if (!window.confirm(t("Reset MFA and revoke all sessions? You will enroll again at the next login."))) return;
+    setIsResettingMfa(true);
+    try {
+      await api.post("/api/auth/security/mfa/reset");
+      clearSession();
+    } catch {
+      setMessage(t("Unable to reset MFA."));
+      setIsResettingMfa(false);
+    }
   };
 
   return (
@@ -81,6 +93,7 @@ export default function SystemOperationsPage() {
             <button type="button" className="ops-tool" onClick={resetWorkspace}><strong>{t("Reset Workspace Selection")}</strong><span>{t("Show the daily workspace chooser again.")}</span></button>
             <button type="button" className="ops-tool" onClick={resetLanguage}><strong>{t("Reset Language Cache")}</strong><span>{t("Return language selection to the browser default.")}</span></button>
             <button type="button" className="ops-tool" onClick={resetTheme}><strong>{t("Reset Theme")}</strong><span>{t("Return appearance to the system default.")}</span></button>
+            <button type="button" className="ops-tool danger" disabled={isResettingMfa} onClick={() => void resetMyMfa()}><strong>{t("Reset My MFA")}</strong><span>{t("Remove authenticator enrollment, trusted devices, recovery codes, and active sessions.")}</span></button>
             <button type="button" className="ops-tool danger" onClick={clearSession}><strong>{t("Clear Login Session")}</strong><span>{t("Sign out and clear cached authorization data.")}</span></button>
             <button type="button" className="ops-tool danger" onClick={clearLocalSettings}><strong>{t("Clear All Local Settings")}</strong><span>{t("Remove all MyFitIdeas browser data on this device.")}</span></button>
           </div>
