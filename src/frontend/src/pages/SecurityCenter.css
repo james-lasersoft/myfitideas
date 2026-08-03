@@ -1,0 +1,19 @@
+.security-page { min-height: 100vh; padding: 2rem; background: #f4f7f8; }
+.security-card { width: min(1000px, 100%); margin: 0 auto; padding: 2rem; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+.security-header { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.5rem; }
+.security-header h1 { margin:.25rem 0 .5rem; }
+.security-header p { margin:0; color:#64748b; }
+.security-section { margin-top:1.25rem; padding:1.25rem; border:1px solid #dbe5df; border-radius:12px; background:#fbfdfb; }
+.security-section-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+.security-section h2 { margin:0 0 .35rem; }
+.security-section p { margin:.2rem 0; color:#64748b; }
+.security-count { min-width:2rem; padding:.25rem .55rem; border-radius:999px; background:#e8f3ec; color:#176b3a; font-weight:700; text-align:center; }
+.security-device-list { display:grid; gap:.75rem; margin-top:1rem; }
+.security-device { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:1rem; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+.security-device small { color:#64748b; }
+.danger-zone { border-color:#fecaca; background:#fff7f7; }
+.danger-button { padding:.75rem 1rem; border:0; border-radius:8px; color:#fff; background:#b42318; }
+.security-admin-table { width:100%; border-collapse:collapse; margin-top:1rem; }
+.security-admin-table th,.security-admin-table td { padding:.75rem; border-bottom:1px solid #e2e8f0; text-align:left; vertical-align:top; }
+.security-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
+@media (max-width:700px){ .security-page{padding:1rem}.security-card{padding:1.25rem}.security-header,.security-device{flex-direction:column}.security-admin-table{display:block;overflow-x:auto} }
