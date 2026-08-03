@@ -6,6 +6,10 @@ export interface AuthorizationSnapshot {
   membershipId: string | null;
   roles: string[];
   permissions: string[];
+  entitlements: string[];
+  companyUser: boolean;
+  mfaRequired: boolean;
+  mfaEnabled: boolean;
 }
 
 export interface RoleRecord {
