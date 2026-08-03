@@ -11,8 +11,14 @@ import {
   getDateKeyInTimeZone,
   getUtcDayRange,
 } from "../utils/timezone.js";
+import {
+  validateHydrationAmountMl,
+  validateHydrationDate,
+} from "../utils/data-integrity.js";
 
 const SUPPORTED_UNITS = ["oz", "ml"] as const;
+const DUPLICATE_WINDOW_MS = 30_000;
+const DAILY_CONFIRMATION_THRESHOLD_ML = 7570;
 
 function isSupportedUnit(unit: string): unit is HydrationUnit {
   return SUPPORTED_UNITS.includes(unit as HydrationUnit);
@@ -41,21 +47,63 @@ export async function createHydrationEntry(req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const { amount, unit = user.preferredHydrationUnit, loggedAt } = req.body;
+    const { amount, unit = user.preferredHydrationUnit, loggedAt, confirmAnomaly } = req.body;
     const numericAmount = Number(amount);
     const normalizedUnit = String(unit).toLowerCase();
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      res.status(400).json({ error: "Hydration amount must be a positive number." });
-      return;
-    }
     if (!isSupportedUnit(normalizedUnit)) {
       res.status(400).json({ error: "Hydration unit must be either oz or ml." });
       return;
     }
 
-    const parsedLoggedAt = loggedAt ? new Date(loggedAt) : undefined;
-    if (parsedLoggedAt && Number.isNaN(parsedLoggedAt.getTime())) {
-      res.status(400).json({ error: "The hydration date is invalid." });
+    const amountMl = toMilliliters(numericAmount, normalizedUnit);
+    const amountError = validateHydrationAmountMl(amountMl);
+    if (amountError) {
+      res.status(400).json({ code: "HYDRATION_OUT_OF_RANGE", error: amountError });
+      return;
+    }
+
+    const parsedLoggedAt = loggedAt ? new Date(loggedAt) : new Date();
+    const dateError = validateHydrationDate(parsedLoggedAt);
+    if (dateError) {
+      res.status(400).json({ code: "HYDRATION_DATE_INVALID", error: dateError });
+      return;
+    }
+
+    const timeZone = user.timezone || "UTC";
+    const dateKey = getDateKeyInTimeZone(parsedLoggedAt, timeZone);
+    const dayRange = getUtcDayRange(dateKey, timeZone);
+    const [sameDayEntries, possibleDuplicate] = await Promise.all([
+      prisma.hydration.findMany({
+        where: { userId, loggedAt: { gte: dayRange.start, lt: dayRange.endExclusive } },
+        select: { amountMl: true },
+      }),
+      prisma.hydration.findFirst({
+        where: {
+          userId,
+          amountMl: { gte: amountMl - 0.01, lte: amountMl + 0.01 },
+          loggedAt: {
+            gte: new Date(parsedLoggedAt.getTime() - DUPLICATE_WINDOW_MS),
+            lte: new Date(parsedLoggedAt.getTime() + DUPLICATE_WINDOW_MS),
+          },
+        },
+        select: { id: true, loggedAt: true },
+      }),
+    ]);
+
+    const projectedDailyTotalMl = sameDayEntries.reduce((sum, entry) => sum + entry.amountMl, 0) + amountMl;
+    const issues = [
+      ...(possibleDuplicate ? [{ code: "POSSIBLE_DUPLICATE_HYDRATION", severity: "confirmation_required", message: "A matching hydration entry was logged within 30 seconds." }] : []),
+      ...(projectedDailyTotalMl > DAILY_CONFIRMATION_THRESHOLD_ML ? [{ code: "UNUSUAL_DAILY_HYDRATION_TOTAL", severity: "confirmation_required", message: "This entry would raise the daily total above 256 oz or 7,570 ml." }] : []),
+      ...(amountMl > Math.max(user.dailyHydrationGoalMl, 1) * 1.5 ? [{ code: "LARGE_HYDRATION_ENTRY", severity: "warning", message: "This single entry is more than 150% of your daily hydration goal." }] : []),
+    ];
+
+    if (issues.some((issue) => issue.severity === "confirmation_required") && confirmAnomaly !== true) {
+      res.status(409).json({
+        code: "HYDRATION_CONFIRMATION_REQUIRED",
+        error: "Please confirm this unusual hydration entry.",
+        issues,
+        details: { amountMl, projectedDailyTotalMl, date: dateKey },
+      });
       return;
     }
 
@@ -64,12 +112,12 @@ export async function createHydrationEntry(req: AuthenticatedRequest, res: Respo
         userId,
         amount: numericAmount,
         unit: normalizedUnit,
-        amountMl: toMilliliters(numericAmount, normalizedUnit),
-        ...(parsedLoggedAt ? { loggedAt: parsedLoggedAt } : {}),
+        amountMl,
+        loggedAt: parsedLoggedAt,
       },
     });
 
-    res.status(201).json({ message: "Hydration entry created successfully.", hydration: hydrationEntry });
+    res.status(201).json({ message: "Hydration entry created successfully.", hydration: hydrationEntry, warnings: issues });
   } catch (error) {
     console.error("Create hydration entry error:", error);
     res.status(500).json({ error: "Unable to create hydration entry." });
