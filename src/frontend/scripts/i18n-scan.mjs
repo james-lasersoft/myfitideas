@@ -12,6 +12,7 @@ export const seedPaths = [
   path.resolve(frontendRoot, "../backend/prisma/seed-translations-dashboard-quick-add.ts"),
   path.resolve(frontendRoot, "../backend/prisma/seed-translations-rbac.ts"),
   path.resolve(frontendRoot, "../backend/prisma/seed-translations-workspaces.ts"),
+  path.resolve(frontendRoot, "../backend/prisma/seed-translations-system-operations.ts"),
 ];
 
 const ignoredDirectories = new Set(["node_modules", "dist", "coverage", ".git"]);
