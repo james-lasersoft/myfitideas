@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import api from "../services/api";
 import { readWorkspaceSelection, requiresDailyChoice, workspacePath } from "../workspaces/workspace";
+import "./LoginPage.css";
 
 interface LoginResponse {
   message: string;
