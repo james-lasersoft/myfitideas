@@ -1,4 +1,84 @@
-.workspace-switcher { display: inline-flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 700; color: inherit; }
-.workspace-switcher select { min-width: 150px; padding: .5rem .75rem; border: 1px solid rgba(34, 91, 59, .35); border-radius: 999px; background: var(--surface, #fff); color: inherit; font: inherit; cursor: pointer; }
-.workspace-switcher select:focus-visible { outline: 3px solid rgba(34, 91, 59, .22); outline-offset: 2px; }
-@media (max-width: 620px) { .workspace-switcher span { display: none; } .workspace-switcher select { min-width: 130px; } }
+.workspace-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.workspace-switcher-label {
+  white-space: nowrap;
+}
+
+.workspace-segmented-control {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: .2rem;
+  border: 1px solid rgba(34, 91, 59, .38);
+  border-radius: 999px;
+  background: rgba(34, 91, 59, .1);
+  box-shadow: inset 0 1px 2px rgba(22, 52, 35, .08);
+}
+
+.workspace-segmented-control button {
+  min-height: 36px;
+  padding: .45rem .8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.workspace-segmented-control button:hover:not(.active) {
+  background: rgba(34, 91, 59, .14);
+}
+
+.workspace-segmented-control button.active {
+  background: var(--brand-green, #225b3b);
+  color: #fff;
+  box-shadow: 0 2px 7px rgba(22, 52, 35, .2);
+}
+
+.workspace-segmented-control button:active {
+  transform: translateY(1px);
+}
+
+.workspace-segmented-control button:focus-visible {
+  outline: 3px solid rgba(34, 91, 59, .26);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .workspace-segmented-control {
+  background: rgba(177, 211, 188, .1);
+  border-color: rgba(177, 211, 188, .3);
+}
+
+[data-theme="dark"] .workspace-segmented-control button:hover:not(.active) {
+  background: rgba(177, 211, 188, .14);
+}
+
+@media (max-width: 760px) {
+  .workspace-switcher-label {
+    display: none;
+  }
+
+  .workspace-segmented-control button {
+    padding-inline: .65rem;
+    font-size: .72rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace-segmented-control button {
+    min-height: 34px;
+    padding-inline: .55rem;
+  }
+}
