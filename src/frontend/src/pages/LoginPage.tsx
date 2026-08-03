@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
@@ -7,6 +8,8 @@ import { readWorkspaceSelection, requiresDailyChoice, workspacePath } from "../w
 interface LoginResponse {
   message: string;
   token: string;
+  accessToken?: string;
+  refreshToken?: string;
   user: {
     id: string;
     email: string;
@@ -20,37 +23,104 @@ interface LoginResponse {
     membershipId: string | null;
     roles: string[];
     permissions: string[];
+    entitlements: string[];
+    companyUser: boolean;
+    mfaRequired: boolean;
+    mfaEnabled: boolean;
   };
 }
+
+interface AuthErrorResponse {
+  code?: string;
+  error?: string;
+  enrollmentToken?: string;
+}
+
+type LoginMode = "credentials" | "mfa" | "enroll" | "recovery";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mode, setMode] = useState<LoginMode>("credentials");
+  const [enrollmentToken, setEnrollmentToken] = useState("");
+  const [mfaSecret, setMfaSecret] = useState("");
+  const [otpAuthUri, setOtpAuthUri] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const finishLogin = (response: LoginResponse) => {
+    localStorage.setItem("authToken", response.accessToken ?? response.token);
+    if (response.refreshToken) localStorage.setItem("refreshToken", response.refreshToken);
+    localStorage.setItem("currentUser", JSON.stringify(response.user));
+    if (response.authorization) localStorage.setItem("authorization", JSON.stringify(response.authorization));
+
+    const hasOrganizationWorkspace = response.authorization?.permissions.includes("admin.access") ?? false;
+    const remembered = readWorkspaceSelection();
+    const destination = requiresDailyChoice(hasOrganizationWorkspace)
+      ? "/workspace"
+      : workspacePath(hasOrganizationWorkspace && remembered ? remembered.workspace : "personal");
+
+    navigate(destination, { replace: true });
+    window.location.reload();
+  };
+
+  const startEnrollment = async (token: string) => {
+    const response = await api.post<{ secret: string; otpAuthUri: string }>("/api/auth/mfa/enroll/start", { enrollmentToken: token });
+    setEnrollmentToken(token);
+    setMfaSecret(response.data.secret);
+    setOtpAuthUri(response.data.otpAuthUri);
+    setMfaCode("");
+    setMode("enroll");
+  };
+
+  const handleCredentialLogin = async () => {
+    try {
+      const response = await api.post<LoginResponse>("/api/auth/login", {
+        email,
+        password,
+        ...(mfaCode ? { mfaCode } : {}),
+      });
+      finishLogin(response.data);
+    } catch (caught) {
+      if (axios.isAxiosError<AuthErrorResponse>(caught)) {
+        const data = caught.response?.data;
+        if (data?.code === "MFA_REQUIRED") {
+          setMode("mfa");
+          setError("Enter the six-digit code from your authenticator app.");
+          return;
+        }
+        if (data?.code === "MFA_ENROLLMENT_REQUIRED" && data.enrollmentToken) {
+          await startEnrollment(data.enrollmentToken);
+          return;
+        }
+        setError(data?.error ?? "Login failed. Please verify your credentials.");
+        return;
+      }
+      setError("Login failed. Please verify your credentials.");
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
-
     try {
-      const response = await api.post<LoginResponse>("/api/auth/login", { email, password });
-      localStorage.setItem("authToken", response.data.token);
-      localStorage.setItem("currentUser", JSON.stringify(response.data.user));
-      if (response.data.authorization) localStorage.setItem("authorization", JSON.stringify(response.data.authorization));
-
-      const hasOrganizationWorkspace = response.data.authorization?.permissions.includes("admin.access") ?? false;
-      const remembered = readWorkspaceSelection();
-      const destination = requiresDailyChoice(hasOrganizationWorkspace)
-        ? "/workspace"
-        : workspacePath(hasOrganizationWorkspace && remembered ? remembered.workspace : "personal");
-
-      navigate(destination, { replace: true });
-      window.location.reload();
-    } catch {
-      setError("Login failed. Please verify your email and password.");
+      if (mode === "enroll") {
+        const response = await api.post<{ recoveryCodes: string[] }>("/api/auth/mfa/enroll/complete", {
+          enrollmentToken,
+          code: mfaCode,
+        });
+        setRecoveryCodes(response.data.recoveryCodes);
+        setMfaCode("");
+        setMode("recovery");
+      } else if (mode === "recovery") {
+        setMode("mfa");
+      } else {
+        await handleCredentialLogin();
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -61,16 +131,46 @@ export default function LoginPage() {
       <section className="auth-card" aria-labelledby="login-heading">
         <BrandLogo className="auth-logo" />
         <div className="auth-intro">
-          <h1 id="login-heading">Welcome back</h1>
-          <p>Continue your body transformation journey.</p>
+          <h1 id="login-heading">{mode === "enroll" ? "Secure your company account" : mode === "recovery" ? "Save your recovery codes" : "Welcome back"}</h1>
+          <p>{mode === "enroll" ? "Company users must use multi-factor authentication." : mode === "recovery" ? "Store these one-time codes in a safe place." : "Continue your body transformation journey."}</p>
         </div>
         <form onSubmit={handleSubmit}>
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-          <label htmlFor="password">Password</label>
-          <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          {(mode === "credentials" || mode === "mfa") && (
+            <>
+              <label htmlFor="email">Email</label>
+              <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={mode === "mfa"} />
+              <label htmlFor="password">Password</label>
+              <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required disabled={mode === "mfa"} />
+            </>
+          )}
+
+          {mode === "enroll" && (
+            <div className="mfa-enrollment-details">
+              <p>Open your authenticator app and add this setup key:</p>
+              <code data-no-translate="true">{mfaSecret}</code>
+              <p>Authenticator setup URI:</p>
+              <code data-no-translate="true">{otpAuthUri}</code>
+            </div>
+          )}
+
+          {(mode === "mfa" || mode === "enroll") && (
+            <>
+              <label htmlFor="mfa-code">Authentication Code</label>
+              <input id="mfa-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9A-Fa-f]{6,10}" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} required />
+            </>
+          )}
+
+          {mode === "recovery" && (
+            <div className="mfa-recovery-codes">
+              {recoveryCodes.map((code) => <code key={code} data-no-translate="true">{code}</code>)}
+            </div>
+          )}
+
           {error && <p className="error-message">{error}</p>}
-          <button type="submit" disabled={isSubmitting}>{isSubmitting ? "Signing in..." : "Sign In"}</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Working..." : mode === "enroll" ? "Enable MFA" : mode === "recovery" ? "I saved these codes" : mode === "mfa" ? "Verify and Sign In" : "Sign In"}
+          </button>
+          {mode === "mfa" && <button type="button" className="secondary-button" onClick={() => { setMode("credentials"); setMfaCode(""); setError(""); }}>Use a different account</button>}
         </form>
       </section>
     </main>
