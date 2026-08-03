@@ -16,6 +16,8 @@ const catalog = [
   ["security.savedCodes", "I saved these codes", "security", "Salvei estes códigos"],
   ["security.verifySignIn", "Verify and Sign In", "security", "Verificar e Entrar"],
   ["security.differentAccount", "Use a different account", "security", "Usar outra conta"],
+  ["security.step", "Step", "security", "Etapa"],
+  ["security.ofThree", "of 3", "security", "de 3"],
   ["security.scanQr", "Scan the QR code with your authenticator app, then enter the six-digit code.", "security", "Escaneie o código QR com seu aplicativo autenticador e insira o código de seis dígitos."],
   ["security.authQr", "Authenticator QR code", "security", "Código QR do autenticador"],
   ["security.manualKey", "Unable to scan? Enter this setup key manually:", "security", "Não consegue escanear? Insira esta chave de configuração manualmente:"],
