@@ -41,23 +41,30 @@ export default function ProfileSecurityPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadSecurityData = async () => {
-    try {
-      const [deviceResponse, sessionResponse] = await Promise.all([
-        api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices"),
-        api.get<{ sessions: ActiveSession[] }>("/api/auth/security/sessions"),
-      ]);
-      setDevices(deviceResponse.data.devices);
-      setSessions(sessionResponse.data.sessions);
-      setError("");
-    } catch {
-      setError(t("Unable to load account security information."));
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let active = true;
 
-  useEffect(() => { void loadSecurityData(); }, []);
+    void Promise.all([
+      api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices"),
+      api.get<{ sessions: ActiveSession[] }>("/api/auth/security/sessions"),
+    ])
+      .then(([deviceResponse, sessionResponse]) => {
+        if (!active) return;
+        setDevices(deviceResponse.data.devices);
+        setSessions(sessionResponse.data.sessions);
+        setError("");
+      })
+      .catch(() => {
+        if (active) setError(t("Unable to load account security information."));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const revokeDevice = async (id: string) => {
     await api.delete(`/api/auth/security/devices/${id}`);
