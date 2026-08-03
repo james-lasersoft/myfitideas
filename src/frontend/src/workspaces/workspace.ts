@@ -1,4 +1,4 @@
-export type WorkspaceId = "personal" | "organization";
+export type WorkspaceId = "personal" | "organization" | "operations";
 
 interface WorkspaceSelection {
   workspace: WorkspaceId;
@@ -19,7 +19,7 @@ export function readWorkspaceSelection(): WorkspaceSelection | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<WorkspaceSelection>;
-    if ((value.workspace !== "personal" && value.workspace !== "organization") || typeof value.selectedOn !== "string") return null;
+    if ((value.workspace !== "personal" && value.workspace !== "organization" && value.workspace !== "operations") || typeof value.selectedOn !== "string") return null;
     return { workspace: value.workspace, selectedOn: value.selectedOn };
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -37,5 +37,6 @@ export function requiresDailyChoice(hasOrganizationWorkspace: boolean): boolean 
 }
 
 export function workspacePath(workspace: WorkspaceId): string {
+  if (workspace === "operations") return "/system-operations";
   return workspace === "organization" ? "/admin" : "/dashboard";
 }
