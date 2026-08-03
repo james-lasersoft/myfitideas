@@ -18,6 +18,7 @@ const modules: AdminModule[] = [
   { title: "Translation Management", description: "Edit, review, and publish multilingual interface content.", action: "Open Translation Manager", path: "/admin/translations", permission: "translations.read" },
   { title: "User Management", description: "Invite users, assign roles, manage account status, and revoke sessions.", action: "Open User Management", path: "/admin/users", permission: "users.read" },
   { title: "Roles & Permissions", description: "Create organization roles and configure effective permissions.", action: "Open Role Management", path: "/admin/roles", permission: "roles.read" },
+  { title: "Security Operations", description: "Review MFA enrollment, trusted devices, and active user sessions.", action: "Open Security Operations", path: "/admin/security", permission: "system.operations" },
   { title: "Audit Logs", description: "Review security-sensitive and administrative events.", action: "Open Audit Log", path: "/admin/audit", permission: "audit.read" },
 ];
 
