@@ -11,7 +11,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "seed:translations": "tsx prisma/seed-translations.ts && tsx prisma/seed-translations-extra.ts && tsx prisma/seed-translations-dashboard.ts && tsx prisma/seed-translations-dashboard-quick-add.ts && tsx prisma/seed-translations-rbac.ts && tsx prisma/seed-translations-workspaces.ts",
+    "seed:translations": "tsx prisma/seed-translations.ts && tsx prisma/seed-translations-extra.ts && tsx prisma/seed-translations-dashboard.ts && tsx prisma/seed-translations-dashboard-quick-add.ts && tsx prisma/seed-translations-rbac.ts && tsx prisma/seed-translations-workspaces.ts && tsx prisma/seed-translations-system-operations.ts",
     "seed:language": "tsx prisma/seed-language.ts",
     "seed:rbac": "tsx prisma/seed-rbac-v2.ts"
   },
