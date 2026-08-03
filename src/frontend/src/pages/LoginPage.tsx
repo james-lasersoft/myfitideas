@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import { useLocale } from "../i18n/LocaleContext";
 import api from "../services/api";
 import { readWorkspaceSelection, requiresDailyChoice, workspacePath } from "../workspaces/workspace";
 import "./LoginPage.css";
@@ -20,6 +21,7 @@ type LoginMode = "credentials" | "mfa" | "enroll" | "recovery";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
@@ -106,7 +108,7 @@ export default function LoginPage() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="login-heading">
         <BrandLogo className="auth-logo" />
-        {step && <p className="mfa-step">Step {step} of 3</p>}
+        {step && <p className="mfa-step">{t("Step")} {step} {t("of 3")}</p>}
         <div className="auth-intro">
           <h1 id="login-heading">{mode === "enroll" ? "Secure your company account" : mode === "recovery" ? "Save your recovery codes" : "Welcome back"}</h1>
           <p>{mode === "enroll" ? "Scan the QR code with your authenticator app, then enter the six-digit code." : mode === "recovery" ? "Store these one-time codes in a safe place." : "Continue your body transformation journey."}</p>
