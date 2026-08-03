@@ -73,6 +73,18 @@ const catalog = [
   ["security.adminTileDescription", "Review MFA enrollment, trusted devices, and active user sessions.", "security", "Revise o cadastro de MFA, dispositivos confiáveis e sessões ativas dos usuários."],
   ["security.openCenter", "Open Security Center", "security", "Abrir Central de Segurança"],
   ["security.profileDescription", "Manage MFA, trusted devices, and account access.", "security", "Gerencie a MFA, dispositivos confiáveis e o acesso à conta."],
+  ["security.accountInfoError", "Unable to load account security information.", "security", "Não foi possível carregar as informações de segurança da conta."],
+  ["security.sessionBrowsers", "Browsers and devices currently signed in to your account.", "security", "Navegadores e dispositivos atualmente conectados à sua conta."],
+  ["security.signOutOthers", "Sign Out Other Sessions", "security", "Encerrar Outras Sessões"],
+  ["security.loadingSessions", "Loading active sessions...", "security", "Carregando sessões ativas..."],
+  ["security.noSessions", "No active sessions were found.", "security", "Nenhuma sessão ativa foi encontrada."],
+  ["security.currentSession", "Current session", "security", "Sessão atual"],
+  ["security.signOut", "Sign Out", "security", "Sair"],
+  ["security.endSession", "End Session", "security", "Encerrar Sessão"],
+  ["security.endCurrentConfirm", "End this current session and sign out?", "security", "Encerrar esta sessão atual e sair?"],
+  ["security.signOutOthersConfirm", "Sign out every other active session?", "security", "Encerrar todas as outras sessões ativas?"],
+  ["security.sessionEnded", "Session ended.", "security", "Sessão encerrada."],
+  ["security.otherSessionsEnded", "All other sessions and trusted devices were revoked.", "security", "Todas as outras sessões e dispositivos confiáveis foram revogados."],
 ] as const;
 
 async function main() {
