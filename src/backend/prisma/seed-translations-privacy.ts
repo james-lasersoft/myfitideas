@@ -50,6 +50,8 @@ const catalog = [
   ["security.session.firefox", "Mozilla Firefox", "security", "Mozilla Firefox"],
   ["security.session.safari", "Safari", "security", "Safari"],
   ["security.session.ip", "IP Address", "security", "Endereço IP"],
+  ["security.session.location", "Approximate Location", "security", "Localização aproximada"],
+  ["security.session.locationUnavailable", "Location unavailable", "security", "Localização indisponível"],
   ["security.session.signedIn", "Signed in", "security", "Login realizado"],
   ["security.session.expires", "Session expires", "security", "Sessão expira"],
   ["security.device.trustedSince", "Trusted since", "security", "Confiável desde"],
