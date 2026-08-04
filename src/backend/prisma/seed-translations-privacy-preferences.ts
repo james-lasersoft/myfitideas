@@ -12,6 +12,9 @@ const catalog = [
   ["privacy.preferences.updated", "Privacy preferences updated.", "privacy", "Preferências de privacidade atualizadas."],
   ["privacy.preferences.updateError", "Unable to update privacy preferences.", "privacy", "Não foi possível atualizar as preferências de privacidade."],
   ["privacy.preferences.securityDescription", "Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.", "privacy", "Gerencie autenticação multifator, dispositivos confiáveis, acesso ativo e preferências de privacidade da sua conta."],
+  ["account.menu.account", "Account", "account", "Conta"],
+  ["account.menu.open", "Open account menu", "account", "Abrir menu da conta"],
+  ["account.menu.settings", "Account Settings", "account", "Configurações da Conta"],
 ] as const;
 
 async function main() {
