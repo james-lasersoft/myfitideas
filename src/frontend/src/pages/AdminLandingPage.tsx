@@ -36,7 +36,6 @@ export default function AdminLandingPage() {
         description={t("Manage users, roles, translations, security activity, and organization controls.")}
         backLabel={t("Back to Dashboard")}
         onBack={() => navigate("/dashboard")}
-        showLogo
       />
 
       <section className="admin-module-grid" aria-label={t("Administrative modules")}>
