@@ -4,8 +4,12 @@ import prisma from "../src/config/prisma.js";
 const catalog = [
   ["privacy.signup.title", "Create your MyFitIdeas account", "privacy", "Crie sua conta MyFitIdeas"],
   ["privacy.signup.subtitle", "Start tracking your health and transformation journey.", "privacy", "Comece a acompanhar sua saúde e sua jornada de transformação."],
+  ["privacy.signup.createPassword", "Create Password", "privacy", "Criar Senha"],
   ["privacy.signup.confirmPassword", "Confirm Password", "privacy", "Confirmar Senha"],
   ["privacy.signup.passwordMismatch", "Passwords do not match.", "privacy", "As senhas não correspondem."],
+  ["privacy.signup.passwordRequirements", "Password requirements", "privacy", "Requisitos da senha"],
+  ["privacy.signup.passwordLength", "At least 8 characters", "privacy", "Pelo menos 8 caracteres"],
+  ["privacy.signup.passwordMatch", "Both password fields match", "privacy", "Os dois campos de senha correspondem"],
   ["privacy.signup.noticeTitle", "Privacy and account security notice", "privacy", "Aviso de privacidade e segurança da conta"],
   ["privacy.signup.securityNotice", "MyFitIdeas records login time, IP address, browser and device information, and approximate location derived from the IP address to protect your account, identify suspicious access, and let you review or end sessions.", "privacy", "O MyFitIdeas registra o horário de login, o endereço IP, informações do navegador e do dispositivo e a localização aproximada derivada do endereço IP para proteger sua conta, identificar acessos suspeitos e permitir que você revise ou encerre sessões."],
   ["privacy.signup.noGps", "MyFitIdeas does not request or use your device GPS location for login security.", "privacy", "O MyFitIdeas não solicita nem usa a localização GPS do seu dispositivo para a segurança do login."],
