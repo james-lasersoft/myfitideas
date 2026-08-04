@@ -2,6 +2,10 @@
 
 Branch: `feature/phase-5-rbac-user-administration`
 
+Status: Complete
+
+Completion date: August 3, 2026
+
 ## Implemented
 
 - Organization-ready permission-based RBAC schema and migration
@@ -20,6 +24,29 @@ Branch: `feature/phase-5-rbac-user-administration`
 - Frontend authorization context, permission route protection, and access-denied page
 - Dynamic Administration Center modules
 - RBAC translation catalog integration
+
+## Validation completed
+
+- Backend `npm ci`: passed
+- Prisma Client generation: passed
+- Backend typecheck: passed
+- Backend build: passed
+- Backend tests: 4 suites and 21 tests passed
+- Frontend `npm ci`: passed
+- Frontend lint: passed
+- Localization guard: 41 files checked against 481 catalog entries
+- Frontend production build: passed
+- Manual RBAC acceptance testing: passed
+- User invitations and acceptance: passed
+- Role assignment and removal: passed
+- Session revocation and account deactivation behavior: passed
+- Unauthorized-route and API protection: passed
+- Audit-event verification: passed
+- Final active Super Administrator safeguards: passed
+
+## Dependency security review
+
+Nonbreaking dependency fixes were applied locally during validation. The remaining React Router advisory `GHSA-qwww-vcr4-c8h2` applies to unstable React Server Components APIs. MyFitIdeas is a Vite client-side SPA and source inspection confirmed that none of the affected RSC APIs are used. `npm audit fix --force` was intentionally not applied because it proposed a breaking router downgrade. The advisory is accepted temporarily as non-reachable in the current architecture and is assigned to future controlled dependency maintenance.
 
 ## Deferred by design
 
@@ -40,3 +67,7 @@ Branch: `feature/phase-5-rbac-user-administration`
 8. Run backend tests, typecheck, and build.
 9. Run frontend validation and build.
 10. Confirm the existing account has Super Administrator access before enabling the branch in production.
+
+## Closeout decision
+
+Phase 5 is approved as complete. The branch is the authoritative baseline for planning and implementing Phase 6. The rejected dashboard arc-badge experiments were not merged and are not part of this milestone.
