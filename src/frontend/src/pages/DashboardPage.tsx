@@ -22,7 +22,6 @@ interface DashboardModule {
   description: string;
   action: string;
   path: string;
-  admin?: boolean;
 }
 
 interface RememberedEntry {
@@ -50,19 +49,6 @@ const dashboardModules: DashboardModule[] = [
     description: "Review trends across weight, hydration, and body measurements.",
     action: "View Progress",
     path: "/progress",
-  },
-  {
-    title: "Profile",
-    description: "Manage personal details, goals, units, and localization preferences.",
-    action: "Open Profile",
-    path: "/profile",
-  },
-  {
-    title: "Administration",
-    description: "Manage translations and future company controls.",
-    action: "Open Administration",
-    path: "/admin",
-    admin: true,
   },
 ];
 
@@ -103,9 +89,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const storedUser = localStorage.getItem("currentUser");
-  const user: StoredUser | null = storedUser
-    ? JSON.parse(storedUser)
-    : null;
+  const user: StoredUser | null = storedUser ? JSON.parse(storedUser) : null;
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,12 +102,6 @@ export default function DashboardPage() {
       .then(setSummary)
       .finally(() => setLoading(false));
   }, []);
-
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("currentUser");
-    navigate("/");
-  };
 
   const weightUnit = summary?.preferredWeightUnit ?? "lb";
   const hydrationUnit = summary?.preferredHydrationUnit ?? "oz";
@@ -163,7 +141,6 @@ export default function DashboardPage() {
           <h1>Dashboard</h1>
           <p>{getGreeting()}, {user?.firstName ?? "User"}</p>
         </div>
-        <button className="secondary-button" onClick={logout}>Log Out</button>
       </header>
 
       {loading ? (
@@ -211,11 +188,10 @@ export default function DashboardPage() {
 
           <section className="dashboard-grid dashboard-actions-grid" aria-label="Dashboard modules">
             {dashboardModules.map((module) => (
-              <button key={module.path} type="button" className={`dashboard-module-tile${module.admin ? " admin-module" : ""}`} onClick={() => navigate(module.path)}>
-                <span className="dashboard-module-status">Available</span>
+              <button key={module.path} type="button" className="dashboard-module-tile" onClick={() => navigate(module.path)}>
                 <h2>{module.title}</h2>
                 <p>{module.description}</p>
-                <span className="dashboard-module-action"><span>{module.action}</span><span className="dashboard-module-arrow" aria-hidden="true">→</span></span>
+                <span className="dashboard-module-action"><span>{module.action}</span></span>
               </button>
             ))}
           </section>
