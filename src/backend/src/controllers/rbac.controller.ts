@@ -19,6 +19,15 @@ function organizationId(req: AuthorizedRequest): string {
   return value;
 }
 
+function actorPermissions(req: AuthorizedRequest): Set<string> {
+  return new Set(req.authorization?.permissions ?? []);
+}
+
+function unauthorizedPermissionKeys(req: AuthorizedRequest, permissionKeys: string[]): string[] {
+  const allowed = actorPermissions(req);
+  return [...new Set(permissionKeys)].filter((key) => !allowed.has(key)).sort();
+}
+
 function requireRouteParam(req: AuthorizedRequest, name: string): string {
   const value = req.params[name];
   if (typeof value !== "string" || !value.trim()) {
@@ -154,6 +163,14 @@ export async function createRole(req: AuthorizedRequest, res: Response): Promise
     res.status(400).json({ error: "Role name is required." });
     return;
   }
+  const unauthorized = unauthorizedPermissionKeys(req, permissionKeys);
+  if (unauthorized.length > 0) {
+    res.status(403).json({
+      error: "You cannot create a role with permissions you do not hold.",
+      unauthorizedPermissions: unauthorized,
+    });
+    return;
+  }
   const key = name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "");
   const permissions = await prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
   const role = await prisma.role.create({
@@ -184,6 +201,14 @@ export async function updateRole(req: AuthorizedRequest, res: Response): Promise
     return;
   }
   const permissionKeys = Array.isArray(req.body?.permissions) ? req.body.permissions.filter((value: unknown): value is string => typeof value === "string") : [];
+  const unauthorized = unauthorizedPermissionKeys(req, permissionKeys);
+  if (unauthorized.length > 0) {
+    res.status(403).json({
+      error: "You cannot update a role with permissions you do not hold.",
+      unauthorizedPermissions: unauthorized,
+    });
+    return;
+  }
   const permissions = await prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
   const updated = await prisma.$transaction(async (tx) => {
     await tx.rolePermission.deleteMany({ where: { roleId: role.id } });
@@ -215,7 +240,23 @@ export async function assignRoles(req: AuthorizedRequest, res: Response): Promis
     res.status(404).json({ error: "User membership was not found." });
     return;
   }
-  const roles = await prisma.role.findMany({ where: { id: { in: roleIds }, OR: [{ organizationId: orgId }, { organizationId: null, isSystem: true }], isActive: true } });
+  const roles = await prisma.role.findMany({
+    where: {
+      id: { in: roleIds },
+      OR: [{ organizationId: orgId }, { organizationId: null, isSystem: true }],
+      isActive: true,
+    },
+    include: { permissions: { include: { permission: true } } },
+  });
+  const requestedPermissionKeys = roles.flatMap((role) => role.permissions.map(({ permission }) => permission.key));
+  const unauthorized = unauthorizedPermissionKeys(req, requestedPermissionKeys);
+  if (unauthorized.length > 0) {
+    res.status(403).json({
+      error: "You cannot assign a role that grants permissions you do not hold.",
+      unauthorizedPermissions: unauthorized,
+    });
+    return;
+  }
   await prisma.$transaction(async (tx) => {
     await tx.membershipRole.deleteMany({ where: { membershipId: membership.id } });
     if (roles.length) await tx.membershipRole.createMany({ data: roles.map((role) => ({ membershipId: membership.id, roleId: role.id })) });
@@ -241,6 +282,28 @@ export async function createInvitation(req: AuthorizedRequest, res: Response): P
   if (!email || !email.includes("@")) {
     res.status(400).json({ error: "A valid email address is required." });
     return;
+  }
+  if (roleId) {
+    const role = await prisma.role.findFirst({
+      where: {
+        id: roleId,
+        OR: [{ organizationId: orgId }, { organizationId: null, isSystem: true }],
+        isActive: true,
+      },
+      include: { permissions: { include: { permission: true } } },
+    });
+    if (!role) {
+      res.status(400).json({ error: "The selected role is not available in this organization." });
+      return;
+    }
+    const unauthorized = unauthorizedPermissionKeys(req, role.permissions.map(({ permission }) => permission.key));
+    if (unauthorized.length > 0) {
+      res.status(403).json({
+        error: "You cannot invite a user into a role that grants permissions you do not hold.",
+        unauthorizedPermissions: unauthorized,
+      });
+      return;
+    }
   }
   const rawToken = crypto.randomBytes(32).toString("base64url");
   const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
