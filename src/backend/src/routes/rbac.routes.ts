@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
+import { deleteRole } from "../controllers/role-deletion.controller.js";
 import {
   assignRoles,
   createInvitation,
@@ -26,6 +27,7 @@ router.post("/users/:userId/revoke-sessions", authenticateToken, requirePermissi
 router.get("/roles", authenticateToken, requirePermission("roles.read"), listRoles);
 router.post("/roles", authenticateToken, requirePermission("roles.create"), createRole);
 router.put("/roles/:roleId", authenticateToken, requirePermission("roles.update"), updateRole);
+router.delete("/roles/:roleId", authenticateToken, requirePermission("roles.delete"), deleteRole);
 router.get("/permissions", authenticateToken, requirePermission("roles.read"), listPermissions);
 router.get("/invitations", authenticateToken, requirePermission("users.read"), listInvitations);
 router.post("/invitations", authenticateToken, requirePermission("users.create"), createInvitation);
