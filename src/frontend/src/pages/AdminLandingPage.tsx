@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthorization } from "../auth/AuthorizationContext";
-import BrandLogo from "../components/BrandLogo";
-import Button from "../components/ui/Button";
+import { AdminModuleCard, AdminPageHeader } from "../components/admin/AdminComponents";
 import { useLocale } from "../i18n/LocaleContext";
 import "./Admin.css";
 import "./AdminConsoleTheme.css";
@@ -31,36 +30,33 @@ export default function AdminLandingPage() {
 
   return (
     <main className="admin-page admin-console-page">
-      <header className="admin-header">
-        <div>
-          <BrandLogo className="admin-logo" />
-          <p className="admin-eyebrow">{t("Company administration")}</p>
-          <h1>{t("Administration Center")}</h1>
-          <p>{t("Manage users, roles, translations, security activity, and organization controls.")}</p>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>{t("Back to Dashboard")}</Button>
-      </header>
+      <AdminPageHeader
+        eyebrow={t("Company administration")}
+        title={t("Administration Center")}
+        description={t("Manage users, roles, translations, security activity, and organization controls.")}
+        backLabel={t("Back to Dashboard")}
+        onBack={() => navigate("/dashboard")}
+        showLogo
+      />
 
       <section className="admin-module-grid" aria-label={t("Administrative modules")}>
         {available.map((module) => (
-          <button
-            type="button"
-            className="admin-module-card admin-module-tile active-module"
+          <AdminModuleCard
             key={module.path}
+            title={t(module.title)}
+            description={t(module.description)}
+            action={t(module.action)}
             onClick={() => navigate(module.path)}
-            aria-label={t(module.action)}
-          >
-            <span className="admin-module-title">{t(module.title)}</span>
-            <span className="admin-module-description">{t(module.description)}</span>
-            <span className="admin-module-action">{t(module.action)}</span>
-          </button>
+            ariaLabel={t(module.action)}
+          />
         ))}
 
-        <article className="admin-module-card admin-module-tile planned-module" aria-disabled="true">
-          <span className="admin-module-title">{t("System Settings")}</span>
-          <span className="admin-module-description">{t("Manage operational configuration and feature controls.")}</span>
-          <span className="admin-module-action future-module-note">{t("Coming in a future phase")}</span>
-        </article>
+        <AdminModuleCard
+          title={t("System Settings")}
+          description={t("Manage operational configuration and feature controls.")}
+          action={t("Coming in a future phase")}
+          disabled
+        />
       </section>
     </main>
   );
