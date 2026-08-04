@@ -1,6 +1,8 @@
 # Phase 5: RBAC, User Administration, and Security Auditability
 
-Status: In progress
+Status: Complete
+
+Completion date: August 3, 2026
 
 ## Approved product decisions
 
@@ -15,7 +17,7 @@ Status: In progress
 - Automatic email delivery deferred
 - Main branch remains untouched while Phase 5 is developed on `feature/phase-5-rbac-user-administration`
 
-## Implementation sequence
+## Completed implementation sequence
 
 1. Database schema and migration
 2. Permission and role bootstrap
@@ -60,6 +62,24 @@ Status: In progress
 - Roles
 - Audit
 - Organization
+
+## Final validation results
+
+- Backend dependency installation completed successfully.
+- Prisma Client generation completed successfully.
+- Backend TypeScript typecheck passed.
+- Backend production build passed.
+- Backend Jest suite passed: 4 suites, 21 tests.
+- Frontend dependency installation completed successfully.
+- ESLint passed.
+- Localization guard passed across 41 files and 481 catalog entries.
+- Frontend TypeScript and Vite production builds passed.
+- Manual RBAC acceptance testing passed.
+- User administration, role administration, invitations, session revocation, unauthorized-route handling, and audit logging were validated.
+
+## Dependency security decision
+
+`npm audit` continues to report React Router advisory `GHSA-qwww-vcr4-c8h2`. The current frontend is a Vite client-side SPA and does not use React Server Components or the affected unstable RSC APIs. Source inspection found no use of `RSCStaticRouter`, `RSCHydratedRouter`, `createCallServer`, `react-server`, or unstable RSC imports. A forced downgrade was not applied because it would introduce a breaking routing change. This finding is recorded as a temporarily accepted, non-reachable dependency risk and will be revisited in a controlled dependency-security phase.
 
 ## Deferred items
 
