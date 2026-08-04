@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthorization } from "../../auth/AuthorizationContext";
 import { useLocale } from "../../i18n/LocaleContext";
 import "./AccountMenu.css";
 
@@ -21,7 +20,6 @@ function readStoredUser(): StoredUser {
 
 export default function AccountMenu() {
   const navigate = useNavigate();
-  const { can } = useAuthorization();
   const { t } = useLocale();
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -87,9 +85,6 @@ export default function AccountMenu() {
           </div>
           <button type="button" role="menuitem" onClick={() => goTo("/profile")}>{t("Account Settings")}</button>
           <button type="button" role="menuitem" onClick={() => goTo("/profile/security")}>{t("Security Center")}</button>
-          {can("admin.access") && (
-            <button type="button" role="menuitem" onClick={() => goTo("/admin")}>{t("Admin Center")}</button>
-          )}
           <div className="account-menu-divider" />
           <button type="button" role="menuitem" className="account-menu-signout" onClick={signOut}>{t("Sign Out")}</button>
         </div>
