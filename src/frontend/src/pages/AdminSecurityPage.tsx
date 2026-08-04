@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import { AdminLoadingState, AdminPageHeader } from "../components/admin/AdminComponents";
 import { useLocale } from "../i18n/LocaleContext";
+import api from "../services/api";
+import "./Admin.css";
+import "./AdminConsoleTheme.css";
 import "./SecurityCenter.css";
 
 interface SecurityUser {
@@ -66,21 +69,20 @@ export default function AdminSecurityPage() {
   };
 
   return (
-    <main className="security-page ops-page">
-      <section className="security-card">
-        <header className="security-header">
-          <div>
-            <p className="section-eyebrow">{t("Administrative Security")}</p>
-            <h1>{t("Security Operations")}</h1>
-            <p>{t("Review MFA enrollment, trusted devices, and active sessions for company users.")}</p>
-          </div>
-          <button type="button" className="secondary-button" onClick={() => navigate("/admin")}>{t("Back to Administration")}</button>
-        </header>
+    <main className="admin-page admin-console-page security-page ops-page">
+      <AdminPageHeader
+        eyebrow={t("Administrative Security")}
+        title={t("Security Operations")}
+        description={t("Review MFA enrollment, trusted devices, and active sessions for company users.")}
+        backLabel={t("Back to Administration")}
+        onBack={() => navigate("/admin")}
+      />
 
+      <section className="security-card">
         {error && <p className="form-message error-message">{error}</p>}
         {message && <p className="form-message success-message">{message}</p>}
 
-        {loading ? <p>{t("Loading security operations...")}</p> : (
+        {loading ? <AdminLoadingState label={t("Loading security operations...")} /> : (
           <table className="security-admin-table">
             <thead><tr><th>{t("User")}</th><th>{t("Roles")}</th><th>{t("MFA")}</th><th>{t("Active Sessions")}</th><th>{t("Trusted Devices")}</th><th>{t("Actions")}</th></tr></thead>
             <tbody>{users.map((user) => (
