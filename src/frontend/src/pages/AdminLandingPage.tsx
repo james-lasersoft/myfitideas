@@ -32,7 +32,7 @@ export default function AdminLandingPage() {
     <main className="admin-page admin-console-page">
       <AdminPageHeader
         eyebrow={t("Company administration")}
-        title={t("Administration Center")}
+        title={t("Admin Center")}
         description={t("Manage users, roles, translations, security activity, and organization controls.")}
         backLabel={t("Back to Dashboard")}
         onBack={() => navigate("/dashboard")}
