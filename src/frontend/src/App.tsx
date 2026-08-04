@@ -22,6 +22,7 @@ const ProfileSecurityPage = lazy(() => import("./pages/ProfileSecurityPage"));
 const ProgressChartsPage = lazy(() => import("./pages/ProgressChartsPage"));
 const AdminLandingPage = lazy(() => import("./pages/AdminLandingPage"));
 const AdminSecurityPage = lazy(() => import("./pages/AdminSecurityPage"));
+const CompanySettingsPage = lazy(() => import("./pages/CompanySettingsPage"));
 const TranslationAdminPage = lazy(() => import("./pages/TranslationAdminPage"));
 const UserAdminPage = lazy(() => import("./pages/UserAdminPage"));
 const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/progress" element={<ProtectedPage><ProgressChartsPage /></ProtectedPage>} />
           <Route path="/admin" element={<AuthorizedPage permission="admin.access"><AdminLandingPage /></AuthorizedPage>} />
           <Route path="/admin/security" element={<AuthorizedPage permission="system.operations"><AdminSecurityPage /></AuthorizedPage>} />
+          <Route path="/admin/settings" element={<AuthorizedPage permission="system.operations"><CompanySettingsPage /></AuthorizedPage>} />
           <Route path="/admin/translations" element={<AuthorizedPage permission="translations.read"><TranslationAdminShell><TranslationAdminPage /></TranslationAdminShell></AuthorizedPage>} />
           <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
