@@ -28,14 +28,21 @@ body.member-shell-active .progress-charts-header .brand-logo,
 body.member-shell-active .profile-identity > img,
 body.member-shell-active .profile-identity > svg,
 body.member-shell-active .progress-charts-header > img,
-body.member-shell-active .progress-charts-header > svg {
+body.member-shell-active .progress-charts-header > svg,
+body.member-shell-active .hydration-page .dashboard-header > img,
+body.member-shell-active .hydration-page .dashboard-header > svg {
   display: none !important;
 }
 
 body.member-shell-active .profile-identity::before,
-body.member-shell-active .progress-charts-header::before {
+body.member-shell-active .progress-charts-header::before,
+body.member-shell-active .progress-charts-header > div::before,
+body.member-shell-active .hydration-page .dashboard-header::before,
+body.member-shell-active .hydration-page .dashboard-header > div::before {
   display: none !important;
   content: none !important;
+  background: none !important;
+  background-image: none !important;
 }
 
 body.member-shell-active .security-header {
