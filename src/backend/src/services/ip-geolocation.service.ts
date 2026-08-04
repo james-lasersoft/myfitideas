@@ -8,8 +8,13 @@ export interface IpGeolocationResult {
   timezone: string | null;
   latitude: number | null;
   longitude: number | null;
-  provider: "ipinfo";
+  provider: string;
   lookedUpAt: Date;
+}
+
+export interface IpGeolocationProvider {
+  readonly key: string;
+  lookup(ipAddress: string): Promise<IpGeolocationResult | null>;
 }
 
 interface IpinfoResponse {
@@ -65,35 +70,55 @@ function parseCoordinates(payload: IpinfoResponse): { latitude: number | null; l
   };
 }
 
-export async function lookupIpGeolocation(ipAddress: string | null | undefined): Promise<IpGeolocationResult | null> {
-  const token = process.env.IPINFO_TOKEN?.trim();
-  const ip = normalizeClientIp(ipAddress);
-  if (!token || !ip || !isPublicIp(ip)) return null;
+class IpinfoGeolocationProvider implements IpGeolocationProvider {
+  readonly key = "ipinfo";
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 2500);
-  try {
-    const response = await fetch(`https://ipinfo.io/${encodeURIComponent(ip)}/json?token=${encodeURIComponent(token)}`, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) return null;
-    const payload = await response.json() as IpinfoResponse;
-    const coordinates = parseCoordinates(payload);
-    return {
-      city: payload.city?.trim() || null,
-      region: payload.region?.trim() || null,
-      country: payload.country?.trim() || null,
-      countryCode: payload.country_code?.trim() || payload.country?.trim() || null,
-      timezone: payload.timezone?.trim() || null,
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-      provider: "ipinfo",
-      lookedUpAt: new Date(),
-    };
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
+  async lookup(ipAddress: string): Promise<IpGeolocationResult | null> {
+    const token = process.env.IPINFO_TOKEN?.trim();
+    if (!token) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const response = await fetch(`https://ipinfo.io/${encodeURIComponent(ipAddress)}/json?token=${encodeURIComponent(token)}`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return null;
+      const payload = await response.json() as IpinfoResponse;
+      const coordinates = parseCoordinates(payload);
+      return {
+        city: payload.city?.trim() || null,
+        region: payload.region?.trim() || null,
+        country: payload.country?.trim() || null,
+        countryCode: payload.country_code?.trim() || payload.country?.trim() || null,
+        timezone: payload.timezone?.trim() || null,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        provider: this.key,
+        lookedUpAt: new Date(),
+      };
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+}
+
+class NullGeolocationProvider implements IpGeolocationProvider {
+  readonly key = "none";
+  async lookup(): Promise<null> { return null; }
+}
+
+export function getIpGeolocationProvider(): IpGeolocationProvider {
+  const configured = (process.env.GEOLOCATION_PROVIDER ?? "ipinfo").trim().toLowerCase();
+  if (configured === "ipinfo") return new IpinfoGeolocationProvider();
+  return new NullGeolocationProvider();
+}
+
+export async function lookupIpGeolocation(ipAddress: string | null | undefined): Promise<IpGeolocationResult | null> {
+  const ip = normalizeClientIp(ipAddress);
+  if (!ip || !isPublicIp(ip)) return null;
+  return getIpGeolocationProvider().lookup(ip);
 }
