@@ -4,6 +4,7 @@ import BrandLogo from "../components/BrandLogo";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
 import "./Admin.css";
+import "./AdminConsoleTheme.css";
 import "./AdminTiles.css";
 
 interface AdminModule {
