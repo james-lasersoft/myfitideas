@@ -35,6 +35,8 @@ interface LoginResponse {
   };
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function RegistrationPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
@@ -47,6 +49,11 @@ export default function RegistrationPage() {
   const [aggregateAnalyticsEnabled, setAggregateAnalyticsEnabled] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const passwordLongEnough = password.length >= 8;
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const requiredIdentityComplete = firstName.trim().length > 0 && EMAIL_PATTERN.test(email.trim());
+  const canCreateAccount = requiredIdentityComplete && passwordLongEnough && passwordsMatch && privacyAcknowledged && !submitting;
 
   const completeLogin = (response: LoginResponse) => {
     localStorage.setItem("authToken", response.accessToken ?? response.token);
@@ -68,10 +75,7 @@ export default function RegistrationPage() {
     event.preventDefault();
     setError("");
 
-    if (password !== confirmPassword) {
-      setError(t("Passwords do not match."));
-      return;
-    }
+    if (!canCreateAccount) return;
 
     setSubmitting(true);
     try {
@@ -112,8 +116,16 @@ export default function RegistrationPage() {
             <label>{t("Last Name")}<input value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" /></label>
           </div>
           <label>{t("Email")}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
-          <label>{t("Password")}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-          <label>{t("Confirm Password")}<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+          <label>{t("Create Password")}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} aria-describedby="password-requirements" required /></label>
+          <label>{t("Confirm Password")}<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} aria-describedby="password-requirements" required /></label>
+
+          <div id="password-requirements" className="password-requirements" aria-live="polite">
+            <p>{t("Password requirements")}</p>
+            <ul>
+              <li className={passwordLongEnough ? "met" : "pending"}>{passwordLongEnough ? "✓" : "○"} {t("At least 8 characters")}</li>
+              <li className={passwordsMatch ? "met" : "pending"}>{passwordsMatch ? "✓" : "○"} {t("Both password fields match")}</li>
+            </ul>
+          </div>
 
           <details className="privacy-summary">
             <summary>{t("Privacy and account security notice")}</summary>
@@ -133,7 +145,7 @@ export default function RegistrationPage() {
 
           <p className="privacy-choice-note">{t("Declining aggregate analytics does not affect your ability to use MyFitIdeas.")}</p>
           {error && <p className="error-message" role="alert">{error}</p>}
-          <button type="submit" disabled={submitting || !privacyAcknowledged}>{submitting ? t("Creating account...") : t("Create Account")}</button>
+          <button type="submit" disabled={!canCreateAccount}>{submitting ? t("Creating account...") : t("Create Account")}</button>
           <button type="button" className="secondary-button" onClick={() => navigate("/")}>{t("Back to Sign In")}</button>
         </form>
       </section>
