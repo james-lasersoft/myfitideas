@@ -29,13 +29,50 @@ interface PrivacyPreferences {
   approximateLocationMethod: string;
 }
 
-function deviceLabel(userAgent: string | null): string {
-  if (!userAgent) return "Unknown device";
-  if (userAgent.includes("Edg/")) return "Microsoft Edge";
-  if (userAgent.includes("Chrome/")) return "Google Chrome";
-  if (userAgent.includes("Firefox/")) return "Mozilla Firefox";
-  if (userAgent.includes("Safari/")) return "Safari";
-  return userAgent;
+interface DeviceInfo {
+  browser: string;
+  operatingSystem: string;
+  deviceType: string;
+}
+
+function parseDeviceInfo(userAgent: string | null): DeviceInfo {
+  if (!userAgent) return { browser: "Unknown browser", operatingSystem: "Unknown operating system", deviceType: "Unknown device" };
+
+  const browser = userAgent.includes("Edg/")
+    ? "Microsoft Edge"
+    : userAgent.includes("OPR/") || userAgent.includes("Opera/")
+      ? "Opera"
+      : userAgent.includes("Chrome/") || userAgent.includes("CriOS/")
+        ? "Google Chrome"
+        : userAgent.includes("Firefox/") || userAgent.includes("FxiOS/")
+          ? "Mozilla Firefox"
+          : userAgent.includes("Safari/")
+            ? "Safari"
+            : "Other browser";
+
+  const operatingSystem = userAgent.includes("Windows NT")
+    ? "Windows"
+    : userAgent.includes("Android")
+      ? "Android"
+      : /iPhone|iPad|iPod/.test(userAgent)
+        ? "iOS or iPadOS"
+        : userAgent.includes("Mac OS X")
+          ? "macOS"
+          : userAgent.includes("Linux")
+            ? "Linux"
+            : "Other operating system";
+
+  const deviceType = /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)
+    ? "Tablet"
+    : /Mobile|iPhone|iPod|Android/i.test(userAgent)
+      ? "Mobile device"
+      : "Computer";
+
+  return { browser, operatingSystem, deviceType };
+}
+
+function formatDateTime(value: string | null): string {
+  return value ? new Date(value).toLocaleString() : "Not available";
 }
 
 export default function ProfileSecurityPage() {
@@ -148,12 +185,24 @@ export default function ProfileSecurityPage() {
           </div>
           {loading ? <p>{t("Loading active sessions...")}</p> : sessions.length === 0 ? <p>{t("No active sessions were found.")}</p> : (
             <div className="security-device-list">
-              {sessions.map((session) => (
-                <article className="security-device" key={session.id}>
-                  <div><strong>{deviceLabel(session.userAgent)} {session.current ? `(${t("Current session")})` : ""}</strong><p>{session.ipAddress ?? t("IP address unavailable")}</p><small>{t("Last used")}: {new Date(session.lastSeenAt).toLocaleString()}</small></div>
-                  <button type="button" className={session.current ? "danger-button" : "secondary-button"} onClick={() => void revokeSession(session)}>{session.current ? t("Sign Out") : t("End Session")}</button>
-                </article>
-              ))}
+              {sessions.map((session) => {
+                const info = parseDeviceInfo(session.userAgent);
+                return (
+                  <article className="security-device security-device-detailed" key={session.id}>
+                    <div className="security-device-content">
+                      <div className="security-device-title-row"><strong>{t(info.browser)}</strong>{session.current && <span className="current-session-badge">{t("Current session")}</span>}</div>
+                      <p>{t(info.operatingSystem)} · {t(info.deviceType)}</p>
+                      <dl className="security-detail-grid">
+                        <div><dt>{t("IP Address")}</dt><dd>{session.ipAddress ?? t("IP address unavailable")}</dd></div>
+                        <div><dt>{t("Signed in")}</dt><dd>{formatDateTime(session.createdAt)}</dd></div>
+                        <div><dt>{t("Last used")}</dt><dd>{formatDateTime(session.lastSeenAt)}</dd></div>
+                        <div><dt>{t("Session expires")}</dt><dd>{formatDateTime(session.refreshExpiresAt)}</dd></div>
+                      </dl>
+                    </div>
+                    <button type="button" className={session.current ? "danger-button" : "secondary-button"} onClick={() => void revokeSession(session)}>{session.current ? t("Sign Out") : t("End Session")}</button>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
@@ -165,34 +214,36 @@ export default function ProfileSecurityPage() {
           </div>
           {loading ? <p>{t("Loading trusted devices...")}</p> : devices.length === 0 ? <p>{t("No trusted devices are currently registered.")}</p> : (
             <div className="security-device-list">
-              {devices.map((device) => (
-                <article className="security-device" key={device.id}>
-                  <div><strong>{deviceLabel(device.userAgent)}</strong><p>{device.ipAddress ?? t("IP address unavailable")}</p><small>{t("Last used")}: {new Date(device.lastSeenAt).toLocaleString()} · {t("Expires")}: {new Date(device.expiresAt).toLocaleDateString()}</small></div>
-                  <button type="button" className="secondary-button" onClick={() => void revokeDevice(device.id)}>{t("Remove")}</button>
-                </article>
-              ))}
+              {devices.map((device) => {
+                const info = parseDeviceInfo(device.userAgent);
+                return (
+                  <article className="security-device security-device-detailed" key={device.id}>
+                    <div className="security-device-content">
+                      <strong>{t(info.browser)}</strong>
+                      <p>{t(info.operatingSystem)} · {t(info.deviceType)}</p>
+                      <dl className="security-detail-grid">
+                        <div><dt>{t("IP Address")}</dt><dd>{device.ipAddress ?? t("IP address unavailable")}</dd></div>
+                        <div><dt>{t("Trusted since")}</dt><dd>{formatDateTime(device.createdAt)}</dd></div>
+                        <div><dt>{t("Last used")}</dt><dd>{formatDateTime(device.lastSeenAt)}</dd></div>
+                        <div><dt>{t("Trust expires")}</dt><dd>{formatDateTime(device.expiresAt)}</dd></div>
+                      </dl>
+                    </div>
+                    <button type="button" className="secondary-button" onClick={() => void revokeDevice(device.id)}>{t("Remove")}</button>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
 
         <section className="security-section privacy-preferences-section">
           <div className="security-section-heading">
-            <div>
-              <h2>{t("Privacy & Analytics")}</h2>
-              <p>{t("Choose whether your information may contribute to de-identified aggregate product statistics.")}</p>
-            </div>
-            <span className={`privacy-status-badge ${aggregateAnalyticsEnabled ? "enabled" : "disabled"}`}>
-              {aggregateAnalyticsEnabled ? t("Participating") : t("Not participating")}
-            </span>
+            <div><h2>{t("Privacy & Analytics")}</h2><p>{t("Choose whether your information may contribute to de-identified aggregate product statistics.")}</p></div>
+            <span className={`privacy-status-badge ${aggregateAnalyticsEnabled ? "enabled" : "disabled"}`}>{aggregateAnalyticsEnabled ? t("Participating") : t("Not participating")}</span>
           </div>
           <p className="privacy-detail-note">{t("This optional choice does not affect access to MyFitIdeas. Login security continues to use IP address, device information, and approximate IP-based location. Device GPS is not requested.")}</p>
           <label className="privacy-preference-toggle">
-            <input
-              type="checkbox"
-              checked={aggregateAnalyticsEnabled}
-              disabled={loading || savingPrivacy}
-              onChange={(event) => void updateAnalyticsPreference(event.target.checked)}
-            />
+            <input type="checkbox" checked={aggregateAnalyticsEnabled} disabled={loading || savingPrivacy} onChange={(event) => void updateAnalyticsPreference(event.target.checked)} />
             <span>{savingPrivacy ? t("Saving privacy preference...") : t("Allow de-identified aggregate analytics")}</span>
           </label>
         </section>
