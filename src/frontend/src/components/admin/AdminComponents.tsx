@@ -13,6 +13,9 @@ interface AdminPageHeaderProps {
   actions?: ReactNode;
 }
 
+const COLLAPSE_SCROLL_Y = 112;
+const EXPAND_SCROLL_Y = 56;
+
 export function AdminPageHeader({
   eyebrow,
   title,
@@ -24,10 +27,31 @@ export function AdminPageHeader({
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const update = () => setCollapsed(window.scrollY > 72);
+    let frameId = 0;
+
+    const update = () => {
+      frameId = 0;
+      const scrollY = window.scrollY;
+
+      setCollapsed((current) => {
+        if (!current && scrollY >= COLLAPSE_SCROLL_Y) return true;
+        if (current && scrollY <= EXPAND_SCROLL_Y) return false;
+        return current;
+      });
+    };
+
+    const requestUpdate = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(update);
+    };
+
     update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", requestUpdate);
+      if (frameId) window.cancelAnimationFrame(frameId);
+    };
   }, []);
 
   return (
