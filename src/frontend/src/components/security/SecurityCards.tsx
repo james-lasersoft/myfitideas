@@ -48,7 +48,7 @@ interface SecurityRecordCardProps {
   translateValue: (value: string) => string;
 }
 
-export function parseSecurityDevice(userAgent: string | null): DeviceDetails {
+function parseSecurityDevice(userAgent: string | null): DeviceDetails {
   if (!userAgent) {
     return { browser: "Unknown browser", operatingSystem: "Unknown operating system", category: "Unknown device", icon: "?" };
   }
