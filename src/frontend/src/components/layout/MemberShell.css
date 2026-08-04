@@ -1,0 +1,109 @@
+body.member-shell-active {
+  --member-toolbar-height: 58px;
+  --member-header-collapsed-height: 58px;
+}
+
+body.member-shell-active .dashboard-header,
+body.member-shell-active .page-brand-header,
+body.member-shell-active .profile-header,
+body.member-shell-active .hydration-header,
+body.member-shell-active .progress-header,
+body.member-shell-active .security-header {
+  position: sticky;
+  top: var(--member-toolbar-height);
+  z-index: 930;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-height: 190px;
+  transition: max-height 180ms ease, padding 180ms ease, margin 180ms ease, box-shadow 180ms ease;
+}
+
+body.member-shell-active .dashboard-brand-block .dashboard-logo,
+body.member-shell-active .page-brand-heading .page-brand-symbol,
+body.member-shell-active .profile-header .brand-logo,
+body.member-shell-active .hydration-header .brand-logo,
+body.member-shell-active .progress-header .brand-logo {
+  display: none;
+}
+
+body.member-header-collapsed .dashboard-header,
+body.member-header-collapsed .page-brand-header,
+body.member-header-collapsed .profile-header,
+body.member-header-collapsed .hydration-header,
+body.member-header-collapsed .progress-header,
+body.member-header-collapsed .security-header {
+  max-height: var(--member-header-collapsed-height);
+  min-height: var(--member-header-collapsed-height);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+  box-shadow: 0 8px 18px rgba(31, 81, 52, 0.12);
+}
+
+body.member-header-collapsed .dashboard-header p,
+body.member-header-collapsed .page-brand-header p,
+body.member-header-collapsed .profile-header p,
+body.member-header-collapsed .hydration-header p,
+body.member-header-collapsed .progress-header p,
+body.member-header-collapsed .security-header p,
+body.member-header-collapsed .section-eyebrow {
+  display: none;
+}
+
+body.member-header-collapsed .dashboard-header h1,
+body.member-header-collapsed .page-brand-header h1,
+body.member-header-collapsed .profile-header h1,
+body.member-header-collapsed .hydration-header h1,
+body.member-header-collapsed .progress-header h1,
+body.member-header-collapsed .security-header h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.2;
+}
+
+body.member-shell-active .dashboard-header,
+body.member-shell-active .page-brand-header,
+body.member-shell-active .profile-header,
+body.member-shell-active .hydration-header,
+body.member-shell-active .progress-header,
+body.member-shell-active .security-header {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+html[data-theme="dark"] body.member-shell-active .dashboard-header,
+html[data-theme="dark"] body.member-shell-active .page-brand-header,
+html[data-theme="dark"] body.member-shell-active .profile-header,
+html[data-theme="dark"] body.member-shell-active .hydration-header,
+html[data-theme="dark"] body.member-shell-active .progress-header,
+html[data-theme="dark"] body.member-shell-active .security-header {
+  background: rgba(24, 37, 29, 0.96);
+}
+
+@media (max-width: 700px) {
+  body.member-shell-active {
+    --member-toolbar-height: 54px;
+    --member-header-collapsed-height: 54px;
+  }
+
+  body.member-header-collapsed .dashboard-header,
+  body.member-header-collapsed .page-brand-header,
+  body.member-header-collapsed .profile-header,
+  body.member-header-collapsed .hydration-header,
+  body.member-header-collapsed .progress-header,
+  body.member-header-collapsed .security-header {
+    gap: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.member-shell-active .dashboard-header,
+  body.member-shell-active .page-brand-header,
+  body.member-shell-active .profile-header,
+  body.member-shell-active .hydration-header,
+  body.member-shell-active .progress-header,
+  body.member-shell-active .security-header {
+    transition: none;
+  }
+}
