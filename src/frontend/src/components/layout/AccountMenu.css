@@ -1,0 +1,164 @@
+.account-menu {
+  position: relative;
+  pointer-events: auto;
+}
+
+.account-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 34px;
+  padding: 0.2rem 0.45rem 0.2rem 0.25rem;
+  border: 0;
+  border-radius: 999px;
+  color: #24312a;
+  background: transparent;
+  font: inherit;
+}
+
+.account-menu-trigger:hover,
+.account-menu-trigger:focus-visible {
+  background: rgba(31, 139, 67, 0.1);
+}
+
+.account-menu-trigger:focus-visible {
+  outline: 2px solid rgba(31, 139, 67, 0.35);
+  outline-offset: 2px;
+}
+
+.account-menu-avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(145deg, #176d34, #259a4c);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.account-menu-name {
+  max-width: 150px;
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-caret {
+  font-size: 0.72rem;
+}
+
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  z-index: 1200;
+  display: grid;
+  width: min(270px, calc(100vw - 1rem));
+  padding: 0.5rem;
+  border: 1px solid #d7e2db;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(22, 47, 31, 0.2);
+}
+
+.account-menu-summary {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.account-menu-summary strong {
+  color: #24312a;
+}
+
+.account-menu-summary span {
+  overflow: hidden;
+  color: #67736b;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-panel > button {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 9px;
+  color: #24312a;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-weight: 650;
+}
+
+.account-menu-panel > button:hover,
+.account-menu-panel > button:focus-visible {
+  background: #eef7f1;
+}
+
+.account-menu-panel > button:focus-visible {
+  outline: 2px solid rgba(31, 139, 67, 0.3);
+  outline-offset: 1px;
+}
+
+.account-menu-divider {
+  height: 1px;
+  margin: 0.35rem 0;
+  background: #e4ebe6;
+}
+
+.account-menu-panel > .account-menu-signout {
+  color: #a61b1b;
+}
+
+html[data-theme="dark"] .account-menu-trigger {
+  color: #edf4ef;
+}
+
+html[data-theme="dark"] .account-menu-trigger:hover,
+html[data-theme="dark"] .account-menu-trigger:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .account-menu-panel {
+  border-color: #435448;
+  background: #18211b;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .account-menu-summary strong,
+html[data-theme="dark"] .account-menu-panel > button {
+  color: #edf4ef;
+}
+
+html[data-theme="dark"] .account-menu-summary span {
+  color: #a9b5ad;
+}
+
+html[data-theme="dark"] .account-menu-panel > button:hover,
+html[data-theme="dark"] .account-menu-panel > button:focus-visible {
+  background: #243128;
+}
+
+html[data-theme="dark"] .account-menu-divider {
+  background: #3b4b40;
+}
+
+html[data-theme="dark"] .account-menu-panel > .account-menu-signout {
+  color: #ff9d9d;
+}
+
+@media (max-width: 760px) {
+  .account-menu-name {
+    display: none;
+  }
+
+  .account-menu-trigger {
+    padding-right: 0.3rem;
+  }
+}
