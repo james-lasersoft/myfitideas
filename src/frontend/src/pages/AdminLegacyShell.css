@@ -1,44 +1,28 @@
-.translation-admin-page > .admin-header.compact {
-  position: sticky;
-  top: 58px;
-  z-index: 900;
-  min-height: 82px;
-  margin-bottom: 1rem;
-  padding: 0.8rem 1.1rem;
-  align-items: center;
-  overflow: hidden;
-  border-color: var(--admin-border, var(--mfi-border));
-  background: var(--admin-surface, rgba(255, 255, 255, 0.96));
-  box-shadow: 0 6px 18px rgba(18, 39, 60, 0.1);
+.translation-admin-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1400px);
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.translation-admin-page > .admin-header.compact .admin-logo {
+.translation-admin-shell-content {
+  min-width: 0;
+}
+
+.translation-admin-shell-content > .translation-admin-page {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.translation-admin-shell-content > .translation-admin-page > .admin-header.compact {
   display: none;
 }
 
-.translation-admin-page > .admin-header.compact .admin-eyebrow {
-  margin-top: 0;
-  color: var(--admin-accent, var(--mfi-deep-stem));
-}
-
-.translation-admin-page > .admin-header.compact h1 {
-  margin-top: 0;
-}
-
-.translation-admin-page > .admin-header.compact > button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-html[data-theme="dark"] .translation-admin-page > .admin-header.compact {
-  background: var(--admin-surface, #182535);
-  border-color: var(--admin-border, #34485b);
-}
-
 @media (max-width: 760px) {
-  .translation-admin-page > .admin-header.compact {
-    top: 54px;
-    min-height: 74px;
-    padding: 0.7rem 0.8rem;
+  .translation-admin-shell {
+    gap: 0.75rem;
   }
 }
