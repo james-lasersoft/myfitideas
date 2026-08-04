@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthorization } from "../auth/AuthorizationContext";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
 import {
@@ -22,6 +23,7 @@ function apiErrorMessage(error: unknown, fallback: string): string {
 export default function UserAdminPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
+  const { can } = useAuthorization();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [search, setSearch] = useState("");
@@ -34,6 +36,11 @@ export default function UserAdminPage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [savingRoles, setSavingRoles] = useState(false);
+
+  const canCreateUsers = can("users.create");
+  const canUpdateUsers = can("users.update");
+  const canAssignRoles = can("users.assign_roles");
+  const canRevokeSessions = can("users.revoke_sessions") || can("users.update");
 
   const load = useCallback(async (query = search) => {
     setLoading(true);
@@ -72,6 +79,29 @@ export default function UserAdminPage() {
     } catch (inviteError) {
       setMessage("");
       setError(apiErrorMessage(inviteError, t("Unable to create invitation.")));
+    }
+  };
+
+  const changeStatus = async (user: AdminUser, status: string) => {
+    setError("");
+    setMessage("");
+    try {
+      await setUserStatus(user.user.id, status);
+      setMessage(t("User status updated."));
+      await load(search);
+    } catch (statusError) {
+      setError(apiErrorMessage(statusError, t("Unable to update user status.")));
+    }
+  };
+
+  const revokeSessions = async (user: AdminUser) => {
+    setError("");
+    setMessage("");
+    try {
+      await revokeUserSessions(user.user.id);
+      setMessage(t("Active sessions revoked."));
+    } catch (sessionError) {
+      setError(apiErrorMessage(sessionError, t("Unable to revoke active sessions.")));
     }
   };
 
@@ -115,27 +145,27 @@ export default function UserAdminPage() {
         <Button variant="outline" onClick={() => navigate("/admin")}>{t("Back to Admin")}</Button>
       </header>
 
-      <section className="security-panel">
-        <h2>{t("Invite User")}</h2>
-        <div className="security-form-row">
-          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t("Email address")} type="email" />
-          <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)}>
-            <option value="">{t("Select role")}</option>
-            {activeRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-          </select>
-          <Button onClick={() => void invite()} disabled={!email}>{t("Create Invitation")}</Button>
-        </div>
-        {message && <p className="success-message">{message}</p>}
-        {error && !selectedUser && <p className="form-message error-message">{error}</p>}
-        {inviteLink && (
-          <div className="invitation-link">
-            <input readOnly value={inviteLink} />
-            <Button variant="outline" onClick={() => void navigator.clipboard.writeText(inviteLink)}>{t("Copy Link")}</Button>
+      {canCreateUsers && (
+        <section className="security-panel">
+          <h2>{t("Invite User")}</h2>
+          <div className="security-form-row">
+            <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t("Email address")} type="email" />
+            <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)}>
+              <option value="">{t("Select role")}</option>
+              {activeRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+            </select>
+            <Button onClick={() => void invite()} disabled={!email}>{t("Create Invitation")}</Button>
           </div>
-        )}
-      </section>
+          {inviteLink && (
+            <div className="invitation-link">
+              <input readOnly value={inviteLink} />
+              <Button variant="outline" onClick={() => void navigator.clipboard.writeText(inviteLink)}>{t("Copy Link")}</Button>
+            </div>
+          )}
+        </section>
+      )}
 
-      {selectedUser && (
+      {selectedUser && canAssignRoles && (
         <section className="security-panel user-role-editor" aria-labelledby="role-editor-title">
           <div className="security-toolbar role-editor-heading">
             <div>
@@ -201,6 +231,8 @@ export default function UserAdminPage() {
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search users")} />
           <Button variant="outline" onClick={() => void load(search)}>{t("Search")}</Button>
         </div>
+        {message && <p className="success-message">{message}</p>}
+        {error && !selectedUser && <p className="form-message error-message">{error}</p>}
         {loading ? <p>{t("Loading users...")}</p> : (
           <div className="security-table-wrap">
             <table className="security-table">
@@ -218,11 +250,15 @@ export default function UserAdminPage() {
                   <tr key={item.membershipId}>
                     <td><strong>{item.user.firstName} {item.user.lastName ?? ""}</strong><small>{item.user.email}</small></td>
                     <td>
-                      <select value={item.user.status} onChange={async (event) => { await setUserStatus(item.user.id, event.target.value); await load(search); }}>
-                        <option value="ACTIVE">{t("Active")}</option>
-                        <option value="INACTIVE">{t("Inactive")}</option>
-                        <option value="SUSPENDED">{t("Suspended")}</option>
-                      </select>
+                      {canUpdateUsers ? (
+                        <select value={item.user.status} onChange={(event) => void changeStatus(item, event.target.value)}>
+                          <option value="ACTIVE">{t("Active")}</option>
+                          <option value="INACTIVE">{t("Inactive")}</option>
+                          <option value="SUSPENDED">{t("Suspended")}</option>
+                        </select>
+                      ) : (
+                        <span>{t(item.user.status === "ACTIVE" ? "Active" : item.user.status === "INACTIVE" ? "Inactive" : "Suspended")}</span>
+                      )}
                     </td>
                     <td>
                       <div className="assigned-role-list">
@@ -234,8 +270,9 @@ export default function UserAdminPage() {
                     <td>{item.user.lastLoginAt ? new Date(item.user.lastLoginAt).toLocaleString() : t("Never")}</td>
                     <td>
                       <div className="table-action-group">
-                        <Button size="sm" onClick={() => openRoleEditor(item)}>{t("Manage Roles")}</Button>
-                        <Button variant="outline" size="sm" onClick={async () => { await revokeUserSessions(item.user.id); setMessage(t("Active sessions revoked.")); }}>{t("Revoke Sessions")}</Button>
+                        {canAssignRoles && <Button size="sm" onClick={() => openRoleEditor(item)}>{t("Manage Roles")}</Button>}
+                        {canRevokeSessions && <Button variant="outline" size="sm" onClick={() => void revokeSessions(item)}>{t("Revoke Sessions")}</Button>}
+                        {!canAssignRoles && !canRevokeSessions && <span>{t("View only")}</span>}
                       </div>
                     </td>
                   </tr>
