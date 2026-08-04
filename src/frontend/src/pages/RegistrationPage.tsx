@@ -4,10 +4,36 @@ import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import { useLocale } from "../i18n/LocaleContext";
 import api from "../services/api";
+import { readWorkspaceSelection, requiresDailyChoice, workspacePath } from "../workspaces/workspace";
 import "./LoginPage.css";
 import "./RegistrationPage.css";
 
 interface RegistrationError { error?: string }
+
+interface LoginResponse {
+  message: string;
+  token: string;
+  accessToken?: string;
+  refreshToken?: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string | null;
+    mustChangePassword?: boolean;
+  };
+  authorization?: {
+    organizationId: string | null;
+    organizationName: string | null;
+    membershipId: string | null;
+    roles: string[];
+    permissions: string[];
+    entitlements: string[];
+    companyUser: boolean;
+    mfaRequired: boolean;
+    mfaEnabled: boolean;
+  };
+}
 
 export default function RegistrationPage() {
   const navigate = useNavigate();
@@ -16,14 +42,37 @@ export default function RegistrationPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [aggregateAnalyticsEnabled, setAggregateAnalyticsEnabled] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const completeLogin = (response: LoginResponse) => {
+    localStorage.setItem("authToken", response.accessToken ?? response.token);
+    if (response.refreshToken) localStorage.setItem("refreshToken", response.refreshToken);
+    localStorage.setItem("currentUser", JSON.stringify(response.user));
+    if (response.authorization) localStorage.setItem("authorization", JSON.stringify(response.authorization));
+
+    const hasOrganizationWorkspace = response.authorization?.permissions.includes("admin.access") ?? false;
+    const remembered = readWorkspaceSelection();
+    const destination = requiresDailyChoice(hasOrganizationWorkspace)
+      ? "/workspace"
+      : workspacePath(hasOrganizationWorkspace && remembered ? remembered.workspace : "personal");
+
+    navigate(destination, { replace: true });
+    window.location.reload();
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError(t("Passwords do not match."));
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.post("/api/auth/register", {
@@ -34,7 +83,9 @@ export default function RegistrationPage() {
         privacyAcknowledged,
         aggregateAnalyticsEnabled,
       });
-      navigate("/", { replace: true, state: { registrationComplete: true } });
+
+      const loginResponse = await api.post<LoginResponse>("/api/auth/login", { email, password });
+      completeLogin(loginResponse.data);
     } catch (caught) {
       if (axios.isAxiosError<RegistrationError>(caught)) {
         setError(caught.response?.data?.error ?? t("Unable to create your account."));
@@ -62,6 +113,7 @@ export default function RegistrationPage() {
           </div>
           <label>{t("Email")}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
           <label>{t("Password")}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+          <label>{t("Confirm Password")}<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
 
           <details className="privacy-summary">
             <summary>{t("Privacy and account security notice")}</summary>
