@@ -1,0 +1,174 @@
+.security-record-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #d9e3ea;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(30, 55, 75, 0.05);
+}
+
+.security-record-card.is-current {
+  border-color: #9fd7b1;
+  box-shadow: 0 0 0 1px rgba(26, 127, 70, 0.08), 0 6px 16px rgba(30, 55, 75, 0.06);
+}
+
+.security-record-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.security-record-identity {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
+}
+
+.security-device-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2.4rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 10px;
+  background: #edf5f0;
+  color: #176b3a;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.security-record-identity h3 {
+  margin: 0;
+  color: #1d2f3d;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.security-record-identity p {
+  margin: .2rem 0 0;
+  color: #64748b;
+  font-size: .8rem;
+}
+
+.security-card-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .8rem 1rem;
+  padding: .9rem;
+  border-radius: 12px;
+  background: #f7faf8;
+}
+
+.security-card-field {
+  min-width: 0;
+}
+
+.security-card-field-wide {
+  grid-column: span 2;
+}
+
+.security-card-field span,
+.security-card-field strong {
+  display: block;
+}
+
+.security-card-field span {
+  margin-bottom: .2rem;
+  color: #708090;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.security-card-field strong {
+  overflow: hidden;
+  color: #203443;
+  font-size: .86rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-record-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.security-record-card-footer button {
+  min-width: 132px;
+}
+
+html[data-theme="dark"] .security-record-card {
+  border-color: #354a5d;
+  background: #182535;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .security-record-card.is-current {
+  border-color: #3a8e5f;
+}
+
+html[data-theme="dark"] .security-device-icon,
+html[data-theme="dark"] .security-card-field-grid {
+  background: #223344;
+}
+
+html[data-theme="dark"] .security-record-identity h3,
+html[data-theme="dark"] .security-card-field strong {
+  color: #edf3f8;
+}
+
+html[data-theme="dark"] .security-record-identity p,
+html[data-theme="dark"] .security-card-field span {
+  color: #aebdcc;
+}
+
+@media (max-width: 1050px) {
+  .security-card-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .security-record-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .current-session-badge {
+    align-self: flex-start;
+  }
+
+  .security-card-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .security-card-field-wide {
+    grid-column: auto;
+  }
+
+  .security-card-field strong {
+    white-space: normal;
+  }
+
+  .security-record-card-footer,
+  .security-record-card-footer button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .security-record-card {
+    animation: security-card-enter .18s ease-out both;
+  }
+}
+
+@keyframes security-card-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
