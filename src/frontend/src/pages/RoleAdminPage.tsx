@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthorization } from "../auth/AuthorizationContext";
+import { AdminLoadingState, AdminPageHeader } from "../components/admin/AdminComponents";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
 import { createRole, deleteRole, getPermissions, getRoles, updateRole, type RoleRecord } from "../services/rbacService";
@@ -119,10 +120,13 @@ export default function RoleAdminPage() {
 
   return (
     <main className="admin-page security-admin-page">
-      <header className="admin-header compact">
-        <div><p className="admin-eyebrow">{t("Administration / Roles")}</p><h1>{t("Role Management")}</h1><p>{t("Create reusable roles and assign permissions by functional area.")}</p></div>
-        <Button variant="outline" onClick={() => navigate("/admin")}>{t("Back to Admin")}</Button>
-      </header>
+      <AdminPageHeader
+        eyebrow={t("Administration / Roles")}
+        title={t("Role Management")}
+        description={t("Create reusable roles and assign permissions by functional area.")}
+        backLabel={t("Back to Admin")}
+        onBack={() => navigate("/admin")}
+      />
 
       {deleteCandidate && (
         <section className="security-panel deletion-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="delete-role-title" aria-describedby="delete-role-description">
@@ -143,7 +147,7 @@ export default function RoleAdminPage() {
         <aside className="security-panel role-list">
           <div className="security-toolbar"><h2>{t("Roles")}</h2>{canCreateRoles && <Button size="sm" onClick={reset}>{t("New Role")}</Button>}</div>
           {loading ? (
-            <div className="admin-loading-state" role="status"><span className="admin-spinner" aria-hidden="true" /><span>{t("Loading roles...")}</span></div>
+            <AdminLoadingState label={t("Loading roles...")} />
           ) : roles.map((role) => (
             <button key={role.id} type="button" className={`role-list-item${selectedRoleId === role.id ? " active" : ""}`} onClick={() => selectRole(role)}>
               <span className="role-list-heading"><strong>{role.name}</strong>{role.isProtected && <span className="role-type-badge protected">{t("Protected")}</span>}</span>
