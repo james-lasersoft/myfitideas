@@ -5,6 +5,7 @@ import api from "../../services/api";
 import BrandLogo from "../BrandLogo";
 import LanguageSelector from "../LanguageSelector";
 import ThemeToggle from "../ThemeToggle";
+import AccountMenu from "./AccountMenu";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import "./GlobalControls.css";
 import "./MemberShell.css";
@@ -97,6 +98,7 @@ export default function GlobalControls() {
         <WorkspaceSwitcher />
         <ThemeToggle />
         <LanguageSelector />
+        {isMemberWorkspace && <AccountMenu />}
       </div>
     </div>
   );
