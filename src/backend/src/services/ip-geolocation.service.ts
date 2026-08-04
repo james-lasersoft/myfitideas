@@ -45,7 +45,12 @@ export function normalizeClientIp(value: string | null | undefined): string | nu
 export function isPublicIp(value: string): boolean {
   if (net.isIPv4(value)) {
     const parts = value.split(".").map(Number);
-    const [a, b] = parts;
+    if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+
+    const a = parts[0];
+    const b = parts[1];
+    if (a === undefined || b === undefined) return false;
+
     if (a === 10 || a === 127 || a === 0) return false;
     if (a === 169 && b === 254) return false;
     if (a === 172 && b >= 16 && b <= 31) return false;
