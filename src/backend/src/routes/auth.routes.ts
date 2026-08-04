@@ -11,6 +11,10 @@ import {
 } from "../controllers/auth.controller.js";
 import { registerWithPrivacy } from "../controllers/privacy-registration.controller.js";
 import {
+  getPrivacyPreferences,
+  updatePrivacyPreferences,
+} from "../controllers/privacy-preferences.controller.js";
+import {
   listActiveSessions,
   revokeOtherSessions,
   revokeSession,
@@ -23,6 +27,8 @@ router.post("/register", registerWithPrivacy);
 router.post("/login", login);
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", authenticateToken, logout);
+router.get("/privacy/preferences", authenticateToken, getPrivacyPreferences);
+router.put("/privacy/preferences", authenticateToken, updatePrivacyPreferences);
 router.post("/mfa/enroll/start", beginMfaEnrollment);
 router.post("/mfa/enroll/complete", completeMfaEnrollment);
 router.get("/security/devices", authenticateToken, listSecurityDevices);
