@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Button from "../ui/Button";
 import "./AdminComponents.css";
 
@@ -13,9 +13,6 @@ interface AdminPageHeaderProps {
   actions?: ReactNode;
 }
 
-const COLLAPSE_SCROLL_Y = 112;
-const EXPAND_SCROLL_Y = 56;
-
 export function AdminPageHeader({
   eyebrow,
   title,
@@ -25,47 +22,40 @@ export function AdminPageHeader({
   actions,
 }: AdminPageHeaderProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const collapseSentinelRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
-    let frameId = 0;
+    const sentinel = collapseSentinelRef.current;
+    if (!sentinel) return;
 
-    const update = () => {
-      frameId = 0;
-      const scrollY = window.scrollY;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCollapsed(!entry.isIntersecting),
+      {
+        root: null,
+        rootMargin: "-58px 0px 0px 0px",
+        threshold: 0,
+      },
+    );
 
-      setCollapsed((current) => {
-        if (!current && scrollY >= COLLAPSE_SCROLL_Y) return true;
-        if (current && scrollY <= EXPAND_SCROLL_Y) return false;
-        return current;
-      });
-    };
-
-    const requestUpdate = () => {
-      if (frameId) return;
-      frameId = window.requestAnimationFrame(update);
-    };
-
-    update();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", requestUpdate);
-      if (frameId) window.cancelAnimationFrame(frameId);
-    };
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   return (
-    <header className={`admin-header admin-ds-header${collapsed ? " collapsed" : ""}`}>
-      <div className="admin-ds-header-copy">
-        <p className="admin-eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p className="admin-ds-header-description">{description}</p>
-      </div>
-      <div className="admin-ds-header-actions">
-        {actions}
-        <Button variant="outline" onClick={onBack}>{backLabel}</Button>
-      </div>
-    </header>
+    <>
+      <span ref={collapseSentinelRef} className="admin-header-collapse-sentinel" aria-hidden="true" />
+      <header className={`admin-header admin-ds-header${collapsed ? " collapsed" : ""}`}>
+        <div className="admin-ds-header-copy">
+          <p className="admin-eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className="admin-ds-header-description">{description}</p>
+        </div>
+        <div className="admin-ds-header-actions">
+          {actions}
+          <Button variant="outline" onClick={onBack}>{backLabel}</Button>
+        </div>
+      </header>
+    </>
   );
 }
 
