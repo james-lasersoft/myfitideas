@@ -5,17 +5,11 @@
 }
 
 .profile-avatar {
-  display: grid;
-  flex: 0 0 auto;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  border-radius: 50%;
-  color: #ffffff;
-  background: #2563eb;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  display: none;
+}
+
+.profile-personal-grid > .profile-inline-future:last-child {
+  display: none;
 }
 
 .profile-section {
