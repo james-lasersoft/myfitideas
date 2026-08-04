@@ -2,7 +2,8 @@ import "dotenv/config";
 import prisma from "../src/config/prisma.js";
 
 const catalog = [
-  ["admin.shell.ariaLabel", "MyFitIdeas administration", "admin-shell", "Administração MyFitIdeas"],
+  ["admin.shell.ariaLabel", "MyFitIdeas Admin Center", "admin-shell", "Central de Administração MyFitIdeas"],
+  ["admin.center.title", "Admin Center", "admin-shell", "Central de Administração"],
 ] as const;
 
 async function main() {
@@ -12,7 +13,7 @@ async function main() {
   for (const [key, sourceText, category, ptBr] of catalog) {
     const translationKey = await prisma.translationKey.upsert({
       where: { key },
-      update: { category },
+      update: { sourceText, category },
       create: { key, sourceText, category },
     });
     const currentSource = translationKey.sourceText;
@@ -32,7 +33,7 @@ async function main() {
 
     await prisma.translationValue.upsert({
       where: { translationKeyId_languageId: { translationKeyId: translationKey.id, languageId: portuguese.id } },
-      update: {},
+      update: { value: ptBr, status: "PUBLISHED", publishedValue: ptBr },
       create: {
         translationKeyId: translationKey.id,
         languageId: portuguese.id,
