@@ -29,7 +29,7 @@ export default function AdminLandingPage() {
   const available = modules.filter((module) => can(module.permission));
 
   return (
-    <main className="admin-page">
+    <main className="admin-page admin-console-page">
       <header className="admin-header">
         <div>
           <BrandLogo className="admin-logo" />
@@ -42,19 +42,24 @@ export default function AdminLandingPage() {
 
       <section className="admin-module-grid" aria-label={t("Administrative modules")}>
         {available.map((module) => (
-          <button type="button" className="admin-module-card admin-module-tile active-module" key={module.path} onClick={() => navigate(module.path)} aria-label={t(module.action)}>
-            <span className="module-status ready">{t("Available")}</span>
+          <button
+            type="button"
+            className="admin-module-card admin-module-tile active-module"
+            key={module.path}
+            onClick={() => navigate(module.path)}
+            aria-label={t(module.action)}
+          >
             <span className="admin-module-title">{t(module.title)}</span>
             <span className="admin-module-description">{t(module.description)}</span>
             <span className="admin-module-action">{t(module.action)}</span>
           </button>
         ))}
-        <button type="button" className="admin-module-card admin-module-tile planned-module" disabled>
-          <span className="module-status">{t("Planned")}</span>
+
+        <article className="admin-module-card admin-module-tile planned-module" aria-disabled="true">
           <span className="admin-module-title">{t("System Settings")}</span>
           <span className="admin-module-description">{t("Manage operational configuration and feature controls.")}</span>
-          <span className="admin-module-action">{t("Coming in a future phase")}</span>
-        </button>
+          <span className="admin-module-action future-module-note">{t("Coming in a future phase")}</span>
+        </article>
       </section>
     </main>
   );
