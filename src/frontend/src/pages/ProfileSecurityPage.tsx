@@ -23,6 +23,12 @@ interface ActiveSession {
   current: boolean;
 }
 
+interface PrivacyPreferences {
+  aggregateAnalyticsEnabled: boolean;
+  preciseGpsCollected: boolean;
+  approximateLocationMethod: string;
+}
+
 function deviceLabel(userAgent: string | null): string {
   if (!userAgent) return "Unknown device";
   if (userAgent.includes("Edg/")) return "Microsoft Edge";
@@ -37,6 +43,8 @@ export default function ProfileSecurityPage() {
   const { t } = useLocale();
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [aggregateAnalyticsEnabled, setAggregateAnalyticsEnabled] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -47,11 +55,13 @@ export default function ProfileSecurityPage() {
     void Promise.all([
       api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices"),
       api.get<{ sessions: ActiveSession[] }>("/api/auth/security/sessions"),
+      api.get<{ preferences: PrivacyPreferences }>("/api/auth/privacy/preferences"),
     ])
-      .then(([deviceResponse, sessionResponse]) => {
+      .then(([deviceResponse, sessionResponse, privacyResponse]) => {
         if (!active) return;
         setDevices(deviceResponse.data.devices);
         setSessions(sessionResponse.data.sessions);
+        setAggregateAnalyticsEnabled(privacyResponse.data.preferences.aggregateAnalyticsEnabled);
         setError("");
       })
       .catch(() => {
@@ -92,6 +102,23 @@ export default function ProfileSecurityPage() {
     setMessage(t("All other sessions and trusted devices were revoked."));
   };
 
+  const updateAnalyticsPreference = async (enabled: boolean) => {
+    setSavingPrivacy(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await api.put<{ preferences: PrivacyPreferences }>("/api/auth/privacy/preferences", {
+        aggregateAnalyticsEnabled: enabled,
+      });
+      setAggregateAnalyticsEnabled(response.data.preferences.aggregateAnalyticsEnabled);
+      setMessage(t("Privacy preferences updated."));
+    } catch {
+      setError(t("Unable to update privacy preferences."));
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
+
   const resetMfa = async () => {
     if (!window.confirm(t("Reset MFA and revoke all sessions? You will enroll again at the next login."))) return;
     await api.post("/api/auth/security/mfa/reset");
@@ -106,7 +133,7 @@ export default function ProfileSecurityPage() {
           <div>
             <p className="section-eyebrow">{t("Account Security")}</p>
             <h1>{t("Security Center")}</h1>
-            <p>{t("Manage multi-factor authentication, trusted devices, and active access to your account.")}</p>
+            <p>{t("Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.")}</p>
           </div>
           <button type="button" className="secondary-button" onClick={() => navigate("/profile")}>{t("Back to Profile")}</button>
         </header>
@@ -146,6 +173,28 @@ export default function ProfileSecurityPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="security-section privacy-preferences-section">
+          <div className="security-section-heading">
+            <div>
+              <h2>{t("Privacy & Analytics")}</h2>
+              <p>{t("Choose whether your information may contribute to de-identified aggregate product statistics.")}</p>
+            </div>
+            <span className={`privacy-status-badge ${aggregateAnalyticsEnabled ? "enabled" : "disabled"}`}>
+              {aggregateAnalyticsEnabled ? t("Participating") : t("Not participating")}
+            </span>
+          </div>
+          <p className="privacy-detail-note">{t("This optional choice does not affect access to MyFitIdeas. Login security continues to use IP address, device information, and approximate IP-based location. Device GPS is not requested.")}</p>
+          <label className="privacy-preference-toggle">
+            <input
+              type="checkbox"
+              checked={aggregateAnalyticsEnabled}
+              disabled={loading || savingPrivacy}
+              onChange={(event) => void updateAnalyticsPreference(event.target.checked)}
+            />
+            <span>{savingPrivacy ? t("Saving privacy preference...") : t("Allow de-identified aggregate analytics")}</span>
+          </label>
         </section>
 
         <section className="security-section danger-zone">
