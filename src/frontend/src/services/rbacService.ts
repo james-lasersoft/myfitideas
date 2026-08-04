@@ -74,6 +74,10 @@ export async function updateRole(roleId: string, input: { name?: string; descrip
   return response.data;
 }
 
+export async function deleteRole(roleId: string): Promise<void> {
+  await api.delete(`/api/v1/admin/rbac/roles/${roleId}`);
+}
+
 export async function createInvitation(email: string, roleId?: string) {
   const response = await api.post("/api/v1/admin/rbac/invitations", { email, roleId });
   return response.data as { token: string; invitationPath: string };
