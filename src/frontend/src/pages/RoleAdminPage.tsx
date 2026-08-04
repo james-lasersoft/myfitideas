@@ -66,14 +66,18 @@ export default function RoleAdminPage() {
     return groups;
   }, {}), [permissions]);
 
-  const reset = () => {
+  const clearEditor = () => {
     setSelectedRoleId("");
     setName("");
     setDescription("");
     setSelectedPermissions([]);
+    setDeleteCandidate(null);
+  };
+
+  const reset = () => {
+    clearEditor();
     setMessage("");
     setError("");
-    setDeleteCandidate(null);
   };
 
   const save = async () => {
@@ -83,8 +87,8 @@ export default function RoleAdminPage() {
     try {
       if (selectedRole) await updateRole(selectedRole.id, { name, description, permissions: selectedPermissions });
       else await createRole({ name, description, permissions: selectedPermissions });
+      clearEditor();
       setMessage(t("Role saved successfully."));
-      reset();
       await load();
     } catch (saveError) {
       setError(apiErrorMessage(saveError, t("Unable to save role.")));
@@ -100,12 +104,11 @@ export default function RoleAdminPage() {
     setError("");
     try {
       await deleteRole(deleteCandidate.id);
+      clearEditor();
       setMessage(t("Role deleted successfully."));
-      reset();
       await load();
     } catch (deleteError) {
       setError(apiErrorMessage(deleteError, t("Unable to delete role.")));
-      setDeleteCandidate(null);
     } finally {
       setDeleting(false);
     }
@@ -122,14 +125,15 @@ export default function RoleAdminPage() {
       </header>
 
       {deleteCandidate && (
-        <section className="security-panel deletion-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="delete-role-title">
+        <section className="security-panel deletion-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="delete-role-title" aria-describedby="delete-role-description">
           <div>
             <p className="admin-eyebrow">{t("Confirm role deletion")}</p>
             <h2 id="delete-role-title">{t("Delete Role")}: {deleteCandidate.name}</h2>
-            <p>{t("This action permanently deletes the custom role. Assigned users and pending invitations must be removed first.")}</p>
+            <p id="delete-role-description">{t("This action permanently deletes the custom role. Assigned users and pending invitations must be removed first.")}</p>
+            {error && <p className="form-message error-message" role="alert">{error}</p>}
           </div>
           <div className="profile-actions">
-            <Button variant="outline" onClick={() => setDeleteCandidate(null)} disabled={deleting}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setDeleteCandidate(null); setError(""); }} disabled={deleting}>{t("Cancel")}</Button>
             <Button onClick={() => void confirmDelete()} disabled={deleting}>{deleting ? t("Deleting...") : t("Confirm Delete")}</Button>
           </div>
         </section>
@@ -152,7 +156,7 @@ export default function RoleAdminPage() {
         <section className="security-panel role-editor">
           <div className="security-toolbar role-editor-toolbar">
             <div><h2>{selectedRole ? t("Edit Role") : t("Create Role")}</h2>{selectedRole?.isProtected && <p className="protected-role-note">{t("Protected roles are read only.")}</p>}</div>
-            {selectedRoleDeletable && <Button variant="outline" onClick={() => setDeleteCandidate(selectedRole!)}>{t("Delete Role")}</Button>}
+            {selectedRoleDeletable && <Button variant="outline" onClick={() => { setError(""); setDeleteCandidate(selectedRole!); }}>{t("Delete Role")}</Button>}
           </div>
           <label>{t("Role name")}<input value={name} onChange={(event) => setName(event.target.value)} disabled={Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles} /></label>
           <label>{t("Description")}<textarea value={description} onChange={(event) => setDescription(event.target.value)} disabled={Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles} /></label>
@@ -167,7 +171,7 @@ export default function RoleAdminPage() {
             ))}
           </div>
           {message && <p className="success-message" role="status">{message}</p>}
-          {error && <p className="form-message error-message" role="alert">{error}</p>}
+          {error && !deleteCandidate && <p className="form-message error-message" role="alert">{error}</p>}
           <div className="profile-actions">
             <Button variant="outline" onClick={reset}>{t("Cancel")}</Button>
             <Button onClick={() => void save()} disabled={!name || saving || (Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles)}>{saving ? t("Saving...") : t("Save Role")}</Button>
