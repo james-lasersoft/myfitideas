@@ -19,6 +19,7 @@ import {
   revokeOtherSessions,
   revokeSession,
 } from "../controllers/account-security.controller.js";
+import { listOwnSecurityDetails } from "../controllers/security-details.controller.js";
 import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -31,6 +32,7 @@ router.get("/privacy/preferences", authenticateToken, getPrivacyPreferences);
 router.put("/privacy/preferences", authenticateToken, updatePrivacyPreferences);
 router.post("/mfa/enroll/start", beginMfaEnrollment);
 router.post("/mfa/enroll/complete", completeMfaEnrollment);
+router.get("/security/details", authenticateToken, listOwnSecurityDetails);
 router.get("/security/devices", authenticateToken, listSecurityDevices);
 router.delete("/security/devices/:id", authenticateToken, revokeTrustedDevice);
 router.get("/security/sessions", authenticateToken, listActiveSessions);
