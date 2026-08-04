@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
 import "./ArcMetricBadge.css";
 
 interface ArcMetricBadgeProps {
@@ -41,18 +41,12 @@ export default function ArcMetricBadge({
   return (
     <article
       className="arc-metric-badge"
-      style={{ "--arc-accent": accent } as React.CSSProperties}
+      style={{ "--arc-accent": accent } as CSSProperties}
       aria-labelledby={titleId}
     >
       <div className="arc-metric-visual">
         <svg className="arc-metric-svg" viewBox="0 0 120 120" aria-hidden="true">
-          <circle
-            className="arc-metric-track"
-            cx="60"
-            cy="60"
-            r="40"
-            pathLength="100"
-          />
+          <circle className="arc-metric-track" cx="60" cy="60" r="40" pathLength="100" />
           <circle
             className="arc-metric-progress"
             cx="60"
