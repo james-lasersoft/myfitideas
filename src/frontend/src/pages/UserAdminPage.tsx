@@ -20,6 +20,16 @@ function apiErrorMessage(error: unknown, fallback: string): string {
   return responseError.response?.data?.error ?? fallback;
 }
 
+function statusLabel(status: string, t: (value: string) => string): string {
+  if (status === "ACTIVE") return t("Active");
+  if (status === "INACTIVE") return t("Inactive");
+  return t("Suspended");
+}
+
+function statusClass(status: string): string {
+  return status.toLowerCase();
+}
+
 export default function UserAdminPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
@@ -36,6 +46,7 @@ export default function UserAdminPage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [savingRoles, setSavingRoles] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   const canCreateUsers = can("users.create");
   const canUpdateUsers = can("users.update");
@@ -85,23 +96,29 @@ export default function UserAdminPage() {
   const changeStatus = async (user: AdminUser, status: string) => {
     setError("");
     setMessage("");
+    setUpdatingUserId(user.user.id);
     try {
       await setUserStatus(user.user.id, status);
       setMessage(t("User status updated."));
       await load(search);
     } catch (statusError) {
       setError(apiErrorMessage(statusError, t("Unable to update user status.")));
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
   const revokeSessions = async (user: AdminUser) => {
     setError("");
     setMessage("");
+    setUpdatingUserId(user.user.id);
     try {
       await revokeUserSessions(user.user.id);
       setMessage(t("Active sessions revoked."));
     } catch (sessionError) {
       setError(apiErrorMessage(sessionError, t("Unable to revoke active sessions.")));
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -227,13 +244,18 @@ export default function UserAdminPage() {
       )}
 
       <section className="security-panel">
-        <div className="security-toolbar">
+        <div className="security-toolbar user-list-toolbar">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search users")} />
-          <Button variant="outline" onClick={() => void load(search)}>{t("Search")}</Button>
+          <Button variant="outline" onClick={() => void load(search)} disabled={loading}>{t("Search")}</Button>
         </div>
-        {message && <p className="success-message">{message}</p>}
-        {error && !selectedUser && <p className="form-message error-message">{error}</p>}
-        {loading ? <p>{t("Loading users...")}</p> : (
+        {message && <p className="success-message" role="status">{message}</p>}
+        {error && !selectedUser && <p className="form-message error-message" role="alert">{error}</p>}
+        {loading ? (
+          <div className="admin-loading-state" role="status" aria-live="polite">
+            <span className="admin-spinner" aria-hidden="true" />
+            <span>{t("Loading users...")}</span>
+          </div>
+        ) : (
           <div className="security-table-wrap">
             <table className="security-table">
               <thead>
@@ -246,37 +268,41 @@ export default function UserAdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((item) => (
-                  <tr key={item.membershipId}>
-                    <td><strong>{item.user.firstName} {item.user.lastName ?? ""}</strong><small>{item.user.email}</small></td>
-                    <td>
-                      {canUpdateUsers ? (
-                        <select value={item.user.status} onChange={(event) => void changeStatus(item, event.target.value)}>
-                          <option value="ACTIVE">{t("Active")}</option>
-                          <option value="INACTIVE">{t("Inactive")}</option>
-                          <option value="SUSPENDED">{t("Suspended")}</option>
-                        </select>
-                      ) : (
-                        <span>{t(item.user.status === "ACTIVE" ? "Active" : item.user.status === "INACTIVE" ? "Inactive" : "Suspended")}</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="assigned-role-list">
-                        {item.roles.length === 0
-                          ? <span>{t("No roles assigned")}</span>
-                          : item.roles.map((role) => <span key={role.id} className="role-badge">{role.name}</span>)}
-                      </div>
-                    </td>
-                    <td>{item.user.lastLoginAt ? new Date(item.user.lastLoginAt).toLocaleString() : t("Never")}</td>
-                    <td>
-                      <div className="table-action-group">
-                        {canAssignRoles && <Button size="sm" onClick={() => openRoleEditor(item)}>{t("Manage Roles")}</Button>}
-                        {canRevokeSessions && <Button variant="outline" size="sm" onClick={() => void revokeSessions(item)}>{t("Revoke Sessions")}</Button>}
-                        {!canAssignRoles && !canRevokeSessions && <span>{t("View only")}</span>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {users.map((item) => {
+                  const updating = updatingUserId === item.user.id;
+                  return (
+                    <tr key={item.membershipId} aria-busy={updating}>
+                      <td><strong>{item.user.firstName} {item.user.lastName ?? ""}</strong><small>{item.user.email}</small></td>
+                      <td>
+                        {canUpdateUsers ? (
+                          <select value={item.user.status} onChange={(event) => void changeStatus(item, event.target.value)} disabled={updating}>
+                            <option value="ACTIVE">{t("Active")}</option>
+                            <option value="INACTIVE">{t("Inactive")}</option>
+                            <option value="SUSPENDED">{t("Suspended")}</option>
+                          </select>
+                        ) : (
+                          <span className={`status-badge ${statusClass(item.user.status)}`}>{statusLabel(item.user.status, t)}</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="assigned-role-list">
+                          {item.roles.length === 0
+                            ? <span>{t("No roles assigned")}</span>
+                            : item.roles.map((role) => <span key={role.id} className="role-badge">{role.name}</span>)}
+                        </div>
+                      </td>
+                      <td>{item.user.lastLoginAt ? new Date(item.user.lastLoginAt).toLocaleString() : t("Never")}</td>
+                      <td>
+                        <div className="table-action-group">
+                          {canAssignRoles && <Button size="sm" onClick={() => openRoleEditor(item)} disabled={updating}>{t("Manage Roles")}</Button>}
+                          {canRevokeSessions && <Button variant="outline" size="sm" onClick={() => void revokeSessions(item)} disabled={updating}>{t("Revoke Sessions")}</Button>}
+                          {!canAssignRoles && !canRevokeSessions && <span className="view-only-label">{t("View only")}</span>}
+                          {updating && <span className="inline-progress"><span className="admin-spinner small" aria-hidden="true" />{t("Saving...")}</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
