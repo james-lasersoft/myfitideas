@@ -57,7 +57,7 @@ async function main(): Promise<void> {
         tokenVersion: { increment: 1 },
         mfaEnabled: false,
         mfaSecretEncrypted: null,
-        mfaRecoveryCodeHashes: undefined,
+        mfaRecoveryCodeHashes: [],
       },
       create: {
         email: definition.email,
@@ -87,7 +87,6 @@ async function main(): Promise<void> {
     const role = roleByKey.get(definition.roleKey)!;
     await prisma.$transaction([
       prisma.userSession.deleteMany({ where: { userId: user.id } }),
-      prisma.trustedDevice.deleteMany({ where: { userId: user.id } }),
       prisma.membershipRole.deleteMany({ where: { membershipId: membership.id } }),
       prisma.membershipRole.create({
         data: { membershipId: membership.id, roleId: role.id },
