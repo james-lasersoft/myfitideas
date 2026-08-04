@@ -115,7 +115,7 @@ export default function RoleAdminPage() {
   };
 
   const selectedRoleEditable = !selectedRole?.isProtected && canUpdateRoles;
-  const selectedRoleDeletable = Boolean(selectedRole && canDeleteRoles && !selectedRole.isProtected && !selectedRole.isSystem);
+  const selectedRoleDeletable = selectedRole != null && canDeleteRoles && !selectedRole.isProtected && !selectedRole.isSystem;
 
   return (
     <main className="admin-page security-admin-page">
@@ -156,13 +156,13 @@ export default function RoleAdminPage() {
         <section className="security-panel role-editor">
           <div className="security-toolbar role-editor-toolbar">
             <div><h2>{selectedRole ? t("Edit Role") : t("Create Role")}</h2>{selectedRole?.isProtected && <p className="protected-role-note">{t("Protected roles are read only.")}</p>}</div>
-            {selectedRoleDeletable && <Button variant="outline" onClick={() => { setError(""); setDeleteCandidate(selectedRole!); }}>{t("Delete Role")}</Button>}
+            {selectedRoleDeletable && <Button variant="outline" onClick={() => { setError(""); setDeleteCandidate(selectedRole); }}>{t("Delete Role")}</Button>}
           </div>
-          <label>{t("Role name")}<input value={name} onChange={(event) => setName(event.target.value)} disabled={Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles} /></label>
-          <label>{t("Description")}<textarea value={description} onChange={(event) => setDescription(event.target.value)} disabled={Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles} /></label>
+          <label>{t("Role name")}<input value={name} onChange={(event) => setName(event.target.value)} disabled={selectedRole ? !selectedRoleEditable : !canCreateRoles} /></label>
+          <label>{t("Description")}<textarea value={description} onChange={(event) => setDescription(event.target.value)} disabled={selectedRole ? !selectedRoleEditable : !canCreateRoles} /></label>
           <div className="permission-groups">
             {Object.entries(grouped).map(([category, categoryPermissions]) => (
-              <fieldset key={category} disabled={Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles}>
+              <fieldset key={category} disabled={selectedRole ? !selectedRoleEditable : !canCreateRoles}>
                 <legend>{category}</legend>
                 {categoryPermissions.map((permission) => (
                   <label key={permission.key} className="permission-option"><input type="checkbox" checked={selectedPermissions.includes(permission.key)} onChange={(event) => setSelectedPermissions((current) => event.target.checked ? [...current, permission.key] : current.filter((key) => key !== permission.key))} /><span><strong>{permission.name}</strong><small>{permission.description}</small></span></label>
@@ -174,7 +174,7 @@ export default function RoleAdminPage() {
           {error && !deleteCandidate && <p className="form-message error-message" role="alert">{error}</p>}
           <div className="profile-actions">
             <Button variant="outline" onClick={reset}>{t("Cancel")}</Button>
-            <Button onClick={() => void save()} disabled={!name || saving || (Boolean(selectedRole) ? !selectedRoleEditable : !canCreateRoles)}>{saving ? t("Saving...") : t("Save Role")}</Button>
+            <Button onClick={() => void save()} disabled={!name || saving || (selectedRole ? !selectedRoleEditable : !canCreateRoles)}>{saving ? t("Saving...") : t("Save Role")}</Button>
           </div>
         </section>
       </section>
