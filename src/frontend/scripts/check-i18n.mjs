@@ -10,7 +10,8 @@ async function main() {
     for (const finding of findings) {
       console.error(`${finding.file}:${finding.line}:${finding.column}  unregistered ${finding.kind}: \"${finding.text}\"`);
     }
-    console.error("\nRegister each user-facing English source in src/backend/prisma/seed-translations.ts.");
+    console.error("\nRegister each user-facing English source in the appropriate translation catalog under src/backend/prisma/.");
+    console.error("Use the member catalogs for customer-facing features and the administration catalogs for workspace, RBAC, security, and admin-shell text.");
     console.error("For intentional exceptions, use data-no-translate, i18n-ignore, or i18n-file-ignore.\n");
     process.exit(1);
   }
