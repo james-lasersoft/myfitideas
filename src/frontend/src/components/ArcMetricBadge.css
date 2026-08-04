@@ -1,0 +1,129 @@
+.arc-metric-badge {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--mfi-border, #d9e4dc);
+  border-radius: var(--mfi-radius-lg, 16px);
+  color: var(--mfi-charcoal, #263238);
+  background: #ffffff;
+  box-shadow: var(--mfi-shadow-sm, 0 8px 20px rgba(38, 50, 56, 0.08));
+  text-align: center;
+}
+
+.arc-metric-visual {
+  position: relative;
+  width: min(190px, 100%);
+  aspect-ratio: 1;
+}
+
+.arc-metric-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(135deg);
+  overflow: visible;
+}
+
+.arc-metric-track,
+.arc-metric-progress {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 75 25;
+}
+
+.arc-metric-track {
+  stroke: rgba(102, 115, 107, 0.16);
+}
+
+.arc-metric-progress {
+  stroke: var(--arc-accent);
+  transition: stroke-dashoffset 750ms ease;
+}
+
+.arc-metric-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+}
+
+.arc-metric-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--arc-accent);
+  background: color-mix(in srgb, var(--arc-accent) 12%, transparent);
+}
+
+.arc-metric-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.arc-metric-value {
+  max-width: 140px;
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  line-height: 1.05;
+}
+
+.arc-metric-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.arc-metric-copy h2,
+.arc-metric-copy p {
+  margin: 0;
+}
+
+.arc-metric-copy h2 {
+  font-size: 1.05rem;
+}
+
+.arc-metric-detail,
+.arc-metric-status {
+  color: var(--mfi-text-muted, #66736b);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.arc-metric-status {
+  font-weight: 700;
+}
+
+.arc-metric-actions {
+  width: 100%;
+  margin-top: auto;
+}
+
+html[data-theme="dark"] .arc-metric-badge {
+  color: #edf4ef;
+  background: #18211b;
+  border-color: #34443a;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="dark"] .arc-metric-track {
+  stroke: rgba(175, 190, 179, 0.18);
+}
+
+html[data-theme="dark"] .arc-metric-detail,
+html[data-theme="dark"] .arc-metric-status {
+  color: #afbeb3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc-metric-progress {
+    transition: none;
+  }
+}
