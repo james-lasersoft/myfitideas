@@ -7,6 +7,9 @@ import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
 import "./components/ui/Button.css";
+import "./pages/Admin.css";
+import "./pages/AdminConsoleTheme.css";
+import "./pages/AdminLegacyShell.css";
 import "./pages/ProfileLocalizationPolish.css";
 import "./index.css";
 
