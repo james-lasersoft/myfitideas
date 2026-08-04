@@ -10,15 +10,25 @@
   pointer-events: none;
 }
 
-.global-controls-bar.admin-global-controls {
+.global-controls-bar.admin-global-controls,
+.global-controls-bar.member-global-controls {
   justify-content: space-between;
   align-items: center;
   min-height: 58px;
-  background: linear-gradient(90deg, #17324f, #244866);
   box-shadow: 0 4px 16px rgba(17, 36, 56, 0.18);
 }
 
-.admin-global-brand {
+.global-controls-bar.admin-global-controls {
+  background: linear-gradient(90deg, #17324f, #244866);
+}
+
+.global-controls-bar.member-global-controls {
+  background: linear-gradient(90deg, #176d34, #1f8b43);
+  box-shadow: 0 4px 16px rgba(23, 109, 52, 0.18);
+}
+
+.admin-global-brand,
+.member-global-brand {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -30,7 +40,8 @@
   pointer-events: auto;
 }
 
-.admin-global-logo {
+.admin-global-logo,
+.member-global-logo {
   width: 132px;
   max-width: 28vw;
   display: block;
@@ -49,7 +60,8 @@
   pointer-events: auto;
 }
 
-.admin-global-controls .global-controls-group {
+.admin-global-controls .global-controls-group,
+.member-global-controls .global-controls-group {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 12px rgba(5, 18, 31, 0.18);
@@ -95,12 +107,14 @@ html[data-theme="dark"] .global-controls-group {
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
 }
 
-html[data-theme="dark"] .admin-global-controls .global-controls-group {
+html[data-theme="dark"] .admin-global-controls .global-controls-group,
+html[data-theme="dark"] .member-global-controls .global-controls-group {
   background: rgba(20, 31, 43, 0.96);
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-html[data-theme="dark"] .admin-global-brand {
+html[data-theme="dark"] .admin-global-brand,
+html[data-theme="dark"] .member-global-brand {
   background: rgba(246, 249, 247, 0.96);
   border-color: rgba(255, 255, 255, 0.3);
 }
@@ -111,15 +125,18 @@ html[data-theme="dark"] .admin-global-brand {
     padding: 0.35rem 0.55rem;
   }
 
-  .global-controls-bar.admin-global-controls {
+  .global-controls-bar.admin-global-controls,
+  .global-controls-bar.member-global-controls {
     min-height: 54px;
   }
 
-  .admin-global-brand {
+  .admin-global-brand,
+  .member-global-brand {
     padding: 0.16rem 0.34rem;
   }
 
-  .admin-global-logo {
+  .admin-global-logo,
+  .member-global-logo {
     width: 108px;
   }
 
@@ -129,7 +146,8 @@ html[data-theme="dark"] .admin-global-brand {
 }
 
 @media (max-width: 520px) {
-  .admin-global-logo {
+  .admin-global-logo,
+  .member-global-logo {
     width: 92px;
   }
 
