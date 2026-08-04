@@ -10,7 +10,7 @@
 
 ## Delivered capabilities
 
-Phase 5 established the organization-aware security and administration foundation for MyFitIdeas. The completed milestone includes permission-based RBAC, protected backend APIs, frontend authorization guards, user and role administration, secure invitation acceptance, revocable sessions, account-status enforcement, administrative audit logging, and translation-catalog integration.
+Phase 5 established the organization-aware security and administration foundation for MyFitIdeas. The completed milestone includes permission-based RBAC, protected backend APIs, frontend authorization guards, user and role administration, secure invitation acceptance, revocable sessions, account-status enforcement, multi-factor authentication, trusted-device management, recovery codes, user-facing security controls, administrative audit logging, and translation-catalog integration.
 
 ## Validation evidence
 
@@ -32,7 +32,7 @@ Phase 5 established the organization-aware security and administration foundatio
 - Vite 8.1.4 production build passed.
 - Manual acceptance and regression testing passed.
 
-### Manual RBAC acceptance
+### Manual security and RBAC acceptance
 
 The following workflows were tested and approved:
 
@@ -42,6 +42,9 @@ The following workflows were tested and approved:
 - Role assignment and removal
 - Session revocation
 - Account deactivation enforcement
+- MFA enrollment and authenticator verification
+- Trusted-device listing and revocation
+- MFA reset with session and trusted-device revocation
 - Final active Super Administrator safeguards
 - Security-sensitive audit-event creation
 
@@ -55,15 +58,18 @@ The following items were intentionally deferred and do not block Phase 5 complet
 
 - Automatic email and password-reset delivery
 - SMS delivery
-- Multi-factor authentication
 - Social login and enterprise SSO
 - Subscription billing enforcement
 - Trainer-client relationships
 - Push notifications
 
+Multi-factor authentication was delivered during Phase 5 and is not deferred.
+
 ## Engineering history annotation
 
 The dashboard arc-progress badge work attempted on August 3, 2026 was rejected during visual review. Pull requests #11 and #12 were closed without merge. Those experiments are retained in Git history as design exploration but are excluded from the Phase 5 milestone.
+
+A documentation correction was committed after closeout to accurately record the MFA capability already present in the Phase 5 codebase. No runtime code changed as part of that correction.
 
 ## Next-phase baseline
 
