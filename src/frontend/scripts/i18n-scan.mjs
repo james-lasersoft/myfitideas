@@ -5,17 +5,26 @@ import ts from "typescript";
 
 export const frontendRoot = process.cwd();
 export const sourceRoot = path.join(frontendRoot, "src");
-export const seedPaths = [
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-extra.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-dashboard.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-dashboard-quick-add.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-rbac.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-workspaces.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-system-operations.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-guardrails.ts"),
-  path.resolve(frontendRoot, "../backend/prisma/seed-translations-security.ts"),
+
+const memberCatalogPaths = [
+  "seed-translations.ts",
+  "seed-translations-extra.ts",
+  "seed-translations-dashboard.ts",
+  "seed-translations-dashboard-quick-add.ts",
 ];
+
+const administrationCatalogPaths = [
+  "seed-translations-rbac.ts",
+  "seed-translations-workspaces.ts",
+  "seed-translations-admin-shell.ts",
+  "seed-translations-system-operations.ts",
+  "seed-translations-guardrails.ts",
+  "seed-translations-security.ts",
+];
+
+export const seedPaths = [...memberCatalogPaths, ...administrationCatalogPaths].map((fileName) =>
+  path.resolve(frontendRoot, "../backend/prisma", fileName)
+);
 
 const ignoredDirectories = new Set(["node_modules", "dist", "coverage", ".git"]);
 const ignoredFiles = new Set(["translations.ts"]);
