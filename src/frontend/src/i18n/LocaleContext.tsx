@@ -16,6 +16,15 @@ const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 let publishedCatalog: Record<string, string> = {};
 
+const canonicalSources: Record<string, string> = {
+  "Back to Admin": "Back to Admin Center",
+  "Back to Administration": "Back to Admin Center",
+};
+
+function canonicalSource(text: string): string {
+  return canonicalSources[text] ?? text;
+}
+
 function normalizeLocale(value: string | null | undefined): SupportedLocale {
   if (value?.toLowerCase().startsWith("pt")) return "pt-BR";
   return "en-US";
@@ -44,11 +53,11 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 function translateText(text: string, locale: SupportedLocale): string {
-  if (locale === "en-US") return text;
   const leading = text.match(/^\s*/)?.[0] ?? "";
   const trailing = text.match(/\s*$/)?.[0] ?? "";
-  const core = text.trim();
+  const core = canonicalSource(text.trim());
   if (!core) return text;
+  if (locale === "en-US") return `${leading}${core}${trailing}`;
 
   const direct = publishedCatalog[core] ?? translations[locale][core];
   if (direct) return `${leading}${direct}${trailing}`;
@@ -73,7 +82,7 @@ function translateText(text: string, locale: SupportedLocale): string {
   for (const [pattern, replacement] of replacements) {
     if (pattern.test(core)) return `${leading}${core.replace(pattern, replacement)}${trailing}`;
   }
-  return text;
+  return `${leading}${core}${trailing}`;
 }
 
 function isTranslationExcluded(element: Element | null): boolean {
@@ -84,7 +93,7 @@ function localizeTextNode(node: Text, locale: SupportedLocale): void {
   if (isTranslationExcluded(node.parentElement)) return;
   if (!originalText.has(node)) originalText.set(node, node.nodeValue ?? "");
   const source = originalText.get(node) ?? "";
-  const nextValue = locale === "en-US" ? source : translateText(source, locale);
+  const nextValue = translateText(source, locale);
   if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
 }
 
@@ -111,7 +120,7 @@ function localizeElement(root: ParentNode, locale: SupportedLocale): void {
       if (!current) continue;
       if (!saved.has(attribute)) saved.set(attribute, current);
       const source = saved.get(attribute) ?? current;
-      element.setAttribute(attribute, locale === "en-US" ? source : translateText(source, locale));
+      element.setAttribute(attribute, translateText(source, locale));
     }
   });
 }
@@ -127,7 +136,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (text: string) => publishedCatalog[text] ?? translations[locale][text] ?? text,
+    (text: string) => {
+      const source = canonicalSource(text);
+      if (locale === "en-US") return source;
+      return publishedCatalog[source] ?? translations[locale][source] ?? source;
+    },
     [locale]
   );
 
