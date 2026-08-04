@@ -204,7 +204,6 @@ export default function ProgressChartsPage() {
     <main className="progress-charts-page">
       <section className="progress-charts-header">
         <div>
-          <p className="section-eyebrow">Progress analytics</p>
           <h1>Progress Charts</h1>
           <p>Review changes in your measurements and hydration over time.</p>
         </div>
@@ -391,8 +390,8 @@ export default function ProgressChartsPage() {
                       {
                         label: `Hips (${lengthUnit})`,
                         data: hipsValues,
-                        borderColor: "rgb(219, 39, 119)",
-                        backgroundColor: "rgba(219, 39, 119, 0.1)",
+                        borderColor: "rgb(217, 70, 239)",
+                        backgroundColor: "rgba(217, 70, 239, 0.1)",
                         tension: 0.3,
                         spanGaps: true,
                       },
