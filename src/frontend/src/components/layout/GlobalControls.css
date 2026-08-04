@@ -22,6 +22,11 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(5, 18, 31, 0.16);
   pointer-events: auto;
 }
 
@@ -95,6 +100,11 @@ html[data-theme="dark"] .admin-global-controls .global-controls-group {
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+html[data-theme="dark"] .admin-global-brand {
+  background: rgba(246, 249, 247, 0.96);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 @media (max-width: 700px) {
   .global-controls-bar {
     min-height: 52px;
@@ -103,6 +113,10 @@ html[data-theme="dark"] .admin-global-controls .global-controls-group {
 
   .global-controls-bar.admin-global-controls {
     min-height: 54px;
+  }
+
+  .admin-global-brand {
+    padding: 0.16rem 0.34rem;
   }
 
   .admin-global-logo {
