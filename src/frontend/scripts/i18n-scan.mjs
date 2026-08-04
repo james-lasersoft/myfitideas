@@ -20,6 +20,7 @@ const administrationCatalogPaths = [
   "seed-translations-system-operations.ts",
   "seed-translations-guardrails.ts",
   "seed-translations-security.ts",
+  "seed-translations-security-operations-ui.ts",
 ];
 
 export const seedPaths = [...memberCatalogPaths, ...administrationCatalogPaths].map((fileName) =>
