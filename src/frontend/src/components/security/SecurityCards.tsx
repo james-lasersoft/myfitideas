@@ -70,7 +70,7 @@ export function parseSecurityDevice(userAgent: string | null): DeviceDetails {
     : userAgent.includes("Android")
       ? "Android"
       : /iPhone|iPad|iPod/.test(userAgent)
-        ? "iOS / iPadOS"
+        ? "iOS or iPadOS"
         : userAgent.includes("Mac OS X")
           ? "macOS"
           : userAgent.includes("Linux")
@@ -121,7 +121,7 @@ export function SecurityRecordCard({
   translateValue,
 }: SecurityRecordCardProps) {
   const device = parseSecurityDevice(record.userAgent);
-  const title = `${translateValue(device.browser)} on ${translateValue(device.operatingSystem)}`;
+  const title = `${translateValue(device.browser)} · ${translateValue(device.operatingSystem)}`;
 
   return (
     <article className={`security-record-card${current ? " is-current" : ""}`}>
