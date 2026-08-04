@@ -1,0 +1,45 @@
+{
+  "brand": "MyFitIdeas",
+  "release": "Brand v1.0",
+  "colors": {
+    "deepStem": "#1F8B43",
+    "topLeaf": "#48BE30",
+    "growth": "#5FCB3C",
+    "springBud": "#A6E84A",
+    "charcoal": "#263238",
+    "morningDew": "#F5FDF0",
+    "white": "#FFFFFF"
+  },
+  "workspaces": {
+    "member": {
+      "name": "Personal",
+      "purpose": "Health tracking, body transformation, progress, and personal account activity.",
+      "primary": "#1F8B43",
+      "primaryGradientStart": "#176D34",
+      "primaryGradientEnd": "#1F8B43",
+      "accent": "#48BE30",
+      "growth": "#5FCB3C",
+      "highlight": "#A6E84A",
+      "background": "#F5FDF0",
+      "surface": "#FFFFFF",
+      "text": "#263238"
+    },
+    "administration": {
+      "name": "Administration",
+      "purpose": "Business operations, user and role management, security, auditing, and company configuration.",
+      "primary": "#17324F",
+      "primaryGradientStart": "#17324F",
+      "primaryGradientEnd": "#244866",
+      "secondary": "#244866",
+      "slate": "#334155",
+      "background": "#F7F9FC",
+      "surface": "#FFFFFF",
+      "text": "#1F2937"
+    }
+  },
+  "wordmark": {
+    "source": "Noto Sans Display SemiBold",
+    "production": "Outlined vector paths",
+    "nameStyle": "MyFitIdeas"
+  }
+}
