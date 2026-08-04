@@ -7,6 +7,7 @@ import LanguageSelector from "../LanguageSelector";
 import ThemeToggle from "../ThemeToggle";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import "./GlobalControls.css";
+import "./MemberShell.css";
 
 function readSessionId(token: string): string | null {
   try {
@@ -20,10 +21,24 @@ function readSessionId(token: string): string | null {
   }
 }
 
+const MEMBER_ROUTES = [
+  "/dashboard",
+  "/measurements",
+  "/hydration",
+  "/progress",
+  "/profile",
+];
+
+function isMemberRoute(pathname: string): boolean {
+  return MEMBER_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
 export default function GlobalControls() {
   const location = useLocation();
   const { t } = useLocale();
   const isAdminWorkspace = location.pathname.startsWith("/admin");
+  const isMemberWorkspace = isMemberRoute(location.pathname);
+  const hasPersistentWorkspaceBar = isAdminWorkspace || isMemberWorkspace;
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -39,11 +54,43 @@ export default function GlobalControls() {
       .catch(() => sessionStorage.removeItem(storageKey));
   }, [location.pathname]);
 
+  useEffect(() => {
+    const body = document.body;
+    body.classList.toggle("member-shell-active", isMemberWorkspace);
+    body.classList.remove("member-header-collapsed");
+
+    if (!isMemberWorkspace) return undefined;
+
+    let collapsed = false;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const nextCollapsed = collapsed ? window.scrollY > 56 : window.scrollY > 132;
+      if (nextCollapsed === collapsed) return;
+      collapsed = nextCollapsed;
+      body.classList.toggle("member-header-collapsed", collapsed);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+      body.classList.remove("member-shell-active", "member-header-collapsed");
+    };
+  }, [isMemberWorkspace, location.pathname]);
+
   return (
-    <div className={`global-controls-bar${isAdminWorkspace ? " admin-global-controls" : ""}`}>
-      {isAdminWorkspace && (
-        <div className="admin-global-brand" aria-label={t("MyFitIdeas Admin Center")}>
-          <BrandLogo className="admin-global-logo" />
+    <div className={`global-controls-bar${isAdminWorkspace ? " admin-global-controls" : ""}${isMemberWorkspace ? " member-global-controls" : ""}`}>
+      {hasPersistentWorkspaceBar && (
+        <div
+          className={isAdminWorkspace ? "admin-global-brand" : "member-global-brand"}
+          aria-label={isAdminWorkspace ? t("MyFitIdeas Admin Center") : "MyFitIdeas"}
+        >
+          <BrandLogo className={isAdminWorkspace ? "admin-global-logo" : "member-global-logo"} />
         </div>
       )}
       <div className="global-controls-group">
