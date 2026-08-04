@@ -146,6 +146,7 @@ export default function LoginPage() {
 
           {error && <p className="error-message">{error}</p>}
           <button type="submit" disabled={isSubmitting || (mode === "recovery" && !recoveryConfirmed)}>{isSubmitting ? "Working..." : mode === "enroll" ? "Verify and enable MFA" : mode === "recovery" ? "Finish setup" : mode === "mfa" ? "Verify and Sign In" : "Sign In"}</button>
+          {mode === "credentials" && <button type="button" className="secondary-button" onClick={() => navigate("/register")}>{t("Create Account")}</button>}
           {mode === "mfa" && <button type="button" className="secondary-button" onClick={() => { setMode("credentials"); setMfaCode(""); setError(""); }}>Use a different account</button>}
         </form>
       </section>
