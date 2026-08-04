@@ -19,6 +19,7 @@ const modules: AdminModule[] = [
   { title: "User Management", description: "Invite users, assign roles, manage account status, and revoke sessions.", action: "Open User Management", path: "/admin/users", permission: "users.read" },
   { title: "Roles & Permissions", description: "Create organization roles and configure effective permissions.", action: "Open Role Management", path: "/admin/roles", permission: "roles.read" },
   { title: "Security Operations", description: "Review MFA enrollment, trusted devices, and active user sessions.", action: "Open Security Operations", path: "/admin/security", permission: "system.operations" },
+  { title: "Company Settings", description: "Configure provider-neutral services and organization security policies.", action: "Open Company Settings", path: "/admin/settings", permission: "system.operations" },
   { title: "Audit Logs", description: "Review security-sensitive and administrative events.", action: "Open Audit Log", path: "/admin/audit", permission: "audit.read" },
 ];
 
@@ -49,13 +50,6 @@ export default function AdminLandingPage() {
             ariaLabel={t(module.action)}
           />
         ))}
-
-        <AdminModuleCard
-          title={t("System Settings")}
-          description={t("Manage operational configuration and feature controls.")}
-          action={t("Coming in a future phase")}
-          disabled
-        />
       </section>
     </main>
   );
