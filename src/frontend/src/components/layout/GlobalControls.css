@@ -24,7 +24,7 @@
   min-width: 0;
   padding: 0.2rem 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 10px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 2px 8px rgba(5, 18, 31, 0.16);
   pointer-events: auto;
