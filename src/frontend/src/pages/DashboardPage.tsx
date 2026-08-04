@@ -127,27 +127,16 @@ export default function DashboardPage() {
 
   const weightUnit = summary?.preferredWeightUnit ?? "lb";
   const hydrationUnit = summary?.preferredHydrationUnit ?? "oz";
-  const primaryWater =
-    hydrationUnit === "ml"
-      ? summary?.todayWaterMl ?? 0
-      : summary?.todayWaterOz ?? 0;
+  const primaryWater = hydrationUnit === "ml" ? summary?.todayWaterMl ?? 0 : summary?.todayWaterOz ?? 0;
   const secondaryWaterUnit = hydrationUnit === "ml" ? "oz" : "ml";
-  const secondaryWater =
-    secondaryWaterUnit === "ml"
-      ? summary?.todayWaterMl ?? 0
-      : summary?.todayWaterOz ?? 0;
+  const secondaryWater = secondaryWaterUnit === "ml" ? summary?.todayWaterMl ?? 0 : summary?.todayWaterOz ?? 0;
 
   const quickAddOptions = useMemo<RememberedEntry[]>(() => {
-    const defaults =
-      hydrationUnit === "ml"
-        ? [250, 350, 500].map((amount) => ({ amount, unit: "ml" as const }))
-        : [8, 12, 16].map((amount) => ({ amount, unit: "oz" as const }));
+    const defaults = hydrationUnit === "ml"
+      ? [250, 350, 500].map((amount) => ({ amount, unit: "ml" as const }))
+      : [8, 12, 16].map((amount) => ({ amount, unit: "oz" as const }));
     const remembered = getRememberedEntry();
-
-    if (!remembered || defaults.some((entry) => quickAddKey(entry) === quickAddKey(remembered))) {
-      return defaults;
-    }
-
+    if (!remembered || defaults.some((entry) => quickAddKey(entry) === quickAddKey(remembered))) return defaults;
     return [...defaults, remembered];
   }, [hydrationUnit]);
 
@@ -156,15 +145,9 @@ export default function DashboardPage() {
     setQuickAddBusy(key);
     setQuickAddMessage("");
     setQuickAddError("");
-
     try {
-      await createHydrationEntry({
-        amount: entry.amount,
-        unit: entry.unit,
-        loggedAt: new Date().toISOString(),
-      });
-      const refreshedSummary = await getDashboardSummary();
-      setSummary(refreshedSummary);
+      await createHydrationEntry({ amount: entry.amount, unit: entry.unit, loggedAt: new Date().toISOString() });
+      setSummary(await getDashboardSummary());
       setQuickAddMessage("Hydration entry added.");
     } catch {
       setQuickAddError("Unable to save hydration entry.");
@@ -177,15 +160,10 @@ export default function DashboardPage() {
     <main className="dashboard-page">
       <header className="dashboard-header">
         <div className="dashboard-brand-block">
-          <BrandLogo className="dashboard-logo" />
-          <p>
-            {getGreeting()}, {user?.firstName ?? "User"}
-          </p>
+          <h1>Dashboard</h1>
+          <p>{getGreeting()}, {user?.firstName ?? "User"}</p>
         </div>
-
-        <button className="secondary-button" onClick={logout}>
-          Log Out
-        </button>
+        <button className="secondary-button" onClick={logout}>Log Out</button>
       </header>
 
       {loading ? (
@@ -198,45 +176,20 @@ export default function DashboardPage() {
           <section className="dashboard-grid">
             <article className="dashboard-card">
               <h2>Current Weight</h2>
-              <h1>
-                {summary?.currentWeight != null
-                  ? `${formatMeasurement(summary.currentWeight, weightUnit)} ${weightUnit}`
-                  : "--"}
-              </h1>
-
-              {summary?.weightDifference != null && (
-                <p>
-                  {summary.weightDifference > 0 ? "+" : ""}
-                  {formatMeasurement(summary.weightDifference, weightUnit)} {weightUnit} since last measurement
-                </p>
-              )}
+              <h1>{summary?.currentWeight != null ? `${formatMeasurement(summary.currentWeight, weightUnit)} ${weightUnit}` : "--"}</h1>
+              {summary?.weightDifference != null && <p>{summary.weightDifference > 0 ? "+" : ""}{formatMeasurement(summary.weightDifference, weightUnit)} {weightUnit} since last measurement</p>}
             </article>
 
             <article className="dashboard-card dashboard-hydration-card">
               <h2>Today's Water</h2>
-              <h1>
-                {formatMeasurement(primaryWater, hydrationUnit)} {hydrationUnit}
-              </h1>
-              <p>
-                {formatMeasurement(secondaryWater, secondaryWaterUnit)} {secondaryWaterUnit}
-              </p>
-
+              <h1>{formatMeasurement(primaryWater, hydrationUnit)} {hydrationUnit}</h1>
+              <p>{formatMeasurement(secondaryWater, secondaryWaterUnit)} {secondaryWaterUnit}</p>
               <div className="dashboard-quick-add" aria-label="Quick add hydration">
                 <span className="dashboard-quick-add-label">Quick Add</span>
                 <div className="dashboard-quick-add-buttons">
                   {quickAddOptions.map((entry) => {
                     const key = quickAddKey(entry);
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        className="dashboard-quick-add-button"
-                        disabled={quickAddBusy !== null}
-                        onClick={() => void handleQuickAdd(entry)}
-                      >
-                        {quickAddBusy === key ? "Adding..." : `+${entry.amount} ${entry.unit}`}
-                      </button>
-                    );
+                    return <button key={key} type="button" className="dashboard-quick-add-button" disabled={quickAddBusy !== null} onClick={() => void handleQuickAdd(entry)}>{quickAddBusy === key ? "Adding..." : `+${entry.amount} ${entry.unit}`}</button>;
                   })}
                 </div>
                 {quickAddMessage && <p className="dashboard-quick-add-success" role="status">{quickAddMessage}</p>}
@@ -246,39 +199,23 @@ export default function DashboardPage() {
 
             <article className="dashboard-card">
               <h2>BMI</h2>
-              <h1>
-                {summary?.bmi != null
-                  ? formatMeasurement(summary.bmi, "%")
-                  : "--"}
-              </h1>
+              <h1>{summary?.bmi != null ? formatMeasurement(summary.bmi, "%") : "--"}</h1>
               <p>{summary?.bmiCategory ?? "Height required"}</p>
             </article>
 
             <article className="dashboard-card">
               <h2>Last Measurement</h2>
-              <p>
-                {summary?.lastMeasurementDate
-                  ? new Date(summary.lastMeasurementDate).toLocaleDateString()
-                  : "None"}
-              </p>
+              <p>{summary?.lastMeasurementDate ? new Date(summary.lastMeasurementDate).toLocaleDateString() : "None"}</p>
             </article>
           </section>
 
           <section className="dashboard-grid dashboard-actions-grid" aria-label="Dashboard modules">
             {dashboardModules.map((module) => (
-              <button
-                key={module.path}
-                type="button"
-                className={`dashboard-module-tile${module.admin ? " admin-module" : ""}`}
-                onClick={() => navigate(module.path)}
-              >
+              <button key={module.path} type="button" className={`dashboard-module-tile${module.admin ? " admin-module" : ""}`} onClick={() => navigate(module.path)}>
                 <span className="dashboard-module-status">Available</span>
                 <h2>{module.title}</h2>
                 <p>{module.description}</p>
-                <span className="dashboard-module-action">
-                  <span>{module.action}</span>
-                  <span className="dashboard-module-arrow" aria-hidden="true">→</span>
-                </span>
+                <span className="dashboard-module-action"><span>{module.action}</span><span className="dashboard-module-arrow" aria-hidden="true">→</span></span>
               </button>
             ))}
           </section>
