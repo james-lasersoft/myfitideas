@@ -1,6 +1,7 @@
 body.member-shell-active {
   --member-toolbar-height: 58px;
   --member-header-collapsed-height: 58px;
+  --member-content-width: 1200px;
 }
 
 body.member-shell-active .dashboard-header,
@@ -17,6 +18,41 @@ body.member-shell-active .security-header {
   box-sizing: border-box;
   max-height: 190px;
   transition: max-height 180ms ease, padding 180ms ease, margin 180ms ease, box-shadow 180ms ease;
+}
+
+body.member-shell-active .dashboard-header > div,
+body.member-shell-active .hydration-page .dashboard-header > div,
+body.member-shell-active .progress-charts-header > div,
+body.member-shell-active .page-brand-heading,
+body.member-shell-active .profile-identity,
+body.member-shell-active .security-header > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+body.member-shell-active .dashboard-header h1,
+body.member-shell-active .hydration-page .dashboard-header h1,
+body.member-shell-active .progress-charts-header h1,
+body.member-shell-active .page-brand-header h1,
+body.member-shell-active .profile-header h1,
+body.member-shell-active .security-header h1 {
+  margin: 0 0 0.45rem;
+}
+
+body.member-shell-active .dashboard-header p,
+body.member-shell-active .hydration-page .dashboard-header p,
+body.member-shell-active .progress-charts-header p,
+body.member-shell-active .page-brand-header p,
+body.member-shell-active .profile-header p,
+body.member-shell-active .security-header p {
+  margin: 0;
+}
+
+body.member-shell-active .profile-card {
+  width: min(var(--member-content-width), 100%);
 }
 
 body.member-shell-active .dashboard-brand-block .dashboard-logo,
