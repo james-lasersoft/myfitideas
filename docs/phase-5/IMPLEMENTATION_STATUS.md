@@ -20,10 +20,13 @@ Completion date: August 3, 2026
 - User administration endpoints and UI
 - Role and permission administration endpoints and UI
 - Secure 72-hour hashed invitation tokens, copyable invitation links, and invitation acceptance flow
+- Multi-factor authentication enrollment and completion workflows
+- Authenticator-based MFA verification, recovery codes, trusted devices, and MFA reset
+- User-facing Security Center for active sessions, trusted devices, and MFA reset
 - Administrative audit logging endpoints and UI
 - Frontend authorization context, permission route protection, and access-denied page
 - Dynamic Administration Center modules
-- RBAC translation catalog integration
+- RBAC and security translation catalog integration
 
 ## Validation completed
 
@@ -40,6 +43,7 @@ Completion date: August 3, 2026
 - User invitations and acceptance: passed
 - Role assignment and removal: passed
 - Session revocation and account deactivation behavior: passed
+- MFA enrollment, trusted-device management, and reset controls: passed
 - Unauthorized-route and API protection: passed
 - Audit-event verification: passed
 - Final active Super Administrator safeguards: passed
@@ -51,7 +55,7 @@ Nonbreaking dependency fixes were applied locally during validation. The remaini
 ## Deferred by design
 
 - Automatic invitation and password-reset email delivery
-- MFA and enterprise SSO
+- Enterprise SSO
 - Trainer-client relationships
 - Subscription billing enforcement
 
