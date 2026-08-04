@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AdminPageHeader } from "../components/admin/AdminComponents";
 import Button from "../components/ui/Button";
 import { useLocale } from "../i18n/LocaleContext";
 import { getAuditLogs } from "../services/rbacService";
@@ -31,10 +32,13 @@ export default function AuditLogPage() {
 
   return (
     <main className="admin-page security-admin-page">
-      <header className="admin-header compact">
-        <div><p className="admin-eyebrow">{t("Administration / Audit")}</p><h1>{t("Audit Log")}</h1><p>{t("Review security-sensitive and administrative activity.")}</p></div>
-        <Button variant="outline" onClick={() => navigate("/admin")}>{t("Back to Admin")}</Button>
-      </header>
+      <AdminPageHeader
+        eyebrow={t("Administration / Audit")}
+        title={t("Audit Log")}
+        description={t("Review security-sensitive and administrative activity.")}
+        backLabel={t("Back to Admin")}
+        onBack={() => navigate("/admin")}
+      />
       <section className="security-panel">
         <div className="security-table-wrap"><table className="security-table"><thead><tr><th>{t("Time")}</th><th>{t("Actor")}</th><th>{t("Action")}</th><th>{t("Target")}</th><th>{t("Result")}</th></tr></thead><tbody>
           {items.map((item) => <tr key={item.id}><td>{new Date(item.createdAt).toLocaleString()}</td><td>{item.actor?.email ?? t("System")}</td><td><code>{item.action}</code></td><td>{item.targetType}{item.targetId ? ` · ${item.targetId}` : ""}</td><td><span className={`audit-result ${item.result.toLowerCase()}`}>{item.result}</span></td></tr>)}
