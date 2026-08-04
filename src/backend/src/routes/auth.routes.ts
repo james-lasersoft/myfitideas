@@ -6,10 +6,10 @@ import {
   login,
   logout,
   refreshAccessToken,
-  register,
   resetMfa,
   revokeTrustedDevice,
 } from "../controllers/auth.controller.js";
+import { registerWithPrivacy } from "../controllers/privacy-registration.controller.js";
 import {
   listActiveSessions,
   revokeOtherSessions,
@@ -19,7 +19,7 @@ import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.post("/register", register);
+router.post("/register", registerWithPrivacy);
 router.post("/login", login);
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", authenticateToken, logout);
