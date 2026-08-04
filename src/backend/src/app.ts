@@ -20,6 +20,12 @@ const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const trustProxy = process.env.TRUST_PROXY?.trim();
+if (trustProxy) {
+  const numericTrustProxy = Number(trustProxy);
+  app.set("trust proxy", Number.isInteger(numericTrustProxy) && numericTrustProxy >= 0 ? numericTrustProxy : trustProxy);
+}
+
 app.disable("x-powered-by");
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
