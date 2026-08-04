@@ -21,6 +21,16 @@ const catalog = [
   ["privacy.signup.back", "Back to Sign In", "privacy", "Voltar para Entrar"],
   ["privacy.signup.error", "Unable to create your account.", "privacy", "Não foi possível criar sua conta."],
   ["privacy.signup.requiredError", "You must acknowledge the Terms and Privacy Notice to create an account.", "privacy", "Você deve reconhecer os Termos e o Aviso de Privacidade para criar uma conta."],
+  ["privacy.preferences.title", "Privacy & Analytics", "privacy", "Privacidade e Análises"],
+  ["privacy.preferences.description", "Choose whether your information may contribute to de-identified aggregate product statistics.", "privacy", "Escolha se suas informações podem contribuir para estatísticas agregadas e desidentificadas do produto."],
+  ["privacy.preferences.participating", "Participating", "privacy", "Participando"],
+  ["privacy.preferences.notParticipating", "Not participating", "privacy", "Não participando"],
+  ["privacy.preferences.detail", "This optional choice does not affect access to MyFitIdeas. Login security continues to use IP address, device information, and approximate IP-based location. Device GPS is not requested.", "privacy", "Esta escolha opcional não afeta o acesso ao MyFitIdeas. A segurança do login continua usando endereço IP, informações do dispositivo e localização aproximada baseada no IP. O GPS do dispositivo não é solicitado."],
+  ["privacy.preferences.allow", "Allow de-identified aggregate analytics", "privacy", "Permitir análises agregadas e desidentificadas"],
+  ["privacy.preferences.saving", "Saving privacy preference...", "privacy", "Salvando preferência de privacidade..."],
+  ["privacy.preferences.updated", "Privacy preferences updated.", "privacy", "Preferências de privacidade atualizadas."],
+  ["privacy.preferences.updateError", "Unable to update privacy preferences.", "privacy", "Não foi possível atualizar as preferências de privacidade."],
+  ["privacy.preferences.securityDescription", "Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.", "privacy", "Gerencie autenticação multifator, dispositivos confiáveis, acesso ativo e preferências de privacidade da sua conta."],
 ] as const;
 
 async function main() {
