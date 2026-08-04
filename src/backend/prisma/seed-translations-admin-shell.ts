@@ -4,6 +4,7 @@ import prisma from "../src/config/prisma.js";
 const catalog = [
   ["admin.shell.ariaLabel", "MyFitIdeas Admin Center", "admin-shell", "Central de Administração MyFitIdeas"],
   ["admin.center.title", "Admin Center", "admin-shell", "Central de Administração"],
+  ["admin.center.back", "Back to Admin Center", "admin-shell", "Voltar à Central de Administração"],
 ] as const;
 
 async function main() {
