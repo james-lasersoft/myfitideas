@@ -1,7 +1,6 @@
 import type { Response } from "express";
 import prisma from "../config/prisma.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
-import { lookupIpGeolocation } from "../services/ip-geolocation.service.js";
 
 const TRUSTED_DEVICE_PREFIX = "trusted:";
 
@@ -24,39 +23,6 @@ type SecurityRecord = {
   locationProvider: string | null;
   locationLookedUpAt: Date | null;
 };
-
-async function enrichLocation(record: SecurityRecord): Promise<SecurityRecord> {
-  if (record.locationLookedUpAt || !record.ipAddress) return record;
-  const location = await lookupIpGeolocation(record.ipAddress);
-  if (!location) return record;
-
-  await prisma.$executeRaw`
-    UPDATE "user_sessions"
-    SET "locationCity" = ${location.city},
-        "locationRegion" = ${location.region},
-        "locationCountry" = ${location.country},
-        "locationCountryCode" = ${location.countryCode},
-        "locationTimezone" = ${location.timezone},
-        "locationLatitude" = ${location.latitude},
-        "locationLongitude" = ${location.longitude},
-        "locationProvider" = ${location.provider},
-        "locationLookedUpAt" = ${location.lookedUpAt}
-    WHERE "id" = ${record.id}
-  `;
-
-  return {
-    ...record,
-    locationCity: location.city,
-    locationRegion: location.region,
-    locationCountry: location.country,
-    locationCountryCode: location.countryCode,
-    locationTimezone: location.timezone,
-    locationLatitude: location.latitude,
-    locationLongitude: location.longitude,
-    locationProvider: location.provider,
-    locationLookedUpAt: location.lookedUpAt,
-  };
-}
 
 function presentLocation(record: SecurityRecord) {
   return {
@@ -94,8 +60,7 @@ export async function listOwnSecurityDetails(req: AuthenticatedRequest, res: Res
       LIMIT 50
     `;
 
-    const enriched = await Promise.all(records.map(enrichLocation));
-    const sessions = enriched
+    const sessions = records
       .filter((record) => !record.tokenHash.startsWith(TRUSTED_DEVICE_PREFIX))
       .map((record) => ({
         id: record.id,
@@ -107,7 +72,7 @@ export async function listOwnSecurityDetails(req: AuthenticatedRequest, res: Res
         current: record.id === req.user?.sessionId,
         location: presentLocation(record),
       }));
-    const devices = enriched
+    const devices = records
       .filter((record) => record.tokenHash.startsWith(TRUSTED_DEVICE_PREFIX))
       .map((record) => ({
         id: record.id,
