@@ -27,6 +27,7 @@ const UserAdminPage = lazy(() => import("./pages/UserAdminPage"));
 const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const AcceptInvitationPage = lazy(() => import("./pages/AcceptInvitationPage"));
+const RegistrationPage = lazy(() => import("./pages/RegistrationPage"));
 const WorkspaceChooserPage = lazy(() => import("./pages/WorkspaceChooserPage"));
 const SystemOperationsPage = lazy(() => import("./pages/SystemOperationsPage"));
 
@@ -50,6 +51,7 @@ export default function App() {
         <GlobalControls />
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<Suspense fallback={<PageLoading />}><RegistrationPage /></Suspense>} />
           <Route path="/accept-invitation" element={<Suspense fallback={<PageLoading />}><AcceptInvitationPage /></Suspense>} />
           <Route path="/workspace" element={<ProtectedPage><WorkspaceChooserPage /></ProtectedPage>} />
           <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
