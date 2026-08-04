@@ -133,7 +133,6 @@ export default function ProfileSecurityPage() {
       <section className="security-card">
         <header className="security-header">
           <div>
-            <p className="section-eyebrow">{t("Account Security")}</p>
             <h1>{t("Security Center")}</h1>
             <p>{t("Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.")}</p>
           </div>
