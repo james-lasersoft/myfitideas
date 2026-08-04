@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import BrandLogo from "../BrandLogo";
+import { useEffect, useState, type ReactNode } from "react";
 import Button from "../ui/Button";
 import "./AdminComponents.css";
 
@@ -11,7 +10,6 @@ interface AdminPageHeaderProps {
   description: string;
   backLabel: string;
   onBack: () => void;
-  showLogo?: boolean;
   actions?: ReactNode;
 }
 
@@ -21,16 +19,23 @@ export function AdminPageHeader({
   description,
   backLabel,
   onBack,
-  showLogo = false,
   actions,
 }: AdminPageHeaderProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const update = () => setCollapsed(window.scrollY > 72);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
   return (
-    <header className="admin-header admin-ds-header">
+    <header className={`admin-header admin-ds-header${collapsed ? " collapsed" : ""}`}>
       <div className="admin-ds-header-copy">
-        {showLogo && <BrandLogo className="admin-logo" />}
         <p className="admin-eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
-        <p>{description}</p>
+        <p className="admin-ds-header-description">{description}</p>
       </div>
       <div className="admin-ds-header-actions">
         {actions}
