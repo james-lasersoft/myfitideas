@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthorizationProvider } from "./auth/AuthorizationContext";
 import PermissionRoute from "./auth/PermissionRoute";
 import SuperAdminRoute from "./auth/SuperAdminRoute";
+import TranslationAdminShell from "./components/admin/TranslationAdminShell";
 import GlobalControls from "./components/layout/GlobalControls";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
@@ -59,7 +60,7 @@ export default function App() {
           <Route path="/progress" element={<ProtectedPage><ProgressChartsPage /></ProtectedPage>} />
           <Route path="/admin" element={<AuthorizedPage permission="admin.access"><AdminLandingPage /></AuthorizedPage>} />
           <Route path="/admin/security" element={<AuthorizedPage permission="system.operations"><AdminSecurityPage /></AuthorizedPage>} />
-          <Route path="/admin/translations" element={<AuthorizedPage permission="translations.read"><TranslationAdminPage /></AuthorizedPage>} />
+          <Route path="/admin/translations" element={<AuthorizedPage permission="translations.read"><TranslationAdminShell><TranslationAdminPage /></TranslationAdminShell></AuthorizedPage>} />
           <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
           <Route path="/admin/audit" element={<AuthorizedPage permission="audit.read"><AuditLogPage /></AuthorizedPage>} />
