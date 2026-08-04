@@ -12,9 +12,10 @@ export interface IpGeolocationResult {
   lookedUpAt: Date;
 }
 
-export interface IpGeolocationProvider {
-  readonly key: string;
-  lookup(ipAddress: string): Promise<IpGeolocationResult | null>;
+export interface GeolocationProviderConfiguration {
+  provider: string;
+  credentialEnvironmentVariable?: string | null;
+  retainApproximateCoordinates?: boolean;
 }
 
 interface IpinfoResponse {
@@ -26,6 +27,11 @@ interface IpinfoResponse {
   latitude?: number;
   longitude?: number;
   timezone?: string;
+}
+
+interface GeolocationProvider {
+  readonly key: string;
+  lookup(ipAddress: string, configuration: GeolocationProviderConfiguration): Promise<IpGeolocationResult | null>;
 }
 
 export function normalizeClientIp(value: string | null | undefined): string | null {
@@ -47,12 +53,10 @@ export function isPublicIp(value: string): boolean {
     if (a === 100 && b >= 64 && b <= 127) return false;
     return true;
   }
-
   if (net.isIPv6(value)) {
     const lower = value.toLowerCase();
     return lower !== "::1" && !lower.startsWith("fc") && !lower.startsWith("fd") && !lower.startsWith("fe80:");
   }
-
   return false;
 }
 
@@ -70,11 +74,11 @@ function parseCoordinates(payload: IpinfoResponse): { latitude: number | null; l
   };
 }
 
-class IpinfoGeolocationProvider implements IpGeolocationProvider {
-  readonly key = "ipinfo";
-
-  async lookup(ipAddress: string): Promise<IpGeolocationResult | null> {
-    const token = process.env.IPINFO_TOKEN?.trim();
+const ipinfoProvider: GeolocationProvider = {
+  key: "ipinfo",
+  async lookup(ipAddress, configuration) {
+    const environmentVariable = configuration.credentialEnvironmentVariable?.trim() || "IPINFO_TOKEN";
+    const token = process.env[environmentVariable]?.trim();
     if (!token) return null;
 
     const controller = new AbortController();
@@ -87,15 +91,16 @@ class IpinfoGeolocationProvider implements IpGeolocationProvider {
       if (!response.ok) return null;
       const payload = await response.json() as IpinfoResponse;
       const coordinates = parseCoordinates(payload);
+      const retainCoordinates = configuration.retainApproximateCoordinates === true;
       return {
         city: payload.city?.trim() || null,
         region: payload.region?.trim() || null,
         country: payload.country?.trim() || null,
         countryCode: payload.country_code?.trim() || payload.country?.trim() || null,
         timezone: payload.timezone?.trim() || null,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        provider: this.key,
+        latitude: retainCoordinates ? coordinates.latitude : null,
+        longitude: retainCoordinates ? coordinates.longitude : null,
+        provider: "ipinfo",
         lookedUpAt: new Date(),
       };
     } catch {
@@ -103,22 +108,21 @@ class IpinfoGeolocationProvider implements IpGeolocationProvider {
     } finally {
       clearTimeout(timeout);
     }
+  },
+};
+
+const providers = new Map<string, GeolocationProvider>([[ipinfoProvider.key, ipinfoProvider]]);
+
+export async function lookupIpGeolocation(
+  ipAddress: string | null | undefined,
+  configuration: GeolocationProviderConfiguration = {
+    provider: process.env.GEOLOCATION_PROVIDER?.trim().toLowerCase() || "disabled",
+    credentialEnvironmentVariable: "IPINFO_TOKEN",
+    retainApproximateCoordinates: false,
   }
-}
-
-class NullGeolocationProvider implements IpGeolocationProvider {
-  readonly key = "none";
-  async lookup(): Promise<null> { return null; }
-}
-
-export function getIpGeolocationProvider(): IpGeolocationProvider {
-  const configured = (process.env.GEOLOCATION_PROVIDER ?? "ipinfo").trim().toLowerCase();
-  if (configured === "ipinfo") return new IpinfoGeolocationProvider();
-  return new NullGeolocationProvider();
-}
-
-export async function lookupIpGeolocation(ipAddress: string | null | undefined): Promise<IpGeolocationResult | null> {
+): Promise<IpGeolocationResult | null> {
   const ip = normalizeClientIp(ipAddress);
   if (!ip || !isPublicIp(ip)) return null;
-  return getIpGeolocationProvider().lookup(ip);
+  const provider = providers.get(configuration.provider.trim().toLowerCase());
+  return provider ? provider.lookup(ip, configuration) : null;
 }
