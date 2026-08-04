@@ -14,6 +14,7 @@ Completion date: August 3, 2026
 - Secure invitation links with 72-hour expiration
 - Session revocation and forced password-change support
 - Immutable administrative audit logging
+- Multi-factor authentication with enrollment, recovery codes, trusted devices, and reset support
 - Automatic email delivery deferred
 - Main branch remains untouched while Phase 5 is developed on `feature/phase-5-rbac-user-administration`
 
@@ -31,10 +32,11 @@ Completion date: August 3, 2026
 10. Role Management page
 11. Invitation acceptance flow
 12. Session management
-13. Audit Log page
-14. Translation catalog additions
-15. Backend and frontend tests
-16. Phase closeout documentation
+13. Multi-factor authentication enrollment, trusted devices, recovery, and reset
+14. Audit Log page
+15. Translation catalog additions
+16. Backend and frontend tests
+17. Phase closeout documentation
 
 ## Security invariants
 
@@ -46,6 +48,7 @@ Completion date: August 3, 2026
 - Organization administrators cannot grant system-only privileges.
 - Passwords are never displayed, emailed, or set by administrators.
 - Invitation and session tokens are stored as hashes.
+- MFA secrets, recovery codes, trusted-device records, and session revocation are handled through protected security workflows.
 - Security-sensitive changes are written to the audit log.
 - User deactivation is soft and preserves historical records.
 
@@ -75,7 +78,7 @@ Completion date: August 3, 2026
 - Localization guard passed across 41 files and 481 catalog entries.
 - Frontend TypeScript and Vite production builds passed.
 - Manual RBAC acceptance testing passed.
-- User administration, role administration, invitations, session revocation, unauthorized-route handling, and audit logging were validated.
+- User administration, role administration, invitations, session revocation, unauthorized-route handling, MFA security controls, and audit logging were validated.
 
 ## Dependency security decision
 
@@ -85,7 +88,6 @@ Completion date: August 3, 2026
 
 - Email provider integration
 - SMS delivery
-- MFA
 - Social login
 - Enterprise SSO
 - Subscription billing enforcement
