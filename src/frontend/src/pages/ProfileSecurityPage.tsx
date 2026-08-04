@@ -4,6 +4,20 @@ import api from "../services/api";
 import { useLocale } from "../i18n/LocaleContext";
 import "./SecurityCenter.css";
 
+interface SessionLocation {
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  countryCode: string | null;
+  timezone: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  provider: string | null;
+  lookedUpAt: string | null;
+  method: "IP_GEOLOCATION";
+  preciseGpsCollected: false;
+}
+
 interface TrustedDevice {
   id: string;
   userAgent: string | null;
@@ -11,6 +25,7 @@ interface TrustedDevice {
   createdAt: string;
   lastSeenAt: string;
   expiresAt: string;
+  location: SessionLocation;
 }
 
 interface ActiveSession {
@@ -21,6 +36,7 @@ interface ActiveSession {
   lastSeenAt: string;
   refreshExpiresAt: string | null;
   current: boolean;
+  location: SessionLocation;
 }
 
 interface PrivacyPreferences {
@@ -29,50 +45,23 @@ interface PrivacyPreferences {
   approximateLocationMethod: string;
 }
 
-interface DeviceInfo {
+interface DeviceDetails {
   browser: string;
   operatingSystem: string;
-  deviceType: string;
+  category: string;
 }
 
-function parseDeviceInfo(userAgent: string | null): DeviceInfo {
-  if (!userAgent) return { browser: "Unknown browser", operatingSystem: "Unknown operating system", deviceType: "Unknown device" };
-
-  const browser = userAgent.includes("Edg/")
-    ? "Microsoft Edge"
-    : userAgent.includes("OPR/") || userAgent.includes("Opera/")
-      ? "Opera"
-      : userAgent.includes("Chrome/") || userAgent.includes("CriOS/")
-        ? "Google Chrome"
-        : userAgent.includes("Firefox/") || userAgent.includes("FxiOS/")
-          ? "Mozilla Firefox"
-          : userAgent.includes("Safari/")
-            ? "Safari"
-            : "Other browser";
-
-  const operatingSystem = userAgent.includes("Windows NT")
-    ? "Windows"
-    : userAgent.includes("Android")
-      ? "Android"
-      : /iPhone|iPad|iPod/.test(userAgent)
-        ? "iOS or iPadOS"
-        : userAgent.includes("Mac OS X")
-          ? "macOS"
-          : userAgent.includes("Linux")
-            ? "Linux"
-            : "Other operating system";
-
-  const deviceType = /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)
-    ? "Tablet"
-    : /Mobile|iPhone|iPod|Android/i.test(userAgent)
-      ? "Mobile device"
-      : "Computer";
-
-  return { browser, operatingSystem, deviceType };
+function parseDevice(userAgent: string | null): DeviceDetails {
+  if (!userAgent) return { browser: "Unknown browser", operatingSystem: "Unknown operating system", category: "Unknown device" };
+  const browser = userAgent.includes("Edg/") ? "Microsoft Edge" : userAgent.includes("OPR/") ? "Opera" : userAgent.includes("Chrome/") ? "Google Chrome" : userAgent.includes("Firefox/") ? "Mozilla Firefox" : userAgent.includes("Safari/") ? "Safari" : "Other browser";
+  const operatingSystem = userAgent.includes("Windows NT 10.0") ? "Windows" : userAgent.includes("Android") ? "Android" : /iPhone|iPad|iPod/.test(userAgent) ? "iOS / iPadOS" : userAgent.includes("Mac OS X") ? "macOS" : userAgent.includes("Linux") ? "Linux" : "Unknown operating system";
+  const category = /iPad|Tablet/.test(userAgent) ? "Tablet" : /Mobile|Android|iPhone|iPod/.test(userAgent) ? "Mobile device" : "Computer";
+  return { browser, operatingSystem, category };
 }
 
-function formatDateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : "Not available";
+function locationLabel(location: SessionLocation): string {
+  const parts = [location.city, location.region, location.country].filter(Boolean);
+  return parts.length ? parts.join(", ") : "Location unavailable";
 }
 
 export default function ProfileSecurityPage() {
@@ -90,14 +79,13 @@ export default function ProfileSecurityPage() {
     let active = true;
 
     void Promise.all([
-      api.get<{ devices: TrustedDevice[] }>("/api/auth/security/devices"),
-      api.get<{ sessions: ActiveSession[] }>("/api/auth/security/sessions"),
+      api.get<{ devices: TrustedDevice[]; sessions: ActiveSession[] }>("/api/auth/security/details"),
       api.get<{ preferences: PrivacyPreferences }>("/api/auth/privacy/preferences"),
     ])
-      .then(([deviceResponse, sessionResponse, privacyResponse]) => {
+      .then(([securityResponse, privacyResponse]) => {
         if (!active) return;
-        setDevices(deviceResponse.data.devices);
-        setSessions(sessionResponse.data.sessions);
+        setDevices(securityResponse.data.devices);
+        setSessions(securityResponse.data.sessions);
         setAggregateAnalyticsEnabled(privacyResponse.data.preferences.aggregateAnalyticsEnabled);
         setError("");
       })
@@ -108,9 +96,7 @@ export default function ProfileSecurityPage() {
         if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [t]);
 
   const revokeDevice = async (id: string) => {
@@ -144,9 +130,7 @@ export default function ProfileSecurityPage() {
     setError("");
     setMessage("");
     try {
-      const response = await api.put<{ preferences: PrivacyPreferences }>("/api/auth/privacy/preferences", {
-        aggregateAnalyticsEnabled: enabled,
-      });
+      const response = await api.put<{ preferences: PrivacyPreferences }>("/api/auth/privacy/preferences", { aggregateAnalyticsEnabled: enabled });
       setAggregateAnalyticsEnabled(response.data.preferences.aggregateAnalyticsEnabled);
       setMessage(t("Privacy preferences updated."));
     } catch {
@@ -163,15 +147,28 @@ export default function ProfileSecurityPage() {
     window.location.assign("/");
   };
 
+  const renderDetails = (record: ActiveSession | TrustedDevice, trusted: boolean) => {
+    const device = parseDevice(record.userAgent);
+    const expiresAt = trusted ? (record as TrustedDevice).expiresAt : (record as ActiveSession).refreshExpiresAt;
+    return (
+      <div className="security-record-details">
+        <span><small>{t("Browser")}</small><strong>{t(device.browser)}</strong></span>
+        <span><small>{t("Operating System")}</small><strong>{t(device.operatingSystem)}</strong></span>
+        <span><small>{t("Device Type")}</small><strong>{t(device.category)}</strong></span>
+        <span><small>{t("Approximate Location")}</small><strong>{t(locationLabel(record.location))}</strong></span>
+        <span><small>{t("IP Address")}</small><strong data-no-translate="true">{record.ipAddress ?? t("IP address unavailable")}</strong></span>
+        <span><small>{trusted ? t("Trusted Since") : t("Signed In")}</small><strong>{new Date(record.createdAt).toLocaleString()}</strong></span>
+        <span><small>{t("Last Activity")}</small><strong>{new Date(record.lastSeenAt).toLocaleString()}</strong></span>
+        <span><small>{trusted ? t("Trust Expires") : t("Session Expires")}</small><strong>{expiresAt ? new Date(expiresAt).toLocaleString() : t("Not available")}</strong></span>
+      </div>
+    );
+  };
+
   return (
     <main className="security-page">
       <section className="security-card">
         <header className="security-header">
-          <div>
-            <p className="section-eyebrow">{t("Account Security")}</p>
-            <h1>{t("Security Center")}</h1>
-            <p>{t("Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.")}</p>
-          </div>
+          <div><p className="section-eyebrow">{t("Account Security")}</p><h1>{t("Security Center")}</h1><p>{t("Manage multi-factor authentication, trusted devices, active access, and privacy preferences for your account.")}</p></div>
           <button type="button" className="secondary-button" onClick={() => navigate("/profile")}>{t("Back to Profile")}</button>
         </header>
 
@@ -179,80 +176,28 @@ export default function ProfileSecurityPage() {
         {message && <p className="form-message success-message">{message}</p>}
 
         <section className="security-section">
-          <div className="security-section-heading">
-            <div><h2>{t("Active Sessions")}</h2><p>{t("Browsers and devices currently signed in to your account.")}</p></div>
-            <button type="button" className="secondary-button" onClick={() => void revokeOtherSessions()}>{t("Sign Out Other Sessions")}</button>
-          </div>
-          {loading ? <p>{t("Loading active sessions...")}</p> : sessions.length === 0 ? <p>{t("No active sessions were found.")}</p> : (
-            <div className="security-device-list">
-              {sessions.map((session) => {
-                const info = parseDeviceInfo(session.userAgent);
-                return (
-                  <article className="security-device security-device-detailed" key={session.id}>
-                    <div className="security-device-content">
-                      <div className="security-device-title-row"><strong>{t(info.browser)}</strong>{session.current && <span className="current-session-badge">{t("Current session")}</span>}</div>
-                      <p>{t(info.operatingSystem)} · {t(info.deviceType)}</p>
-                      <dl className="security-detail-grid">
-                        <div><dt>{t("IP Address")}</dt><dd>{session.ipAddress ?? t("IP address unavailable")}</dd></div>
-                        <div><dt>{t("Signed in")}</dt><dd>{formatDateTime(session.createdAt)}</dd></div>
-                        <div><dt>{t("Last used")}</dt><dd>{formatDateTime(session.lastSeenAt)}</dd></div>
-                        <div><dt>{t("Session expires")}</dt><dd>{formatDateTime(session.refreshExpiresAt)}</dd></div>
-                      </dl>
-                    </div>
-                    <button type="button" className={session.current ? "danger-button" : "secondary-button"} onClick={() => void revokeSession(session)}>{session.current ? t("Sign Out") : t("End Session")}</button>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+          <div className="security-section-heading"><div><h2>{t("Active Sessions")}</h2><p>{t("Browsers and devices currently signed in to your account.")}</p></div><button type="button" className="secondary-button" onClick={() => void revokeOtherSessions()}>{t("Sign Out Other Sessions")}</button></div>
+          {loading ? <p>{t("Loading active sessions...")}</p> : sessions.length === 0 ? <p>{t("No active sessions were found.")}</p> : <div className="security-device-list">{sessions.map((session) => {
+            const device = parseDevice(session.userAgent);
+            return <article className="security-device security-record" key={session.id}><div className="security-record-content"><div className="security-record-title"><strong>{t(device.browser)} on {t(device.operatingSystem)}</strong>{session.current && <span className="current-session-badge">{t("Current session")}</span>}</div>{renderDetails(session, false)}</div><button type="button" className={session.current ? "danger-button" : "secondary-button"} onClick={() => void revokeSession(session)}>{session.current ? t("Sign Out") : t("End Session")}</button></article>;
+          })}</div>}
         </section>
 
         <section className="security-section">
-          <div className="security-section-heading">
-            <div><h2>{t("Trusted Devices")}</h2><p>{t("Devices allowed to skip MFA after a successful password check.")}</p></div>
-            <span className="security-count">{devices.length}</span>
-          </div>
-          {loading ? <p>{t("Loading trusted devices...")}</p> : devices.length === 0 ? <p>{t("No trusted devices are currently registered.")}</p> : (
-            <div className="security-device-list">
-              {devices.map((device) => {
-                const info = parseDeviceInfo(device.userAgent);
-                return (
-                  <article className="security-device security-device-detailed" key={device.id}>
-                    <div className="security-device-content">
-                      <strong>{t(info.browser)}</strong>
-                      <p>{t(info.operatingSystem)} · {t(info.deviceType)}</p>
-                      <dl className="security-detail-grid">
-                        <div><dt>{t("IP Address")}</dt><dd>{device.ipAddress ?? t("IP address unavailable")}</dd></div>
-                        <div><dt>{t("Trusted since")}</dt><dd>{formatDateTime(device.createdAt)}</dd></div>
-                        <div><dt>{t("Last used")}</dt><dd>{formatDateTime(device.lastSeenAt)}</dd></div>
-                        <div><dt>{t("Trust expires")}</dt><dd>{formatDateTime(device.expiresAt)}</dd></div>
-                      </dl>
-                    </div>
-                    <button type="button" className="secondary-button" onClick={() => void revokeDevice(device.id)}>{t("Remove")}</button>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+          <div className="security-section-heading"><div><h2>{t("Trusted Devices")}</h2><p>{t("Devices allowed to skip MFA after a successful password check.")}</p></div><span className="security-count">{devices.length}</span></div>
+          {loading ? <p>{t("Loading trusted devices...")}</p> : devices.length === 0 ? <p>{t("No trusted devices are currently registered.")}</p> : <div className="security-device-list">{devices.map((deviceRecord) => {
+            const device = parseDevice(deviceRecord.userAgent);
+            return <article className="security-device security-record" key={deviceRecord.id}><div className="security-record-content"><div className="security-record-title"><strong>{t(device.browser)} on {t(device.operatingSystem)}</strong></div>{renderDetails(deviceRecord, true)}</div><button type="button" className="secondary-button" onClick={() => void revokeDevice(deviceRecord.id)}>{t("Remove")}</button></article>;
+          })}</div>}
         </section>
 
         <section className="security-section privacy-preferences-section">
-          <div className="security-section-heading">
-            <div><h2>{t("Privacy & Analytics")}</h2><p>{t("Choose whether your information may contribute to de-identified aggregate product statistics.")}</p></div>
-            <span className={`privacy-status-badge ${aggregateAnalyticsEnabled ? "enabled" : "disabled"}`}>{aggregateAnalyticsEnabled ? t("Participating") : t("Not participating")}</span>
-          </div>
+          <div className="security-section-heading"><div><h2>{t("Privacy & Analytics")}</h2><p>{t("Choose whether your information may contribute to de-identified aggregate product statistics.")}</p></div><span className={`privacy-status-badge ${aggregateAnalyticsEnabled ? "enabled" : "disabled"}`}>{aggregateAnalyticsEnabled ? t("Participating") : t("Not participating")}</span></div>
           <p className="privacy-detail-note">{t("This optional choice does not affect access to MyFitIdeas. Login security continues to use IP address, device information, and approximate IP-based location. Device GPS is not requested.")}</p>
-          <label className="privacy-preference-toggle">
-            <input type="checkbox" checked={aggregateAnalyticsEnabled} disabled={loading || savingPrivacy} onChange={(event) => void updateAnalyticsPreference(event.target.checked)} />
-            <span>{savingPrivacy ? t("Saving privacy preference...") : t("Allow de-identified aggregate analytics")}</span>
-          </label>
+          <label className="privacy-preference-toggle"><input type="checkbox" checked={aggregateAnalyticsEnabled} disabled={loading || savingPrivacy} onChange={(event) => void updateAnalyticsPreference(event.target.checked)} /><span>{savingPrivacy ? t("Saving privacy preference...") : t("Allow de-identified aggregate analytics")}</span></label>
         </section>
 
-        <section className="security-section danger-zone">
-          <h2>{t("Multi-factor Authentication")}</h2>
-          <p>{t("Resetting MFA removes your authenticator enrollment, recovery codes, trusted devices, and active sessions.")}</p>
-          <button type="button" className="danger-button" onClick={() => void resetMfa()}>{t("Reset My MFA")}</button>
-        </section>
+        <section className="security-section danger-zone"><h2>{t("Multi-factor Authentication")}</h2><p>{t("Resetting MFA removes your authenticator enrollment, recovery codes, trusted devices, and active sessions.")}</p><button type="button" className="danger-button" onClick={() => void resetMfa()}>{t("Reset My MFA")}</button></section>
       </section>
     </main>
   );
