@@ -96,7 +96,7 @@ export default function CompanySettingsPage() {
               {t("Provider")}
               <select value={settings.provider} onChange={(event) => setSettings({ ...settings, provider: event.target.value as Provider })}>
                 <option value="disabled">{t("Disabled")}</option>
-                <option value="ipinfo">IPinfo</option>
+                <option value="ipinfo" data-no-translate>IPinfo</option>
                 <option value="custom">{t("Custom provider")}</option>
               </select>
             </label>
