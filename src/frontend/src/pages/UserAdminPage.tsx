@@ -37,6 +37,7 @@ export default function UserAdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("");
   const [inviteLink, setInviteLink] = useState("");
@@ -53,7 +54,7 @@ export default function UserAdminPage() {
   const canAssignRoles = can("users.assign_roles");
   const canRevokeSessions = can("users.revoke_sessions") || can("users.update");
 
-  const load = useCallback(async (query = search) => {
+  const load = useCallback(async (query: string) => {
     setLoading(true);
     try {
       const [userResult, roleResult] = await Promise.all([getAdminUsers(query), getRoles()]);
@@ -62,7 +63,7 @@ export default function UserAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(() => load(""));
@@ -79,6 +80,12 @@ export default function UserAdminPage() {
     }
     return [...permissionSet].sort();
   }, [activeRoles, selectedRoleIds]);
+
+  const applySearch = async () => {
+    const query = search.trim();
+    setAppliedSearch(query);
+    await load(query);
+  };
 
   const invite = async () => {
     setError("");
@@ -100,7 +107,7 @@ export default function UserAdminPage() {
     try {
       await setUserStatus(user.user.id, status);
       setMessage(t("User status updated."));
-      await load(search);
+      await load(appliedSearch);
     } catch (statusError) {
       setError(apiErrorMessage(statusError, t("Unable to update user status.")));
     } finally {
@@ -142,7 +149,7 @@ export default function UserAdminPage() {
     try {
       await assignUserRoles(selectedUser.user.id, selectedRoleIds);
       setMessage(t("Role assignments updated."));
-      await load(search);
+      await load(appliedSearch);
       closeRoleEditor();
     } catch (assignmentError) {
       setError(apiErrorMessage(assignmentError, t("Unable to update role assignments.")));
@@ -245,8 +252,18 @@ export default function UserAdminPage() {
 
       <section className="security-panel">
         <div className="security-toolbar user-list-toolbar">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search users")} />
-          <Button variant="outline" onClick={() => void load(search)} disabled={loading}>{t("Search")}</Button>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void applySearch();
+              }
+            }}
+            placeholder={t("Search users")}
+          />
+          <Button variant="outline" onClick={() => void applySearch()} disabled={loading}>{t("Search")}</Button>
         </div>
         {message && <p className="success-message" role="status">{message}</p>}
         {error && !selectedUser && <p className="form-message error-message" role="alert">{error}</p>}
