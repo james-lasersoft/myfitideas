@@ -14,7 +14,7 @@ export default function GlobalControls() {
   return (
     <div className={`global-controls-bar${isAdminWorkspace ? " admin-global-controls" : ""}`}>
       {isAdminWorkspace && (
-        <div className="admin-global-brand" aria-label={t("MyFitIdeas administration")}>
+        <div className="admin-global-brand" aria-label={t("MyFitIdeas Admin Center")}>
           <BrandLogo className="admin-global-logo" />
         </div>
       )}
