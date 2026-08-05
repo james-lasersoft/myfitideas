@@ -1,33 +1,101 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminPageHeader } from "../components/admin/AdminComponents";
 import { useLocale } from "../i18n/LocaleContext";
+import {
+  getSyntheticDataUsers,
+  previewSyntheticData,
+  type SyntheticBodyProfile,
+  type SyntheticDataPreview,
+  type SyntheticDataUser,
+  type SyntheticSexReference,
+  type SyntheticTrend,
+} from "../services/syntheticDataService";
 import "./Admin.css";
 import "./AdminConsoleTheme.css";
 import "./SyntheticDataPage.css";
 
 type PeriodDays = 30 | 60 | 90;
-type BodyProfile = "UNDERWEIGHT" | "NORMAL" | "OVERWEIGHT" | "OBESITY" | "ATHLETIC";
-type SexReference = "MALE" | "FEMALE";
-type Trend = "STABLE" | "LOSS" | "GAIN" | "RECOMPOSITION" | "IRREGULAR";
+
+function readApiError(error: unknown): string {
+  if (typeof error === "object" && error && "response" in error) {
+    const response = (error as { response?: { data?: { error?: string } } }).response;
+    if (response?.data?.error) return response.data.error;
+  }
+  return "Unable to complete the synthetic data request.";
+}
 
 export default function SyntheticDataPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
+  const [users, setUsers] = useState<SyntheticDataUser[]>([]);
+  const [userId, setUserId] = useState("");
   const [periodDays, setPeriodDays] = useState<PeriodDays>(30);
   const [age, setAge] = useState(35);
-  const [bodyProfile, setBodyProfile] = useState<BodyProfile>("NORMAL");
-  const [sexReference, setSexReference] = useState<SexReference>("MALE");
-  const [trend, setTrend] = useState<Trend>("STABLE");
+  const [bodyProfile, setBodyProfile] = useState<SyntheticBodyProfile>("NORMAL");
+  const [sexReference, setSexReference] = useState<SyntheticSexReference>("MALE");
+  const [trend, setTrend] = useState<SyntheticTrend>("STABLE");
   const [dailyWeight, setDailyWeight] = useState(true);
   const [weeklyMeasurements, setWeeklyMeasurements] = useState(true);
   const [dailyHydration, setDailyHydration] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [previewing, setPreviewing] = useState(false);
+  const [error, setError] = useState("");
+  const [serverPreview, setServerPreview] = useState<SyntheticDataPreview | null>(null);
 
-  const preview = useMemo(() => ({
+  useEffect(() => {
+    let active = true;
+    void getSyntheticDataUsers()
+      .then((items) => {
+        if (!active) return;
+        setUsers(items);
+        setUserId((current) => current || items[0]?.id || "");
+      })
+      .catch((requestError: unknown) => {
+        if (active) setError(readApiError(requestError));
+      })
+      .finally(() => {
+        if (active) setLoadingUsers(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const localPreview = useMemo(() => ({
     weightEntries: dailyWeight ? periodDays : 0,
     measurementEntries: weeklyMeasurements ? Math.ceil(periodDays / 7) : 0,
     hydrationEntries: dailyHydration ? periodDays * 4 : 0,
   }), [dailyHydration, dailyWeight, periodDays, weeklyMeasurements]);
+
+  const preview = serverPreview?.estimatedRecords ?? {
+    ...localPreview,
+    total: localPreview.weightEntries + localPreview.measurementEntries + localPreview.hydrationEntries,
+  };
+
+  async function handlePreview() {
+    setError("");
+    setServerPreview(null);
+    setPreviewing(true);
+    try {
+      const result = await previewSyntheticData({
+        userId,
+        periodDays,
+        dailyWeight,
+        weeklyMeasurements,
+        dailyHydration,
+        sexReference,
+        age,
+        bodyProfile,
+        trend,
+      });
+      setServerPreview(result);
+    } catch (requestError) {
+      setError(readApiError(requestError));
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  const canPreview = Boolean(userId) && !previewing && (dailyWeight || weeklyMeasurements || dailyHydration);
 
   return (
     <main className="admin-page admin-console-page synthetic-data-page">
@@ -46,11 +114,19 @@ export default function SyntheticDataPage() {
             <span>{t("Generation will be blocked unless the backend is running in development mode and synthetic data generation is explicitly enabled.")}</span>
           </div>
 
+          {error ? <div className="admin-error-message" role="alert">{t(error)}</div> : null}
+
           <div className="synthetic-data-grid">
             <label>
               <span>{t("Test user")}</span>
-              <select disabled value="">
-                <option value="">{t("User selection will load from the Super Admin API")}</option>
+              <select disabled={loadingUsers || users.length === 0} value={userId} onChange={(event) => setUserId(event.target.value)}>
+                {loadingUsers ? <option value="">{t("Loading users")}</option> : null}
+                {!loadingUsers && users.length === 0 ? <option value="">{t("No active users available")}</option> : null}
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName ?? ""} ({user.email})
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -74,7 +150,7 @@ export default function SyntheticDataPage() {
 
             <label>
               <span>{t("Sex reference")}</span>
-              <select value={sexReference} onChange={(event) => setSexReference(event.target.value as SexReference)}>
+              <select value={sexReference} onChange={(event) => setSexReference(event.target.value as SyntheticSexReference)}>
                 <option value="MALE">{t("Male")}</option>
                 <option value="FEMALE">{t("Female")}</option>
               </select>
@@ -87,7 +163,7 @@ export default function SyntheticDataPage() {
 
             <label>
               <span>{t("Body profile")}</span>
-              <select value={bodyProfile} onChange={(event) => setBodyProfile(event.target.value as BodyProfile)}>
+              <select value={bodyProfile} onChange={(event) => setBodyProfile(event.target.value as SyntheticBodyProfile)}>
                 <option value="UNDERWEIGHT">{t("Underweight")}</option>
                 <option value="NORMAL">{t("Normal range")}</option>
                 <option value="OVERWEIGHT">{t("Overweight")}</option>
@@ -98,7 +174,7 @@ export default function SyntheticDataPage() {
 
             <label>
               <span>{t("Trend")}</span>
-              <select value={trend} onChange={(event) => setTrend(event.target.value as Trend)}>
+              <select value={trend} onChange={(event) => setTrend(event.target.value as SyntheticTrend)}>
                 <option value="STABLE">{t("Stable")}</option>
                 <option value="LOSS">{t("Gradual weight loss")}</option>
                 <option value="GAIN">{t("Gradual weight gain")}</option>
@@ -114,11 +190,14 @@ export default function SyntheticDataPage() {
           <strong>{preview.weightEntries}</strong><span>{t("weight entries")}</span>
           <strong>{preview.measurementEntries}</strong><span>{t("measurement entries")}</span>
           <strong>{preview.hydrationEntries}</strong><span>{t("hydration entries")}</span>
+          <strong>{preview.total}</strong><span>{t("total records")}</span>
           <div className="preview-summary">
             {t("Scenario")}: {t(bodyProfile.toLowerCase())}, {t(sexReference.toLowerCase())}, {age}, {t(trend.toLowerCase())}
           </div>
-          <button type="button" className="admin-primary-action" disabled>{t("Preview generation")}</button>
-          <p>{t("The generation action will be enabled after the protected backend API and batch tracking are connected.")}</p>
+          <button type="button" className="admin-primary-action" disabled={!canPreview} onClick={() => void handlePreview()}>
+            {previewing ? t("Preparing preview") : t("Preview generation")}
+          </button>
+          {serverPreview ? <p>{t("Preview validated by the development backend. Record generation remains disabled until batch tracking is connected.")}</p> : null}
         </aside>
       </section>
     </main>
