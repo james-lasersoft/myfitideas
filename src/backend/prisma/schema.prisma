@@ -326,18 +326,22 @@ model Measurement {
 }
 
 model Hydration {
-  id        String   @id @default(uuid())
-  userId    String
-  amount    Float
-  unit      String
-  loggedAt  DateTime
-  amountMl  Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  userId                String
+  amount                Float
+  unit                  String
+  loggedAt              DateTime
+  amountMl              Float
+  beverageType          String   @default("water")
+  hydrationCoefficient  Float    @default(1)
+  effectiveAmountMl     Float
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, loggedAt])
+  @@index([userId, beverageType, loggedAt])
   @@map("hydration")
 }
 
