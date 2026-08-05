@@ -180,6 +180,39 @@
   min-height: 3rem;
 }
 
+.hydration-page .hydration-gauge-content {
+  top: 49%;
+  width: min(72%, 390px);
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 0.45rem;
+  row-gap: 0;
+}
+
+.hydration-page .hydration-gauge-content strong {
+  grid-column: 1;
+  margin-top: 0;
+}
+
+.hydration-page .hydration-gauge-unit {
+  grid-column: 2;
+  margin-left: 0;
+}
+
+.hydration-page .hydration-gauge-content p {
+  grid-column: 1 / -1;
+  margin: 0.95rem 0 0;
+}
+
+.hydration-page .hydration-gauge-content b {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 1.4rem;
+  padding: 0.42rem 1rem;
+}
+
 @keyframes hydration-confirmation-dismiss {
   0%, 72% {
     opacity: 1;
@@ -279,5 +312,18 @@
   .hydration-page .beverage-selector-row,
   .hydration-page .quick-add-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hydration-page .hydration-gauge-content {
+    top: 50%;
+    width: min(76%, 300px);
+  }
+
+  .hydration-page .hydration-gauge-content p {
+    margin-top: 0.7rem;
+  }
+
+  .hydration-page .hydration-gauge-content b {
+    margin-top: 1rem;
   }
 }
