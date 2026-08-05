@@ -444,14 +444,14 @@ model Entitlement {
 }
 
 model PlanEntitlement {
-  id            String @id @default(uuid())
   planId        String
   entitlementId String
+  createdAt     DateTime @default(now())
 
   plan        SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   entitlement Entitlement      @relation(fields: [entitlementId], references: [id], onDelete: Cascade)
 
-  @@unique([planId, entitlementId])
+  @@id([planId, entitlementId])
   @@index([entitlementId])
   @@map("plan_entitlements")
 }
