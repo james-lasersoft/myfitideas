@@ -12,6 +12,7 @@ const memberCatalogPaths = [
   "seed-translations-dashboard.ts",
   "seed-translations-dashboard-quick-add.ts",
   "seed-translations-privacy.ts",
+  "seed-translations-account-creation.ts",
 ];
 
 const administrationCatalogPaths = [
