@@ -5,6 +5,7 @@ import PermissionRoute from "./auth/PermissionRoute";
 import SuperAdminRoute from "./auth/SuperAdminRoute";
 import TranslationAdminShell from "./components/admin/TranslationAdminShell";
 import GlobalControls from "./components/layout/GlobalControls";
+import PublicShell from "./components/public/PublicShell";
 import PageLoading from "./components/PageLoading";
 import LoginPage from "./pages/LoginPage";
 import "./components/ui/Button.css";
@@ -14,6 +15,8 @@ import "./pages/AdminLegacyShell.css";
 import "./pages/ProfileLocalizationPolish.css";
 import "./index.css";
 
+const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
+const PublicInformationPage = lazy(() => import("./pages/PublicInformationPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MeasurementsPage = lazy(() => import("./pages/MeasurementsPage"));
 const HydrationPage = lazy(() => import("./pages/HydrationPage"));
@@ -34,7 +37,7 @@ const SystemOperationsPage = lazy(() => import("./pages/SystemOperationsPage"));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("authToken");
-  return token ? children : <Navigate to="/" replace />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function ProtectedPage({ children }: { children: ReactNode }) {
@@ -51,9 +54,18 @@ export default function App() {
       <AuthorizationProvider>
         <GlobalControls />
         <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/register" element={<Suspense fallback={<PageLoading />}><RegistrationPage /></Suspense>} />
-          <Route path="/accept-invitation" element={<Suspense fallback={<PageLoading />}><AcceptInvitationPage /></Suspense>} />
+          <Route element={<PublicShell />}>
+            <Route path="/" element={<Suspense fallback={<PageLoading />}><PublicLandingPage /></Suspense>} />
+            <Route path="/features" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
+            <Route path="/pricing" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
+            <Route path="/checkout/result" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
+            <Route path="/privacy" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
+            <Route path="/terms" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<Suspense fallback={<PageLoading />}><RegistrationPage /></Suspense>} />
+            <Route path="/register" element={<Navigate to="/signup" replace />} />
+            <Route path="/accept-invitation" element={<Suspense fallback={<PageLoading />}><AcceptInvitationPage /></Suspense>} />
+          </Route>
           <Route path="/workspace" element={<ProtectedPage><WorkspaceChooserPage /></ProtectedPage>} />
           <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
           <Route path="/measurements" element={<ProtectedPage><MeasurementsPage /></ProtectedPage>} />
