@@ -25,7 +25,7 @@ export default function PublicShell() {
           <div className="public-header-actions">
             <ThemeToggle />
             <LanguageSelector />
-            <NavLink className="public-signup-link" to="/signup">{t("Create Account")}</NavLink>
+            <NavLink className="public-signup-link" to="/create-account">{t("Create Account")}</NavLink>
           </div>
         </div>
       </header>
