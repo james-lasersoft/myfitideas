@@ -6,7 +6,7 @@ export async function getUserEntitlements(userId: string): Promise<string[]> {
     where: {
       userId,
       status: { in: ["ACTIVE", "TRIALING"] },
-      startsAt: { lte: now },
+      startedAt: { lte: now },
       OR: [{ endsAt: null }, { endsAt: { gt: now } }],
     },
     include: {
