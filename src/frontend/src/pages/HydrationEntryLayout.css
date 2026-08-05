@@ -67,6 +67,46 @@
   min-width: 0;
 }
 
+.hydration-page .localized-time-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.85rem;
+  padding: 0.25rem 0.35rem;
+  background: #ffffff;
+  border: 1px solid #c9ddce;
+  border-radius: 0.7rem;
+}
+
+.hydration-page .localized-time-input-12 {
+  grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 0.8fr) minmax(0, 1fr);
+}
+
+.hydration-page .localized-time-input select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.2rem;
+  padding: 0.25rem 0.35rem;
+  color: #172b20;
+  background: transparent;
+  border: 0;
+  border-radius: 0.45rem;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.hydration-page .localized-time-input select:focus-visible {
+  outline: 2px solid rgba(21, 128, 61, 0.32);
+  outline-offset: 1px;
+}
+
+.hydration-page .localized-time-input > span {
+  color: #475569;
+  font-weight: 800;
+}
+
 .hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(1) {
   grid-column: 1;
   grid-row: 4;
@@ -240,8 +280,7 @@
 }
 
 .hydration-page .hydration-progress-card .hydration-date-filter input,
-.hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(3) input,
-.hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(4) input {
+.hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(3) input {
   min-height: 2.85rem;
   padding: 0.72rem 0.78rem;
   color: #172b20;
