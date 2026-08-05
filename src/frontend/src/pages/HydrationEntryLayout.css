@@ -1,6 +1,7 @@
 .hydration-page .hydration-entry-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(135px, 0.38fr) minmax(120px, 0.34fr);
+  grid-template-rows: auto auto auto auto 2.5rem;
   align-items: end;
   gap: 1rem;
 }
@@ -64,7 +65,10 @@
 .hydration-page .hydration-entry-card .error-message {
   grid-column: 1 / -1;
   grid-row: 5;
+  align-self: center;
+  max-height: 2.5rem;
   margin: 0;
+  overflow: hidden;
 }
 
 .hydration-page .hydration-entry-card .success-message {
@@ -229,6 +233,17 @@
   }
 }
 
+@media (min-width: 981px) {
+  .hydration-page .hydration-workspace {
+    align-items: stretch;
+  }
+
+  .hydration-page .hydration-progress-card,
+  .hydration-page .hydration-entry-card {
+    height: 100%;
+  }
+}
+
 @media (max-width: 980px) {
   .hydration-page .hydration-entry-card {
     grid-template-columns: minmax(0, 1fr) minmax(140px, 0.45fr) minmax(130px, 0.4fr);
@@ -239,6 +254,7 @@
   .hydration-page .hydration-entry-card {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto auto auto auto auto 2.5rem;
   }
 
   .hydration-page .hydration-entry-card > .hydration-card-heading {
@@ -291,6 +307,7 @@
 @media (max-width: 520px) {
   .hydration-page .hydration-entry-card {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto auto auto auto 2.5rem;
   }
 
   .hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(3),
@@ -308,6 +325,8 @@
   .hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(1) { grid-row: 6; }
   .hydration-page .hydration-entry-card .hydration-form-grid > label:nth-child(2) { grid-row: 7; }
   .hydration-page .hydration-entry-card .hydration-form-actions > button:first-child { grid-row: 8; }
+  .hydration-page .hydration-entry-card .success-message,
+  .hydration-page .hydration-entry-card .error-message { grid-row: 9; }
 
   .hydration-page .beverage-selector-row,
   .hydration-page .quick-add-buttons {
