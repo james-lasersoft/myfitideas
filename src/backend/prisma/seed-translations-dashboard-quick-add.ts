@@ -14,6 +14,9 @@ const catalog = [
   ["hydration.historyConsumed", "Consumed", "hydration", "Consumido"],
   ["hydration.historyCoefficient", "Coefficient", "hydration", "Coeficiente"],
   ["hydration.historyEffective", "Effective", "hydration", "Efetivo"],
+  ["localization.hour", "Hour", "localization", "Hora"],
+  ["localization.minute", "Minute", "localization", "Minuto"],
+  ["localization.timePeriod", "Time period", "localization", "Período do dia"],
 ] as const;
 
 async function main() {
