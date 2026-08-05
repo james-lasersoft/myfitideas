@@ -88,6 +88,12 @@ export default function LocalizedTimeInput({
     setStep("minute");
   };
 
+  const selectMinute = (selected: number) => {
+    setDraftMinute(selected);
+    onChange(formatValue(draftHour, selected));
+    setOpen(false);
+  };
+
   const setPeriod = (nextPeriod: Period) => {
     setDraftHour((draftHour % 12) + (nextPeriod === "PM" ? 12 : 0));
   };
@@ -129,9 +135,8 @@ export default function LocalizedTimeInput({
                 const selected = option === draftHour || (!is24Hour && option === displayHour);
                 return <button key={option} type="button" className={selected ? "selected" : ""} style={clockPosition(positionIndex, 12, radius)} aria-label={`${t("Hour")} ${option}`} onClick={() => selectHour(option)}>{String(option).padStart(is24Hour ? 2 : 1, "0")}</button>;
               }) : minuteOptions.map((option, index) => (
-                <button key={option} type="button" className={option === draftMinute ? "selected" : ""} style={clockPosition(index, 12, 102)} aria-label={`${t("Minute")} ${option}`} onClick={() => setDraftMinute(option)}>{String(option).padStart(2, "0")}</button>
+                <button key={option} type="button" className={option === draftMinute ? "selected" : ""} style={clockPosition(index, 12, 102)} aria-label={`${t("Minute")} ${option}`} onClick={() => selectMinute(option)}>{String(option).padStart(2, "0")}</button>
               ))}
-              <span className="localized-clock-center" />
             </div>
 
             <div className="localized-time-actions">
