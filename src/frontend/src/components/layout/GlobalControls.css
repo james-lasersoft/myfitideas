@@ -1,3 +1,5 @@
+@import "./WorkspaceTokens.css";
+
 .global-controls-bar {
   position: sticky;
   top: 0;
@@ -15,16 +17,16 @@
   justify-content: space-between;
   align-items: center;
   min-height: 58px;
-  box-shadow: 0 4px 16px rgba(17, 36, 56, 0.18);
 }
 
 .global-controls-bar.admin-global-controls {
-  background: linear-gradient(90deg, #17324f, #244866);
+  background: linear-gradient(90deg, var(--workspace-admin-primary), var(--workspace-admin-secondary));
+  box-shadow: 0 4px 16px rgb(var(--workspace-admin-shadow-rgb) / 18%);
 }
 
 .global-controls-bar.member-global-controls {
-  background: linear-gradient(90deg, #176d34, #1f8b43);
-  box-shadow: 0 4px 16px rgba(23, 109, 52, 0.18);
+  background: linear-gradient(90deg, var(--workspace-member-primary-dark), var(--workspace-member-primary));
+  box-shadow: 0 4px 16px rgb(var(--workspace-member-shadow-rgb) / 18%);
 }
 
 .admin-global-brand,
@@ -33,10 +35,10 @@
   align-items: center;
   min-width: 0;
   padding: 0.2rem 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border: 1px solid rgb(255 255 255 / 42%);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 2px 8px rgba(5, 18, 31, 0.16);
+  background: var(--workspace-logo-surface);
+  box-shadow: 0 2px 8px rgb(5 18 31 / 16%);
   pointer-events: auto;
 }
 
@@ -52,19 +54,19 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem;
-  border: 1px solid rgba(31, 139, 67, 0.2);
+  border: 1px solid rgb(var(--workspace-member-shadow-rgb) / 20%);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 5px 14px rgba(38, 50, 56, 0.1);
+  background: var(--workspace-logo-surface);
+  box-shadow: 0 5px 14px rgb(38 50 56 / 10%);
   backdrop-filter: blur(10px);
   pointer-events: auto;
 }
 
 .admin-global-controls .global-controls-group,
 .member-global-controls .global-controls-group {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 4px 12px rgba(5, 18, 31, 0.18);
+  border-color: var(--workspace-control-border);
+  background: var(--workspace-control-surface);
+  box-shadow: 0 4px 12px rgb(5 18 31 / 18%);
 }
 
 .global-controls-group .theme-toggle-button,
@@ -102,21 +104,21 @@
 }
 
 html[data-theme="dark"] .global-controls-group {
-  background: rgba(24, 33, 27, 0.95);
+  background: rgb(24 33 27 / 95%);
   border-color: #435448;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 30%);
 }
 
 html[data-theme="dark"] .admin-global-controls .global-controls-group,
 html[data-theme="dark"] .member-global-controls .global-controls-group {
-  background: rgba(20, 31, 43, 0.96);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--workspace-control-surface);
+  border-color: var(--workspace-control-border);
 }
 
 html[data-theme="dark"] .admin-global-brand,
 html[data-theme="dark"] .member-global-brand {
-  background: rgba(246, 249, 247, 0.96);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--workspace-logo-surface);
+  border-color: rgb(255 255 255 / 30%);
 }
 
 @media (max-width: 700px) {
