@@ -67,7 +67,7 @@ export default function HydrationProgressVisualization({
   selectedDate,
   dailyTotal,
 }: HydrationProgressVisualizationProps) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [mode, setMode] = useState<ProgressMode>("daily");
   const [tooltip, setTooltip] = useState<TooltipState>({ kind: null, x: 180, y: 42 });
 
@@ -96,6 +96,8 @@ export default function HydrationProgressVisualization({
     const [year, month, day] = selectedDate.split("-").map(Number);
     const endDate = new Date(year, month - 1, day, 12, 0, 0, 0);
     const totals = new Map<string, number>();
+    const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    const dateFormatter = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" });
 
     entries.forEach((entry) => {
       const key = localDateKey(new Date(entry.loggedAt));
@@ -108,12 +110,12 @@ export default function HydrationProgressVisualization({
       const dateKey = localDateKey(date);
       return {
         dateKey,
-        dayLabel: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date),
-        dateLabel: new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date),
+        dayLabel: weekdayFormatter.format(date),
+        dateLabel: dateFormatter.format(date),
         total: totals.get(dateKey) ?? 0,
       };
     });
-  }, [entries, preferredUnit, selectedDate]);
+  }, [entries, locale, preferredUnit, selectedDate]);
 
   const chartMaximum = Math.max(goal, ...weeklyDays.map((day) => day.total), 1);
 
