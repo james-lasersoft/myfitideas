@@ -1,0 +1,304 @@
+.hydration-progress-visualization {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hydration-progress-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-self: center;
+  width: min(100%, 15rem);
+  margin: 0.15rem auto 0.35rem;
+  padding: 0.2rem;
+  background: #edf7f0;
+  border: 1px solid #c8dfcf;
+  border-radius: 999px;
+}
+
+.hydration-progress-toggle button {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.85rem;
+  color: #356047;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.hydration-progress-toggle button:hover {
+  color: #14532d;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.hydration-progress-toggle button.selected,
+.hydration-progress-toggle button[aria-pressed="true"] {
+  color: #ffffff;
+  background: #166534;
+  box-shadow: 0 4px 10px rgba(22, 101, 52, 0.2);
+}
+
+.hydration-gauge {
+  position: relative;
+  overflow: visible;
+}
+
+.hydration-gauge svg {
+  overflow: visible;
+}
+
+.hydration-gauge-track,
+.hydration-gauge-consumed,
+.hydration-gauge-effective {
+  fill: none;
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-dasharray: 75 25;
+  cursor: help;
+  transition: stroke-dasharray 500ms cubic-bezier(0.22, 1, 0.36, 1), filter 160ms ease, stroke 160ms ease;
+}
+
+.hydration-gauge-track {
+  stroke: #d9f2df;
+}
+
+.hydration-gauge-consumed {
+  stroke: #4fbf78;
+}
+
+.hydration-gauge-effective {
+  stroke: #166534;
+}
+
+.hydration-gauge-track:hover,
+.hydration-gauge-track:focus,
+.hydration-gauge-consumed:hover,
+.hydration-gauge-consumed:focus,
+.hydration-gauge-effective:hover,
+.hydration-gauge-effective:focus {
+  filter: drop-shadow(0 0 5px rgba(22, 101, 52, 0.35));
+  outline: none;
+}
+
+.hydration-gauge-track:focus-visible,
+.hydration-gauge-consumed:focus-visible,
+.hydration-gauge-effective:focus-visible {
+  filter: drop-shadow(0 0 7px rgba(22, 101, 52, 0.55));
+}
+
+.hydration-level,
+.hydration-arc-label {
+  pointer-events: none;
+}
+
+.hydration-arc-tooltip {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  gap: 0.12rem;
+  min-width: 9.5rem;
+  max-width: 13rem;
+  padding: 0.55rem 0.7rem;
+  color: #ffffff;
+  background: rgba(20, 83, 45, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.65rem;
+  box-shadow: 0 10px 24px rgba(20, 83, 45, 0.24);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.75rem));
+  white-space: nowrap;
+}
+
+.hydration-arc-tooltip strong {
+  font-size: 0.76rem;
+}
+
+.hydration-arc-tooltip span {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.hydration-arc-tooltip small {
+  color: #dcfce7;
+  font-size: 0.68rem;
+}
+
+.hydration-arc-label {
+  fill: #4f6f5c;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.hydration-weekly-chart {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  height: 100%;
+  padding: 0.45rem 0.35rem 0.1rem;
+  overflow: hidden;
+}
+
+.hydration-weekly-plot {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.5rem;
+  min-height: 0;
+  height: 100%;
+  max-height: 15.5rem;
+  padding: 1rem 0.35rem 0;
+  overflow: hidden;
+  border-bottom: 1px solid #cfe2d4;
+}
+
+.hydration-weekly-column {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: 1rem minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  text-align: center;
+}
+
+.hydration-weekly-value {
+  overflow: hidden;
+  color: #355f46;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hydration-weekly-bar-track {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: min(100%, 2.35rem);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f5fbf7, #eaf5ed);
+  border: 1px solid #d6e8db;
+  border-radius: 0.7rem 0.7rem 0.3rem 0.3rem;
+}
+
+.hydration-weekly-bar {
+  width: 100%;
+  min-height: 0;
+  background: linear-gradient(180deg, #4ade80, #15803d);
+  border-radius: 0.6rem 0.6rem 0.2rem 0.2rem;
+  transition: height 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hydration-weekly-bar.goal-met {
+  background: linear-gradient(180deg, #a3e635, #16a34a 55%, #047857);
+}
+
+.hydration-weekly-column strong {
+  overflow: hidden;
+  color: #163324;
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hydration-weekly-column > span {
+  overflow: hidden;
+  color: #6b7f71;
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hydration-weekly-goal-line {
+  position: absolute;
+  right: 0.35rem;
+  left: 0.35rem;
+  z-index: 1;
+  border-top: 2px dashed rgba(22, 101, 52, 0.45);
+}
+
+.hydration-weekly-goal-line span {
+  position: absolute;
+  top: -1.15rem;
+  right: 0;
+  padding: 0.05rem 0.3rem;
+  color: #166534;
+  background: rgba(247, 254, 231, 0.95);
+  border-radius: 0.35rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.hydration-weekly-unit {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .hydration-weekly-plot {
+    max-height: 14rem;
+    gap: 0.35rem;
+  }
+
+  .hydration-weekly-bar-track {
+    width: min(100%, 2rem);
+  }
+}
+
+@media (max-width: 520px) {
+  .hydration-progress-toggle {
+    width: min(100%, 13rem);
+  }
+
+  .hydration-arc-label {
+    font-size: 11px;
+  }
+
+  .hydration-arc-tooltip {
+    min-width: 8rem;
+    white-space: normal;
+  }
+
+  .hydration-weekly-chart {
+    padding-inline: 0;
+  }
+
+  .hydration-weekly-plot {
+    max-height: 12.5rem;
+    gap: 0.2rem;
+    padding-inline: 0;
+  }
+
+  .hydration-weekly-column > span,
+  .hydration-weekly-value {
+    font-size: 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hydration-gauge-track,
+  .hydration-gauge-consumed,
+  .hydration-gauge-effective,
+  .hydration-weekly-bar {
+    transition: none;
+  }
+}

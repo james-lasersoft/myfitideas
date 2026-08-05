@@ -1,0 +1,114 @@
+.mfa-step {
+  margin: 0.5rem 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.mfa-enrollment-details {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.mfa-enrollment-details p { margin: 0; }
+
+.mfa-qr-code {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0.85rem;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #d8e3da;
+  border-radius: 0.85rem;
+}
+
+.mfa-qr-code svg {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+}
+
+.mfa-setup-key,
+.mfa-uri-details code {
+  display: block;
+  max-width: 100%;
+  padding: 0.7rem 0.8rem;
+  overflow-wrap: anywhere;
+  color: #26343a;
+  background: #f4f8f4;
+  border: 1px solid #d8e3da;
+  border-radius: 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.mfa-uri-details { min-width: 0; }
+.mfa-uri-details summary { cursor: pointer; font-weight: 600; }
+.mfa-uri-details code { margin-top: 0.65rem; }
+
+.mfa-recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.mfa-recovery-codes code {
+  display: block;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  overflow-wrap: anywhere;
+  color: #26343a;
+  background: #f4f8f4;
+  border: 1px solid #d8e3da;
+  border-radius: 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.remember-device-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  background: #f7faf7;
+  border: 1px solid #d8e3da;
+  border-radius: 0.65rem;
+  font-weight: 600;
+}
+
+.remember-device-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+}
+
+.recovery-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.recovery-actions .secondary-button { width: 100%; margin: 0; }
+
+@media (max-width: 520px) {
+  .mfa-qr-code { padding: 0.6rem; }
+  .mfa-recovery-codes,
+  .recovery-actions { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .mfa-recovery-codes,
+  .mfa-recovery-codes * { visibility: visible; }
+  .mfa-recovery-codes { position: absolute; inset: 1rem; }
+}

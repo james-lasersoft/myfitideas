@@ -1,0 +1,161 @@
+@import "./WorkspaceTokens.css";
+
+.global-controls-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.4rem clamp(0.75rem, 2vw, 1.25rem);
+  pointer-events: none;
+}
+
+.global-controls-bar.admin-global-controls,
+.global-controls-bar.member-global-controls {
+  justify-content: space-between;
+  align-items: center;
+  min-height: 58px;
+}
+
+.global-controls-bar.admin-global-controls {
+  background: linear-gradient(90deg, var(--workspace-admin-primary), var(--workspace-admin-secondary));
+  box-shadow: 0 4px 16px rgb(var(--workspace-admin-shadow-rgb) / 18%);
+}
+
+.global-controls-bar.member-global-controls {
+  background: linear-gradient(90deg, var(--workspace-member-primary-dark), var(--workspace-member-primary));
+  box-shadow: 0 4px 16px rgb(var(--workspace-member-shadow-rgb) / 18%);
+}
+
+.admin-global-brand,
+.member-global-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgb(255 255 255 / 42%);
+  border-radius: 999px;
+  background: var(--workspace-logo-surface);
+  box-shadow: 0 2px 8px rgb(5 18 31 / 16%);
+  pointer-events: auto;
+}
+
+.admin-global-logo,
+.member-global-logo {
+  width: 132px;
+  max-width: 28vw;
+  display: block;
+}
+
+.global-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border: 1px solid rgb(var(--workspace-member-shadow-rgb) / 20%);
+  border-radius: 999px;
+  background: var(--workspace-logo-surface);
+  box-shadow: 0 5px 14px rgb(38 50 56 / 10%);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.admin-global-controls .global-controls-group,
+.member-global-controls .global-controls-group {
+  border-color: var(--workspace-control-border);
+  background: var(--workspace-control-surface);
+  box-shadow: 0 4px 12px rgb(5 18 31 / 18%);
+}
+
+.global-controls-group .theme-toggle-button,
+.global-controls-group .language-selector {
+  position: static !important;
+  inset: auto !important;
+  margin: 0;
+}
+
+.global-controls-group .theme-toggle-button {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0.35rem;
+}
+
+.global-controls-group .language-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.global-controls-group .language-flag-button {
+  min-width: 32px;
+  min-height: 30px;
+  padding: 0.22rem 0.28rem;
+  border-radius: 8px;
+}
+
+.global-controls-group .language-flag-icon,
+.global-controls-group .language-flag-icon svg {
+  width: 24px;
+  height: 16px;
+  display: block;
+}
+
+html[data-theme="dark"] .global-controls-group {
+  background: rgb(24 33 27 / 95%);
+  border-color: #435448;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 30%);
+}
+
+html[data-theme="dark"] .admin-global-controls .global-controls-group,
+html[data-theme="dark"] .member-global-controls .global-controls-group {
+  background: var(--workspace-control-surface);
+  border-color: var(--workspace-control-border);
+}
+
+html[data-theme="dark"] .admin-global-brand,
+html[data-theme="dark"] .member-global-brand {
+  background: var(--workspace-logo-surface);
+  border-color: rgb(255 255 255 / 30%);
+}
+
+@media (max-width: 700px) {
+  .global-controls-bar {
+    min-height: 52px;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .global-controls-bar.admin-global-controls,
+  .global-controls-bar.member-global-controls {
+    min-height: 54px;
+  }
+
+  .admin-global-brand,
+  .member-global-brand {
+    padding: 0.16rem 0.34rem;
+  }
+
+  .admin-global-logo,
+  .member-global-logo {
+    width: 108px;
+  }
+
+  .global-controls-group {
+    gap: 0.2rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-global-logo,
+  .member-global-logo {
+    width: 92px;
+  }
+
+  .global-controls-group .theme-toggle-button,
+  .global-controls-group .language-flag-button {
+    min-width: 30px;
+    min-height: 30px;
+  }
+}

@@ -1,0 +1,197 @@
+/* Phase 2.5 Brand v1.0 application-wide page treatment */
+
+.measurements-page,
+.hydration-page,
+.profile-page,
+.progress-charts-page {
+  color: var(--mfi-color-charcoal);
+  background:
+    radial-gradient(circle at 10% 0%, rgb(166 232 74 / 14%), transparent 26rem),
+    linear-gradient(180deg, #fbfff8 0%, var(--mfi-color-background) 100%);
+}
+
+.page-brand-header,
+.hydration-page .dashboard-header,
+.progress-charts-header,
+.profile-header {
+  position: relative;
+  padding: var(--mfi-space-4) var(--mfi-space-6);
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid var(--mfi-color-border);
+  border-radius: var(--mfi-radius-lg);
+  box-shadow: var(--mfi-shadow-1);
+  backdrop-filter: blur(10px);
+}
+
+.page-brand-heading,
+.hydration-page .dashboard-header > div:first-child,
+.progress-charts-header > div:first-child,
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--mfi-space-4);
+}
+
+.page-brand-symbol {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+}
+
+.hydration-page .dashboard-header > div:first-child::before,
+.progress-charts-header > div:first-child::before,
+.profile-identity::before {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  content: "";
+  background: url('/brand/myfitideas-symbol.svg') center / contain no-repeat;
+}
+
+.measurements-page h1,
+.hydration-page h1,
+.profile-page h1,
+.progress-charts-page h1,
+.measurements-page h2,
+.hydration-page h2,
+.profile-page h2,
+.progress-charts-page h2 {
+  font-family: var(--mfi-font-display);
+  color: var(--mfi-color-charcoal);
+}
+
+.measurements-page .dashboard-card,
+.hydration-page .dashboard-card,
+.profile-card,
+.chart-card,
+.chart-range-card {
+  background: rgb(255 255 255 / 96%);
+  border: 1px solid var(--mfi-color-border);
+  border-radius: var(--mfi-radius-lg);
+  box-shadow: var(--mfi-shadow-1);
+}
+
+.measurements-page input,
+.hydration-page input,
+.hydration-page select,
+.profile-page input,
+.profile-page select {
+  color: var(--mfi-color-charcoal);
+  background: var(--mfi-color-white);
+  border: 1px solid var(--mfi-color-border);
+  border-radius: var(--mfi-radius-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.measurements-page input:focus,
+.hydration-page input:focus,
+.hydration-page select:focus,
+.profile-page input:focus,
+.profile-page select:focus {
+  outline: none;
+  border-color: var(--mfi-color-deep-stem);
+  box-shadow: 0 0 0 3px rgb(31 139 67 / 14%);
+}
+
+.measurements-page button:not(.secondary-button),
+.hydration-page button:not(.secondary-button):not(.delete-button),
+.profile-page button:not(.secondary-button):not(.future-action),
+.progress-charts-page .range-button.active {
+  color: var(--mfi-color-white);
+  background: var(--mfi-color-deep-stem);
+  border-color: var(--mfi-color-deep-stem);
+}
+
+.measurements-page button:not(.secondary-button):hover,
+.hydration-page button:not(.secondary-button):not(.delete-button):hover,
+.profile-page button:not(.secondary-button):not(.future-action):hover {
+  background: #176f35;
+}
+
+.secondary-button,
+.range-button {
+  color: var(--mfi-color-deep-stem);
+  background: var(--mfi-color-white);
+  border: 1px solid var(--mfi-color-deep-stem);
+}
+
+.secondary-button:hover,
+.range-button:hover {
+  background: rgb(31 139 67 / 8%);
+}
+
+.history-item,
+.hydration-history-item,
+.profile-section,
+.chart-empty-state {
+  border-color: var(--mfi-color-border);
+}
+
+.hydration-progress-fill {
+  background: linear-gradient(90deg, var(--mfi-color-deep-stem), var(--mfi-color-growth));
+}
+
+.hydration-progress-track {
+  background: rgb(95 203 60 / 16%);
+}
+
+.quick-add-button {
+  color: var(--mfi-color-deep-stem) !important;
+  background: rgb(31 139 67 / 8%) !important;
+  border: 1px solid rgb(31 139 67 / 24%) !important;
+}
+
+.quick-add-button:hover {
+  background: rgb(31 139 67 / 14%) !important;
+}
+
+.profile-avatar,
+.unit-toggle-option.active,
+.chart-unit,
+.section-eyebrow {
+  color: var(--mfi-color-deep-stem) !important;
+  background: rgb(31 139 67 / 10%);
+}
+
+.unit-toggle-option.active {
+  color: var(--mfi-color-white) !important;
+  background: var(--mfi-color-deep-stem);
+}
+
+.chart-card {
+  overflow: hidden;
+}
+
+.chart-card::before {
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin-bottom: var(--mfi-space-3);
+  content: "";
+  background: linear-gradient(90deg, var(--mfi-color-deep-stem), var(--mfi-color-spring-bud));
+  border-radius: 999px;
+}
+
+@media (max-width: 700px) {
+  .page-brand-header,
+  .hydration-page .dashboard-header,
+  .progress-charts-header,
+  .profile-header {
+    padding: var(--mfi-space-4);
+  }
+
+  .page-brand-heading,
+  .hydration-page .dashboard-header > div:first-child,
+  .progress-charts-header > div:first-child,
+  .profile-identity {
+    align-items: flex-start;
+  }
+
+  .page-brand-symbol,
+  .hydration-page .dashboard-header > div:first-child::before,
+  .progress-charts-header > div:first-child::before,
+  .profile-identity::before {
+    width: 44px;
+    height: 44px;
+  }
+}

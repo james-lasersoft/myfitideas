@@ -1,0 +1,47 @@
+:root {
+  --mfi-color-deep-stem: #1f8b43;
+  --mfi-color-deep-stem-dark: #176b35;
+  --mfi-color-growth: #5fcb3c;
+  --mfi-color-top-leaf: #48be30;
+  --mfi-color-spring-bud: #a6e84a;
+  --mfi-color-charcoal: #263238;
+  --mfi-color-white: #ffffff;
+  --mfi-color-background: #f5fdf0;
+  --mfi-color-surface: #ffffff;
+  --mfi-color-surface-subtle: #f4f8f5;
+  --mfi-color-border: #d9e7d5;
+  --mfi-color-text-muted: #607168;
+
+  --mfi-deep-stem: var(--mfi-color-deep-stem);
+  --mfi-deep-stem-dark: var(--mfi-color-deep-stem-dark);
+  --mfi-growth: var(--mfi-color-growth);
+  --mfi-top-leaf: var(--mfi-color-top-leaf);
+  --mfi-spring-bud: var(--mfi-color-spring-bud);
+  --mfi-charcoal: var(--mfi-color-charcoal);
+  --mfi-white: var(--mfi-color-white);
+  --mfi-surface: var(--mfi-color-surface);
+  --mfi-surface-subtle: var(--mfi-color-surface-subtle);
+  --mfi-border: var(--mfi-color-border);
+  --mfi-text-muted: var(--mfi-color-text-muted);
+
+  --mfi-font-display: "Noto Sans Display", "Noto Sans", Arial, sans-serif;
+  --mfi-font-body: "Noto Sans", Arial, sans-serif;
+
+  --mfi-radius-sm: 6px;
+  --mfi-radius-md: 12px;
+  --mfi-radius-lg: 18px;
+  --mfi-radius-xl: 24px;
+
+  --mfi-space-1: 4px;
+  --mfi-space-2: 8px;
+  --mfi-space-3: 12px;
+  --mfi-space-4: 16px;
+  --mfi-space-6: 24px;
+  --mfi-space-8: 32px;
+
+  --mfi-shadow-1: 0 2px 8px rgb(38 50 56 / 8%);
+  --mfi-shadow-2: 0 8px 24px rgb(38 50 56 / 12%);
+  --mfi-shadow-sm: var(--mfi-shadow-1);
+  --mfi-shadow-md: var(--mfi-shadow-2);
+  --mfi-shadow-lg: 0 18px 48px rgb(38 50 56 / 14%);
+}

@@ -1,5 +1,9 @@
 import api from "./api";
 
+export type PreferredDateFormat = "LOCALE" | "MM_DD_YYYY" | "DD_MM_YYYY" | "YYYY_MM_DD";
+export type PreferredTimeFormat = "12" | "24";
+export type PreferredWeekStart = "SUNDAY" | "MONDAY";
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -10,6 +14,9 @@ export interface UserProfile {
   preferredLengthUnit: "in" | "cm";
   preferredHydrationUnit: "oz" | "ml";
   preferredLanguage: "en" | "pt-BR";
+  preferredDateFormat: PreferredDateFormat;
+  preferredTimeFormat: PreferredTimeFormat;
+  preferredWeekStart: PreferredWeekStart;
   timezone: string;
   dailyHydrationGoal: number;
   dailyHydrationGoalMl: number;
@@ -27,6 +34,9 @@ export type UpdateProfileInput = Partial<{
   preferredLengthUnit: "in" | "cm";
   preferredHydrationUnit: "oz" | "ml";
   preferredLanguage: "en" | "pt-BR";
+  preferredDateFormat: PreferredDateFormat;
+  preferredTimeFormat: PreferredTimeFormat;
+  preferredWeekStart: PreferredWeekStart;
   timezone: string;
   dailyHydrationGoal: number;
   targetWeight: number | null;

@@ -5,17 +5,11 @@
 }
 
 .profile-avatar {
-  display: grid;
-  flex: 0 0 auto;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  border-radius: 50%;
-  color: #ffffff;
-  background: #2563eb;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  display: none;
+}
+
+.profile-personal-grid > .profile-inline-future:last-child {
+  display: none;
 }
 
 .profile-section {
@@ -46,7 +40,8 @@
 
 .profile-personal-grid label,
 .profile-values-list label,
-.profile-localization-grid label {
+.profile-localization-grid label,
+.localization-toggle-field {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -110,35 +105,48 @@
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(54px, 1fr));
   padding: 3px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(31, 139, 67, 0.28);
   border-radius: 10px;
-  background: #f1f5f9;
+  background: #eef5f0;
 }
 
-.unit-toggle-option {
+.localization-toggle-field .unit-toggle {
+  align-self: flex-start;
+  width: min(100%, 220px);
+}
+
+.profile-page .unit-toggle .unit-toggle-option {
   min-height: 36px;
   padding: 0.45rem 0.75rem;
   border: 0;
   border-radius: 7px;
-  color: #475569;
+  color: var(--mfi-charcoal);
   background: transparent;
+  box-shadow: none;
   font: inherit;
   font-weight: 700;
   text-transform: lowercase;
 }
 
-.unit-toggle-option:hover {
-  background: #e2e8f0;
+.profile-page .unit-toggle .unit-toggle-option:hover:not(.active) {
+  color: var(--mfi-deep-stem-dark);
+  background: rgba(31, 139, 67, 0.09);
+  box-shadow: none;
 }
 
-.unit-toggle-option.active {
+.profile-page .unit-toggle .unit-toggle-option.active {
   color: #ffffff;
-  background: #2563eb;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  background: var(--mfi-deep-stem);
+  box-shadow: 0 2px 6px rgba(31, 139, 67, 0.24);
+}
+
+.profile-page .unit-toggle .unit-toggle-option.active:hover {
+  color: #ffffff;
+  background: var(--mfi-deep-stem-dark);
 }
 
 .unit-toggle-option:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.3);
+  outline: 3px solid rgba(31, 139, 67, 0.24);
   outline-offset: 2px;
 }
 
@@ -244,7 +252,8 @@
   }
 
   .unit-toggle,
-  .future-action {
+  .future-action,
+  .localization-toggle-field .unit-toggle {
     width: 100%;
   }
 

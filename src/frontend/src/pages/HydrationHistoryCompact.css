@@ -1,0 +1,102 @@
+.hydration-history-item {
+  min-height: 2.2rem;
+  padding: 0.3rem 0.75rem;
+}
+
+.hydration-history-main {
+  grid-template-columns: 2.1rem minmax(5rem, 0.65fr) repeat(3, minmax(5.5rem, 0.8fr)) !important;
+  gap: 0.6rem !important;
+}
+
+.hydration-history-beverage {
+  width: 1.8rem;
+  height: 1.8rem;
+  background: transparent;
+  border: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.hydration-history-identity {
+  display: block;
+}
+
+.hydration-history-identity strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hydration-history-identity p {
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hydration-history-metric {
+  display: block;
+}
+
+.hydration-history-metric small {
+  display: none;
+}
+
+.hydration-history-metric strong {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hydration-date-group-items > .hydration-history-item:first-child {
+  padding-top: 0.45rem;
+}
+
+.hydration-date-group-items > .hydration-history-item:first-child .hydration-history-main {
+  grid-template-rows: auto auto;
+  row-gap: 0.2rem !important;
+}
+
+.hydration-date-group-items > .hydration-history-item:first-child .hydration-history-beverage,
+.hydration-date-group-items > .hydration-history-item:first-child .hydration-history-identity,
+.hydration-date-group-items > .hydration-history-item:first-child .hydration-history-metric {
+  grid-row: 2;
+}
+
+.hydration-date-group-items > .hydration-history-item:first-child .hydration-history-metric small {
+  display: block;
+  grid-row: 1;
+  margin-bottom: 0.18rem;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hydration-history-item .delete-button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .hydration-history-main {
+    grid-template-columns: 1.9rem minmax(4.5rem, 0.7fr) repeat(3, minmax(5rem, 0.8fr)) !important;
+    gap: 0.4rem !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .hydration-date-group {
+    overflow-x: auto;
+  }
+
+  .hydration-history-main {
+    min-width: 28rem;
+  }
+}

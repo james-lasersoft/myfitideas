@@ -1,0 +1,133 @@
+import net from "node:net";
+
+export interface IpGeolocationResult {
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  countryCode: string | null;
+  timezone: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  provider: string;
+  lookedUpAt: Date;
+}
+
+export interface GeolocationProviderConfiguration {
+  provider: string;
+  credentialEnvironmentVariable?: string | null;
+  retainApproximateCoordinates?: boolean;
+}
+
+interface IpinfoResponse {
+  city?: string;
+  region?: string;
+  country?: string;
+  country_code?: string;
+  loc?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+}
+
+interface GeolocationProvider {
+  readonly key: string;
+  lookup(ipAddress: string, configuration: GeolocationProviderConfiguration): Promise<IpGeolocationResult | null>;
+}
+
+export function normalizeClientIp(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const first = value.split(",")[0]?.trim();
+  if (!first) return null;
+  const normalized = first.startsWith("::ffff:") ? first.slice(7) : first;
+  return net.isIP(normalized) ? normalized : null;
+}
+
+export function isPublicIp(value: string): boolean {
+  if (net.isIPv4(value)) {
+    const parts = value.split(".").map(Number);
+    if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+
+    const a = parts[0];
+    const b = parts[1];
+    if (a === undefined || b === undefined) return false;
+
+    if (a === 10 || a === 127 || a === 0) return false;
+    if (a === 169 && b === 254) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 100 && b >= 64 && b <= 127) return false;
+    return true;
+  }
+  if (net.isIPv6(value)) {
+    const lower = value.toLowerCase();
+    return lower !== "::1" && !lower.startsWith("fc") && !lower.startsWith("fd") && !lower.startsWith("fe80:");
+  }
+  return false;
+}
+
+function parseCoordinates(payload: IpinfoResponse): { latitude: number | null; longitude: number | null } {
+  if (typeof payload.latitude === "number" && typeof payload.longitude === "number") {
+    return { latitude: payload.latitude, longitude: payload.longitude };
+  }
+  if (!payload.loc) return { latitude: null, longitude: null };
+  const [latitudeText, longitudeText] = payload.loc.split(",");
+  const latitude = Number(latitudeText);
+  const longitude = Number(longitudeText);
+  return {
+    latitude: Number.isFinite(latitude) ? latitude : null,
+    longitude: Number.isFinite(longitude) ? longitude : null,
+  };
+}
+
+const ipinfoProvider: GeolocationProvider = {
+  key: "ipinfo",
+  async lookup(ipAddress, configuration) {
+    const environmentVariable = configuration.credentialEnvironmentVariable?.trim() || "IPINFO_TOKEN";
+    const token = process.env[environmentVariable]?.trim();
+    if (!token) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const response = await fetch(`https://ipinfo.io/${encodeURIComponent(ipAddress)}/json?token=${encodeURIComponent(token)}`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return null;
+      const payload = await response.json() as IpinfoResponse;
+      const coordinates = parseCoordinates(payload);
+      const retainCoordinates = configuration.retainApproximateCoordinates === true;
+      return {
+        city: payload.city?.trim() || null,
+        region: payload.region?.trim() || null,
+        country: payload.country?.trim() || null,
+        countryCode: payload.country_code?.trim() || payload.country?.trim() || null,
+        timezone: payload.timezone?.trim() || null,
+        latitude: retainCoordinates ? coordinates.latitude : null,
+        longitude: retainCoordinates ? coordinates.longitude : null,
+        provider: "ipinfo",
+        lookedUpAt: new Date(),
+      };
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
+};
+
+const providers = new Map<string, GeolocationProvider>([[ipinfoProvider.key, ipinfoProvider]]);
+
+export async function lookupIpGeolocation(
+  ipAddress: string | null | undefined,
+  configuration: GeolocationProviderConfiguration = {
+    provider: process.env.GEOLOCATION_PROVIDER?.trim().toLowerCase() || "disabled",
+    credentialEnvironmentVariable: "IPINFO_TOKEN",
+    retainApproximateCoordinates: false,
+  }
+): Promise<IpGeolocationResult | null> {
+  const ip = normalizeClientIp(ipAddress);
+  if (!ip || !isPublicIp(ip)) return null;
+  const provider = providers.get(configuration.provider.trim().toLowerCase());
+  return provider ? provider.lookup(ip, configuration) : null;
+}

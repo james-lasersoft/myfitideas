@@ -1,0 +1,4 @@
+ALTER TABLE "users"
+  ADD COLUMN "preferredDateFormat" TEXT NOT NULL DEFAULT 'LOCALE',
+  ADD COLUMN "preferredTimeFormat" TEXT NOT NULL DEFAULT '12',
+  ADD COLUMN "preferredWeekStart" TEXT NOT NULL DEFAULT 'SUNDAY';

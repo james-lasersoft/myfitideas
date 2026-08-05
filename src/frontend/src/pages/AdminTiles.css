@@ -1,0 +1,86 @@
+.admin-module-tile {
+  width: 100%;
+  min-height: 220px;
+  align-items: flex-start;
+  text-align: left;
+  color: var(--admin-text);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.admin-module-tile:not(.planned-module):hover {
+  transform: translateY(-2px);
+  border-color: var(--admin-accent);
+  background: var(--admin-surface-raised);
+  box-shadow: 0 16px 34px rgba(27, 45, 76, 0.14);
+}
+
+.admin-module-tile:not(.planned-module):focus-visible {
+  outline: 3px solid rgba(53, 91, 148, 0.24);
+  outline-offset: 3px;
+}
+
+.admin-module-title {
+  display: block;
+  color: var(--admin-text);
+  font-size: 1.16rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.admin-module-description {
+  display: block;
+  flex: 1;
+  color: var(--admin-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.admin-module-action {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--admin-border);
+  color: var(--admin-accent-strong);
+  font-weight: 800;
+}
+
+.planned-module {
+  cursor: default;
+  border-style: dashed;
+  background: var(--admin-surface-muted);
+  box-shadow: none;
+  opacity: 0.68;
+}
+
+.planned-module .admin-module-title,
+.planned-module .admin-module-description,
+.future-module-note {
+  color: var(--admin-text-muted);
+}
+
+.future-module-note {
+  font-weight: 700;
+}
+
+html[data-theme="dark"] .admin-module-tile {
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+html[data-theme="dark"] .admin-module-tile:not(.planned-module):hover {
+  background: var(--admin-surface-raised);
+  border-color: var(--admin-accent);
+}
+
+@media (max-width: 760px) {
+  .admin-module-tile {
+    min-height: 190px;
+  }
+}

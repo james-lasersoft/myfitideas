@@ -1,0 +1,93 @@
+.mfi-button,
+button.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.72rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.mfi-button--sm { min-height: 36px; padding: 0.5rem 0.75rem; border-radius: 10px; }
+.mfi-button--lg { min-height: 50px; padding: 0.85rem 1.2rem; }
+
+.mfi-button--primary {
+  color: #fff;
+  background: var(--mfi-deep-stem, #1f8b43);
+  border-color: var(--mfi-deep-stem, #1f8b43);
+  box-shadow: 0 7px 18px rgba(31, 139, 67, 0.18);
+}
+
+.mfi-button--outline,
+button.secondary-button {
+  color: var(--mfi-deep-stem-dark, #176c34);
+  background: #fff;
+  border-color: var(--mfi-deep-stem, #1f8b43);
+  box-shadow: none;
+}
+
+.mfi-button--ghost {
+  color: var(--mfi-deep-stem-dark, #176c34);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.mfi-button--danger {
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+}
+
+.mfi-button:hover:not(:disabled),
+button.secondary-button:hover:not(:disabled) {
+  color: #fff;
+  background: var(--mfi-deep-stem-dark, #176c34);
+  border-color: var(--mfi-deep-stem-dark, #176c34);
+  box-shadow: 0 8px 20px rgba(31, 139, 67, 0.2);
+  transform: translateY(-1px);
+}
+
+.mfi-button:focus-visible,
+button.secondary-button:focus-visible {
+  outline: 3px solid rgba(31, 139, 67, 0.25);
+  outline-offset: 2px;
+}
+
+.mfi-button:disabled,
+button.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
+.mfi-button__icon { display: inline-grid; place-items: center; }
+.mfi-button__label { display: inline-flex; align-items: center; }
+
+html[data-theme="dark"] .mfi-button--outline,
+html[data-theme="dark"] button.secondary-button {
+  color: #e8f0ea;
+  background: #202a23;
+  border-color: #5e7565;
+}
+
+html[data-theme="dark"] .mfi-button--ghost {
+  color: #dce9df;
+}
+
+@media (max-width: 600px) {
+  .mfi-button,
+  button.secondary-button {
+    min-height: 42px;
+  }
+}

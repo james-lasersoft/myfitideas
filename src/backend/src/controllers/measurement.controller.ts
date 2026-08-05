@@ -10,6 +10,11 @@ import {
   type LengthUnit,
   type WeightUnit,
 } from "../utils/measurements.js";
+import {
+  compareMeasurementChange,
+  validateMeasurementDate,
+  validateMeasurementRanges,
+} from "../utils/data-integrity.js";
 
 interface MeasurementRequestBody {
   weight?: number;
@@ -20,6 +25,7 @@ interface MeasurementRequestBody {
   weightUnit?: WeightUnit;
   lengthUnit?: LengthUnit;
   measurementDate?: string;
+  confirmAnomaly?: boolean;
 }
 
 export const createMeasurement = async (
@@ -44,7 +50,7 @@ export const createMeasurement = async (
       res.status(400).json({ error: "At least one measurement value is required." });
       return;
     }
-    if (values.some((value) => value !== undefined && (!Number.isFinite(value) || value < 0))) {
+    if (values.some((value) => value !== undefined && (!Number.isFinite(value) || value <= 0))) {
       res.status(400).json({ error: "Measurement values must be valid positive numbers." });
       return;
     }
@@ -57,8 +63,9 @@ export const createMeasurement = async (
     }
 
     const measurementDate = body.measurementDate ? new Date(body.measurementDate) : new Date();
-    if (Number.isNaN(measurementDate.getTime())) {
-      res.status(400).json({ error: "The measurement date is invalid." });
+    const dateError = validateMeasurementDate(measurementDate);
+    if (dateError) {
+      res.status(400).json({ error: dateError });
       return;
     }
 
@@ -66,6 +73,28 @@ export const createMeasurement = async (
     const waistCm = body.waist === undefined ? undefined : toCentimeters(body.waist, lengthUnit);
     const chestCm = body.chest === undefined ? undefined : toCentimeters(body.chest, lengthUnit);
     const hipsCm = body.hips === undefined ? undefined : toCentimeters(body.hips, lengthUnit);
+    const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat: body.bodyFat, measurementDate };
+    const rangeErrors = validateMeasurementRanges(canonicalInput);
+    if (rangeErrors.length) {
+      res.status(400).json({ code: "MEASUREMENT_OUT_OF_RANGE", error: rangeErrors[0], details: rangeErrors });
+      return;
+    }
+
+    const previous = await prisma.measurement.findFirst({
+      where: { userId: req.user.id, measurementDate: { lte: measurementDate } },
+      orderBy: { measurementDate: "desc" },
+      select: { weightKg: true, waistCm: true, chestCm: true, hipsCm: true, bodyFat: true, measurementDate: true },
+    });
+    const issues = compareMeasurementChange(canonicalInput, previous);
+    const requiresConfirmation = issues.some((issue) => issue.severity === "confirmation_required");
+    if (requiresConfirmation && body.confirmAnomaly !== true) {
+      res.status(409).json({
+        code: "MEASUREMENT_CONFIRMATION_REQUIRED",
+        error: "This entry differs substantially from the nearest previous measurement.",
+        issues,
+      });
+      return;
+    }
 
     const measurement = await prisma.measurement.create({
       data: {
@@ -83,7 +112,7 @@ export const createMeasurement = async (
       },
     });
 
-    res.status(201).json({ message: "Measurement saved successfully.", measurement });
+    res.status(201).json({ message: "Measurement saved successfully.", measurement, warnings: issues });
   } catch (error) {
     console.error("Create measurement error:", error);
     res.status(500).json({ error: "Unable to save the measurement." });

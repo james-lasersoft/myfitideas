@@ -1,12 +1,49 @@
 import { Router } from "express";
 import {
+  beginMfaEnrollment,
+  completeMfaEnrollment,
+  listSecurityDevices,
   login,
-  register,
+  logout,
+  refreshAccessToken,
+  resetMfa,
+  revokeTrustedDevice,
 } from "../controllers/auth.controller.js";
+import {
+  checkEmailAvailability,
+  registerWithPrivacy,
+} from "../controllers/privacy-registration.controller.js";
+import {
+  getPrivacyPreferences,
+  updatePrivacyPreferences,
+} from "../controllers/privacy-preferences.controller.js";
+import {
+  listActiveSessions,
+  revokeOtherSessions,
+  revokeSession,
+} from "../controllers/account-security.controller.js";
+import { listOwnSecurityDetails } from "../controllers/security-details.controller.js";
+import { enrichCurrentSessionLocation } from "../controllers/session-location.controller.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.post("/register", register);
+router.post("/register", registerWithPrivacy);
+router.post("/email-availability", checkEmailAvailability);
 router.post("/login", login);
+router.post("/refresh", refreshAccessToken);
+router.post("/logout", authenticateToken, logout);
+router.get("/privacy/preferences", authenticateToken, getPrivacyPreferences);
+router.put("/privacy/preferences", authenticateToken, updatePrivacyPreferences);
+router.post("/mfa/enroll/start", beginMfaEnrollment);
+router.post("/mfa/enroll/complete", completeMfaEnrollment);
+router.get("/security/details", authenticateToken, listOwnSecurityDetails);
+router.post("/security/session/location", authenticateToken, enrichCurrentSessionLocation);
+router.get("/security/devices", authenticateToken, listSecurityDevices);
+router.delete("/security/devices/:id", authenticateToken, revokeTrustedDevice);
+router.get("/security/sessions", authenticateToken, listActiveSessions);
+router.delete("/security/sessions/:id", authenticateToken, revokeSession);
+router.post("/security/sessions/revoke-others", authenticateToken, revokeOtherSessions);
+router.post("/security/mfa/reset", authenticateToken, resetMfa);
 
 export default router;
