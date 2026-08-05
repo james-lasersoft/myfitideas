@@ -32,6 +32,14 @@ const catalog = [
   ["public.patternsDescription", "Use charts and future correlation insights to understand what supports lasting progress.", "public", "Use gráficos e futuros insights de correlação para entender o que sustenta um progresso duradouro."],
   ["public.controlTitle", "Control your information", "public", "Controle suas informações"],
   ["public.controlDescription", "Review sessions, trusted devices, privacy preferences, and account access from a dedicated Security Center.", "public", "Revise sessões, dispositivos confiáveis, preferências de privacidade e acesso à conta em uma Central de Segurança dedicada."],
+  ["public.previewDashboard", "Dashboard", "public", "Painel"],
+  ["public.previewToday", "Today", "public", "Hoje"],
+  ["public.previewWeight", "Weight", "public", "Peso"],
+  ["public.previewBodyFat", "Body Fat", "public", "Gordura corporal"],
+  ["public.previewHydration", "Hydration", "public", "Hidratação"],
+  ["public.previewProgress", "Progress", "public", "Progresso"],
+  ["public.previewSteadyProgress", "Steady progress", "public", "Progresso constante"],
+  ["public.previewPrivate", "Your data stays private", "public", "Seus dados permanecem privados"],
   ["public.experienceKicker", "MyFitIdeas Public Experience", "public", "Experiência Pública MyFitIdeas"],
   ["public.featuresDescription", "Explore the MyFitIdeas transformation platform and the capabilities planned for each stage of the customer journey.", "public", "Explore a plataforma de transformação MyFitIdeas e os recursos planejados para cada etapa da jornada do cliente."],
   ["public.pricingDescription", "Plan presentation is being prepared before billing activation. Account creation remains separate from subscription state.", "public", "A apresentação dos planos está sendo preparada antes da ativação do faturamento. A criação da conta permanece separada do estado da assinatura."],
@@ -57,21 +65,19 @@ async function main() {
   for (const [key, sourceText, category, ptBr] of catalog) {
     const translationKey = await prisma.translationKey.upsert({
       where: { key },
-      update: { category },
+      update: { sourceText, category },
       create: { key, sourceText, category },
     });
 
-    const currentSource = translationKey.sourceText;
-
     await prisma.translationValue.upsert({
       where: { translationKeyId_languageId: { translationKeyId: translationKey.id, languageId: english.id } },
-      update: { value: currentSource, status: "PUBLISHED", publishedValue: currentSource },
-      create: { translationKeyId: translationKey.id, languageId: english.id, value: currentSource, status: "PUBLISHED", publishedValue: currentSource, publishedAt: new Date() },
+      update: { value: sourceText, status: "PUBLISHED", publishedValue: sourceText, publishedAt: new Date() },
+      create: { translationKeyId: translationKey.id, languageId: english.id, value: sourceText, status: "PUBLISHED", publishedValue: sourceText, publishedAt: new Date() },
     });
 
     await prisma.translationValue.upsert({
       where: { translationKeyId_languageId: { translationKeyId: translationKey.id, languageId: portuguese.id } },
-      update: {},
+      update: { value: ptBr, status: "PUBLISHED", publishedValue: ptBr, publishedAt: new Date() },
       create: { translationKeyId: translationKey.id, languageId: portuguese.id, value: ptBr, status: "PUBLISHED", publishedValue: ptBr, publishedAt: new Date() },
     });
   }
