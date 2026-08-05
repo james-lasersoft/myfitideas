@@ -65,16 +65,32 @@ export default function RegistrationPage() {
 
   useEffect(() => {
     const normalized = email.trim().toLowerCase();
-    if (!normalized) { setAvailability("idle"); return; }
-    if (!EMAIL_PATTERN.test(normalized)) { setAvailability("invalid"); return; }
-    setAvailability("checking");
+    if (!EMAIL_PATTERN.test(normalized)) return;
+
+    let cancelled = false;
     const timer = window.setTimeout(() => {
       void api.post<AvailabilityResponse>("/api/auth/email-availability", { email: normalized })
-        .then((response) => setAvailability(response.data.available ? "available" : "unavailable"))
-        .catch(() => setAvailability("idle"));
+        .then((response) => {
+          if (!cancelled) setAvailability(response.data.available ? "available" : "unavailable");
+        })
+        .catch(() => {
+          if (!cancelled) setAvailability("idle");
+        });
     }, 450);
-    return () => window.clearTimeout(timer);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [email]);
+
+  const changeEmail = (nextEmail: string) => {
+    setEmail(nextEmail);
+    const normalized = nextEmail.trim().toLowerCase();
+    if (!normalized) setAvailability("idle");
+    else if (!EMAIL_PATTERN.test(normalized)) setAvailability("invalid");
+    else setAvailability("checking");
+  };
 
   const changeCountry = (nextCountry: string) => {
     setCountryCode(nextCountry);
@@ -138,7 +154,7 @@ export default function RegistrationPage() {
           <p>{t("Already have an account?")} <Link to="/login">{t("Log In")}</Link></p>
         </div>
 
-        <div className="identity-provider-preview" aria-label={t("Identity provider options")}> 
+        <div className="identity-provider-preview" aria-label={t("Identity provider options")}>
           {["Google", "Apple", "Microsoft"].map((provider) => (
             <button key={provider} type="button" disabled data-no-translate="true">{provider}<small>{t("Coming soon")}</small></button>
           ))}
@@ -152,7 +168,7 @@ export default function RegistrationPage() {
           </div>
 
           <label>{t("Email Address")}
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required aria-describedby="email-status" />
+            <input type="email" value={email} onChange={(event) => changeEmail(event.target.value)} autoComplete="email" required aria-describedby="email-status" />
             <small id="email-status" className={`field-status ${availability}`} aria-live="polite">
               {availability === "checking" && t("Checking email availability...")}
               {availability === "available" && t("Email is available")}
