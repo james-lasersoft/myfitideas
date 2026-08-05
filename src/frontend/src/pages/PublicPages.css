@@ -182,7 +182,7 @@
   border-radius: 999px;
   background: linear-gradient(90deg, transparent, var(--workspace-member-primary), transparent);
   content: "";
-  transform: rotate(-6deg);
+  transform: rotate(6deg);
 }
 
 .public-preview-chart i {
@@ -193,13 +193,13 @@
   opacity: 0.9;
 }
 
-.public-preview-chart i:nth-child(1) { --bar-height: 34%; }
-.public-preview-chart i:nth-child(2) { --bar-height: 48%; }
-.public-preview-chart i:nth-child(3) { --bar-height: 42%; }
-.public-preview-chart i:nth-child(4) { --bar-height: 61%; }
-.public-preview-chart i:nth-child(5) { --bar-height: 57%; }
-.public-preview-chart i:nth-child(6) { --bar-height: 72%; }
-.public-preview-chart i:nth-child(7) { --bar-height: 78%; }
+.public-preview-chart i:nth-child(1) { --bar-height: 78%; }
+.public-preview-chart i:nth-child(2) { --bar-height: 72%; }
+.public-preview-chart i:nth-child(3) { --bar-height: 64%; }
+.public-preview-chart i:nth-child(4) { --bar-height: 58%; }
+.public-preview-chart i:nth-child(5) { --bar-height: 49%; }
+.public-preview-chart i:nth-child(6) { --bar-height: 42%; }
+.public-preview-chart i:nth-child(7) { --bar-height: 34%; }
 
 .public-preview-phone {
   position: absolute;
@@ -240,15 +240,15 @@
 
 .public-phone-chart i {
   flex: 1;
-  height: 40%;
+  height: 84%;
   border-radius: 999px 999px 3px 3px;
   background: var(--workspace-member-primary);
 }
 
-.public-phone-chart i:nth-child(2) { height: 55%; }
-.public-phone-chart i:nth-child(3) { height: 68%; }
-.public-phone-chart i:nth-child(4) { height: 75%; }
-.public-phone-chart i:nth-child(5) { height: 84%; }
+.public-phone-chart i:nth-child(2) { height: 72%; }
+.public-phone-chart i:nth-child(3) { height: 60%; }
+.public-phone-chart i:nth-child(4) { height: 48%; }
+.public-phone-chart i:nth-child(5) { height: 36%; }
 
 .public-preview-security {
   position: absolute;
