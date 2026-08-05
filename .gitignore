@@ -27,3 +27,8 @@ Thumbs.db
 
 # Prisma local development database
 prisma/dev.db
+
+# Local database backups
+backups/
+*.dump
+*.sql
