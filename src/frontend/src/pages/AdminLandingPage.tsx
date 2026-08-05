@@ -12,7 +12,6 @@ interface AdminModule {
   action: string;
   path: string;
   permission: string;
-  superAdminOnly?: boolean;
 }
 
 const modules: AdminModule[] = [
@@ -21,16 +20,14 @@ const modules: AdminModule[] = [
   { title: "Roles & Permissions", description: "Create organization roles and configure effective permissions.", action: "Open Role Management", path: "/admin/roles", permission: "roles.read" },
   { title: "Security Operations", description: "Review MFA enrollment, trusted devices, and active user sessions.", action: "Open Security Operations", path: "/admin/security", permission: "system.operations" },
   { title: "Company Settings", description: "Configure provider-neutral services and organization security policies.", action: "Open Company Settings", path: "/admin/settings", permission: "system.operations" },
-  { title: "Synthetic Test Data", description: "Generate realistic development-only weight, body measurement, and hydration history for an existing test user.", action: "Open Test Data Generator", path: "/admin/synthetic-data", permission: "system.operations", superAdminOnly: true },
   { title: "Audit Logs", description: "Review security-sensitive and administrative events.", action: "Open Audit Log", path: "/admin/audit", permission: "audit.read" },
 ];
 
 export default function AdminLandingPage() {
   const navigate = useNavigate();
-  const { authorization, can } = useAuthorization();
+  const { can } = useAuthorization();
   const { t } = useLocale();
-  const isSuperAdmin = authorization?.roles.includes("super-administrator") ?? false;
-  const available = modules.filter((module) => can(module.permission) && (!module.superAdminOnly || isSuperAdmin));
+  const available = modules.filter((module) => can(module.permission));
 
   return (
     <main className="admin-page admin-console-page">
