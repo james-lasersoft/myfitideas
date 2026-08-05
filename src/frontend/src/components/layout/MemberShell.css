@@ -2,6 +2,8 @@ body.member-shell-active {
   --member-toolbar-height: 58px;
   --member-header-collapsed-height: 58px;
   --member-content-width: 1200px;
+  color: var(--workspace-member-text);
+  background: var(--workspace-member-background);
 }
 
 body.member-shell-active .dashboard-header,
@@ -84,9 +86,9 @@ body.member-shell-active .hydration-page .dashboard-header > div::before {
 body.member-shell-active .security-header {
   margin: 0 0 1.25rem;
   padding: 1.25rem 1.5rem;
-  border: 1px solid #dbe5df;
+  border: 1px solid var(--workspace-member-border);
   border-radius: 16px;
-  box-shadow: 0 8px 22px rgba(31, 81, 52, 0.08);
+  box-shadow: 0 8px 22px rgb(var(--workspace-member-shadow-rgb) / 8%);
 }
 
 body.member-shell-active .progress-charts-header {
@@ -115,7 +117,7 @@ body.member-header-collapsed .security-header {
   padding-bottom: 0.55rem;
   margin-bottom: 0.75rem;
   align-items: center;
-  box-shadow: 0 8px 18px rgba(31, 81, 52, 0.12);
+  box-shadow: 0 8px 18px rgb(var(--workspace-member-shadow-rgb) / 12%);
 }
 
 body.member-header-collapsed .dashboard-header p,
@@ -148,8 +150,12 @@ body.member-shell-active .hydration-header,
 body.member-shell-active .progress-header,
 body.member-shell-active .progress-charts-header,
 body.member-shell-active .security-header {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(12px);
+}
+
+html[data-theme="dark"] body.member-shell-active {
+  background: #111a14;
 }
 
 html[data-theme="dark"] body.member-shell-active .dashboard-header,
@@ -159,12 +165,12 @@ html[data-theme="dark"] body.member-shell-active .hydration-header,
 html[data-theme="dark"] body.member-shell-active .progress-header,
 html[data-theme="dark"] body.member-shell-active .progress-charts-header,
 html[data-theme="dark"] body.member-shell-active .security-header {
-  background: rgba(24, 37, 29, 0.96);
+  background: rgb(24 37 29 / 96%);
 }
 
 html[data-theme="dark"] body.member-shell-active .security-header {
   border-color: #385065;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 24%);
 }
 
 @media (max-width: 700px) {
