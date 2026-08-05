@@ -17,11 +17,7 @@ import {
   type HydrationEntry,
   type HydrationUnit,
 } from "../services/hydrationService";
-import {
-  getProfile,
-  updateProfile,
-  type UserProfile,
-} from "../services/profileService";
+import { getProfile, type UserProfile } from "../services/profileService";
 import {
   currentTimeInputValue,
   formatUserDate,
@@ -118,13 +114,11 @@ export default function HydrationPage() {
   const [summaryDate, setSummaryDate] = useState(getLocalDateValue());
   const [entryDate, setEntryDate] = useState(getLocalDateValue());
   const [entryTime, setEntryTime] = useState(currentTimeInputValue());
-  const [goalInput, setGoalInput] = useState("");
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAddAnother, setShowAddAnother] = useState(false);
 
@@ -136,16 +130,9 @@ export default function HydrationPage() {
     preferredUnit === "ml"
       ? dailyTotal?.totalMl ?? 0
       : dailyTotal?.totalOz ?? 0;
-  const secondaryUnit: HydrationUnit = preferredUnit === "ml" ? "oz" : "ml";
-  const secondaryTotal =
-    secondaryUnit === "ml"
-      ? dailyTotal?.totalMl ?? 0
-      : dailyTotal?.totalOz ?? 0;
-
   const rawGoalProgress = goal > 0 ? (primaryTotal / goal) * 100 : 0;
   const goalProgress = Math.min(rawGoalProgress, 100);
   const progressArc = (goalProgress / 100) * ARC_LENGTH;
-  const remaining = Math.max(goal - primaryTotal, 0);
 
   const quickAddOptions = useMemo<RememberedEntry[]>(() => {
     const defaults =
@@ -205,7 +192,6 @@ export default function HydrationPage() {
         setProfile(loadedProfile);
         setUnit(loadedProfile.preferredHydrationUnit);
         setEntryTime(currentTimeInputValue(loadedProfile));
-        setGoalInput(loadedProfile.dailyHydrationGoal.toString());
         setEntries(hydrationEntries);
         setDailyTotal(total);
       })
@@ -278,31 +264,6 @@ export default function HydrationPage() {
     await saveEntry(numericAmount, unit, true);
   };
 
-  const handleGoalSave = async (): Promise<void> => {
-    const numericGoal = Number(goalInput);
-    if (!Number.isFinite(numericGoal) || numericGoal <= 0) {
-      setError("Enter a hydration goal greater than zero.");
-      return;
-    }
-
-    setIsSavingGoal(true);
-    setMessage("");
-    setError("");
-
-    try {
-      const updatedProfile = await updateProfile({
-        dailyHydrationGoal: numericGoal,
-      });
-      setProfile(updatedProfile);
-      setGoalInput(updatedProfile.dailyHydrationGoal.toString());
-      setMessage("Daily hydration goal updated.");
-    } catch {
-      setError("Unable to update the hydration goal.");
-    } finally {
-      setIsSavingGoal(false);
-    }
-  };
-
   const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm("Delete this hydration entry?")) return;
 
@@ -326,7 +287,7 @@ export default function HydrationPage() {
       <header className="dashboard-header">
         <div>
           <h1>Hydration Tracking</h1>
-          <p>Record water intake and review daily totals.</p>
+          <p>Record beverages that contribute to your daily hydration.</p>
         </div>
         <button type="button" onClick={() => navigate("/dashboard")}>
           Back to Dashboard
@@ -358,118 +319,76 @@ export default function HydrationPage() {
           {isLoading ? (
             <p className="hydration-loading">Loading daily total...</p>
           ) : dailyTotal ? (
-            <>
-              <div
-                className="hydration-gauge"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(goalProgress)}
-              >
-                <svg viewBox="0 0 360 300" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="hydrationArcGradient" x1="0" y1="1" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#a3e635" />
-                      <stop offset="38%" stopColor="#4ade80" />
-                      <stop offset="72%" stopColor="#16a34a" />
-                      <stop offset="100%" stopColor="#047857" />
-                    </linearGradient>
-                    <filter id="hydrationArcGlow" x="-30%" y="-30%" width="160%" height="160%">
-                      <feGaussianBlur stdDeviation="5" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <circle
-                    className="hydration-gauge-track"
-                    cx="180"
-                    cy="160"
-                    r="116"
-                    pathLength="100"
-                    transform="rotate(135 180 160)"
-                  />
-                  <circle
-                    className="hydration-gauge-progress"
-                    cx="180"
-                    cy="160"
-                    r="116"
-                    pathLength="100"
-                    transform="rotate(135 180 160)"
-                    style={{ strokeDasharray: `${progressArc} ${100 - progressArc}` }}
-                  />
-                  {[0, 25, 50, 75, 100].map((level) => {
-                    const angle = (135 + (270 * level) / 100) * (Math.PI / 180);
-                    const radius = 116;
-                    const x = 180 + radius * Math.cos(angle);
-                    const y = 160 + radius * Math.sin(angle);
-                    return (
-                      <circle
-                        key={level}
-                        className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
-                        cx={x}
-                        cy={y}
-                        r="5"
-                      />
-                    );
-                  })}
-                </svg>
+            <div
+              className="hydration-gauge"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(goalProgress)}
+            >
+              <svg viewBox="0 0 360 300" aria-hidden="true">
+                <defs>
+                  <linearGradient id="hydrationArcGradient" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#a3e635" />
+                    <stop offset="38%" stopColor="#4ade80" />
+                    <stop offset="72%" stopColor="#16a34a" />
+                    <stop offset="100%" stopColor="#047857" />
+                  </linearGradient>
+                  <filter id="hydrationArcGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <circle
+                  className="hydration-gauge-track"
+                  cx="180"
+                  cy="160"
+                  r="116"
+                  pathLength="100"
+                  transform="rotate(135 180 160)"
+                />
+                <circle
+                  className="hydration-gauge-progress"
+                  cx="180"
+                  cy="160"
+                  r="116"
+                  pathLength="100"
+                  transform="rotate(135 180 160)"
+                  style={{ strokeDasharray: `${progressArc} ${100 - progressArc}` }}
+                />
+                {[0, 25, 50, 75, 100].map((level) => {
+                  const angle = (135 + (270 * level) / 100) * (Math.PI / 180);
+                  const radius = 116;
+                  const x = 180 + radius * Math.cos(angle);
+                  const y = 160 + radius * Math.sin(angle);
+                  return (
+                    <circle
+                      key={level}
+                      className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
+                      cx={x}
+                      cy={y}
+                      r="5"
+                    />
+                  );
+                })}
+              </svg>
 
-                <div className="hydration-gauge-content">
-                  <span className="hydration-gauge-date">Today</span>
-                  <strong>{formatAmount(primaryTotal, preferredUnit)}</strong>
-                  <span className="hydration-gauge-unit">{preferredUnit}</span>
-                  <p>Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
-                  <b>{Math.round(rawGoalProgress)}%</b>
-                </div>
-
-                <div className="hydration-level-label hydration-level-label-start">0%</div>
-                <div className="hydration-level-label hydration-level-label-quarter">25%</div>
-                <div className="hydration-level-label hydration-level-label-half">50%</div>
-                <div className="hydration-level-label hydration-level-label-three-quarter">75%</div>
-                <div className="hydration-level-label hydration-level-label-goal">100%</div>
+              <div className="hydration-gauge-content">
+                <strong>{formatAmount(primaryTotal, preferredUnit)}</strong>
+                <span className="hydration-gauge-unit">{preferredUnit}</span>
+                <p>Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
+                <b>{Math.round(rawGoalProgress)}%</b>
               </div>
 
-              <div className="hydration-stat-grid">
-                <div className="hydration-stat">
-                  <span>Daily Goal</span>
-                  <strong>{formatAmount(goal, preferredUnit)} {preferredUnit}</strong>
-                </div>
-                <div className="hydration-stat">
-                  <span>Today</span>
-                  <strong>{formatAmount(primaryTotal, preferredUnit)} {preferredUnit}</strong>
-                </div>
-                <div className="hydration-stat">
-                  <span>{remaining > 0 ? "Goal" : "Daily Progress"}</span>
-                  <strong>{remaining > 0 ? `${formatAmount(remaining, preferredUnit)} ${preferredUnit}` : "100%"}</strong>
-                </div>
-                <div className="hydration-stat">
-                  <span>{secondaryUnit}</span>
-                  <strong>{formatAmount(secondaryTotal, secondaryUnit)} {secondaryUnit}</strong>
-                </div>
-              </div>
-
-              <div className="hydration-goal-editor">
-                <label>
-                  Daily Goal ({preferredUnit})
-                  <input
-                    type="number"
-                    min="0.1"
-                    step={preferredUnit === "ml" ? "1" : "0.1"}
-                    value={goalInput}
-                    onChange={(event) => setGoalInput(event.target.value)}
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={isSavingGoal}
-                  onClick={handleGoalSave}
-                >
-                  {isSavingGoal ? "Updating..." : "Update Goal"}
-                </button>
-              </div>
-            </>
+              <div className="hydration-level-label hydration-level-label-start">0%</div>
+              <div className="hydration-level-label hydration-level-label-quarter">25%</div>
+              <div className="hydration-level-label hydration-level-label-half">50%</div>
+              <div className="hydration-level-label hydration-level-label-three-quarter">75%</div>
+              <div className="hydration-level-label hydration-level-label-goal">100%</div>
+            </div>
           ) : (
             <p>No hydration total is available.</p>
           )}
@@ -478,33 +397,36 @@ export default function HydrationPage() {
         <article className="dashboard-card hydration-entry-card">
           <div className="hydration-card-heading">
             <div>
-              <h2>Add Water Intake</h2>
-              <p>Quick Add</p>
+              <h2>Log Hydration</h2>
+              <p>Record water or another beverage by volume.</p>
             </div>
           </div>
 
-          <div className="quick-add-buttons">
-            {quickAddOptions.map((option, index) => {
-              const isRemembered =
-                rememberedEntry !== null &&
-                index === quickAddOptions.length - 1 &&
-                option.amount === rememberedEntry.amount &&
-                option.unit === rememberedEntry.unit;
+          <div className="quick-add-section">
+            <span>Quick Add</span>
+            <div className="quick-add-buttons">
+              {quickAddOptions.map((option, index) => {
+                const isRemembered =
+                  rememberedEntry !== null &&
+                  index === quickAddOptions.length - 1 &&
+                  option.amount === rememberedEntry.amount &&
+                  option.unit === rememberedEntry.unit;
 
-              return (
-                <button
-                  key={`${option.amount}-${option.unit}-${index}`}
-                  type="button"
-                  className="quick-add-button"
-                  disabled={isSaving}
-                  title={isRemembered ? "Last manually entered amount" : undefined}
-                  onClick={() => saveEntry(option.amount, option.unit)}
-                >
-                  <span>{isRemembered ? "★" : "+"}</span>
-                  {option.amount} {option.unit}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={`${option.amount}-${option.unit}-${index}`}
+                    type="button"
+                    className="quick-add-button"
+                    disabled={isSaving}
+                    title={isRemembered ? "Last manually entered amount" : undefined}
+                    onClick={() => saveEntry(option.amount, option.unit)}
+                  >
+                    <span>{isRemembered ? "★" : "+"}</span>
+                    {option.amount} {option.unit}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <form className="hydration-form" onSubmit={handleSubmit}>
