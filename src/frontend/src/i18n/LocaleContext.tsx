@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import api from "../services/api";
+import { accountCreationTranslations } from "./accountCreationTranslations";
 import { publicTranslations } from "./publicTranslations";
 import { signupTranslations } from "./signupTranslations";
 import { translations, type SupportedLocale } from "./translations";
@@ -56,7 +57,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 function bundledTranslation(source: string, locale: SupportedLocale): string | undefined {
   if (locale !== "pt-BR") return undefined;
-  return signupTranslations[source] ?? publicTranslations[source] ?? translations[locale][source];
+  return accountCreationTranslations[source] ?? signupTranslations[source] ?? publicTranslations[source] ?? translations[locale][source];
 }
 
 function translateText(text: string, locale: SupportedLocale): string {
