@@ -179,27 +179,27 @@ model Permission {
 }
 
 model RolePermission {
-  id           String @id @default(uuid())
   roleId       String
   permissionId String
+  createdAt    DateTime @default(now())
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, permissionId])
+  @@id([roleId, permissionId])
   @@index([permissionId])
   @@map("role_permissions")
 }
 
 model MembershipRole {
-  id           String @id @default(uuid())
   membershipId String
   roleId       String
+  assignedAt   DateTime @default(now())
 
   membership OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   role       Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@unique([membershipId, roleId])
+  @@id([membershipId, roleId])
   @@index([roleId])
   @@map("membership_roles")
 }
@@ -284,16 +284,16 @@ model TranslationValue {
 }
 
 model TranslationHistory {
-  id                String             @id @default(uuid())
-  translationKeyId  String
-  languageLocale    String
-  previousValue     String?
-  newValue          String
-  previousStatus    TranslationStatus?
-  newStatus         TranslationStatus
-  action            String
-  changedByUserId   String
-  changedAt         DateTime           @default(now())
+  id               String             @id @default(uuid())
+  translationKeyId String
+  languageLocale   String
+  previousValue    String?
+  newValue         String
+  previousStatus   TranslationStatus?
+  newStatus        TranslationStatus
+  action           String
+  changedByUserId  String
+  changedAt        DateTime           @default(now())
 
   translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
   changedBy      User           @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
