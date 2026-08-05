@@ -119,7 +119,6 @@ export default function HydrationPageV2() {
   const goal = profile?.dailyHydrationGoal ?? 0;
   const primaryTotal = preferredUnit === "ml" ? dailyTotal?.totalMl ?? 0 : dailyTotal?.totalOz ?? 0;
   const selectedBeverage = BEVERAGES.find((item) => item.id === selectedBeverageId) ?? BEVERAGES[0];
-  const selectedCoefficientPercent = Math.round(selectedBeverage.coefficient * 100);
   const selectedEntryCount = useMemo(
     () => entries.filter((entry) => localDateValue(new Date(entry.loggedAt)) === summaryDate).length,
     [entries, summaryDate]
@@ -272,10 +271,13 @@ export default function HydrationPageV2() {
           <div className="beverage-selector-section">
             <span className="hydration-input-label">Beverage</span>
             <div className="beverage-selector-row" role="group" aria-label="Beverage type">
-              {visibleBeverages.map((beverage) => <button key={beverage.id} type="button" className={beverage.id === selectedBeverageId ? "beverage-selector-button selected" : "beverage-selector-button"} aria-pressed={beverage.id === selectedBeverageId} onClick={() => selectBeverage(beverage.id)}><span aria-hidden="true">{beverage.icon}</span><small>{beverage.label}</small></button>)}
-              <label className={selectedOverflow ? "beverage-more-control selected" : "beverage-more-control"}>
+              {visibleBeverages.map((beverage) => {
+                const coefficientPercent = Math.round(beverage.coefficient * 100);
+                return <button key={beverage.id} type="button" className={beverage.id === selectedBeverageId ? "beverage-selector-button selected" : "beverage-selector-button"} aria-pressed={beverage.id === selectedBeverageId} aria-label={`${beverage.label}, ${coefficientPercent}%`} title={`${coefficientPercent}%`} onClick={() => selectBeverage(beverage.id)}><span aria-hidden="true">{beverage.icon}</span><small>{beverage.label}</small></button>;
+              })}
+              <label className={selectedOverflow ? "beverage-more-control selected" : "beverage-more-control"} title={selectedOverflow ? `${Math.round(selectedOverflow.coefficient * 100)}%` : undefined}>
                 <span aria-hidden="true">{selectedOverflow?.icon ?? "＋"}</span><small>{selectedOverflow?.label ?? "More"}</small>
-                <select aria-label="More beverages" value={selectedOverflow?.id ?? ""} onChange={(event) => event.target.value && selectBeverage(event.target.value)}><option value="">Select beverage</option>{overflowBeverages.map((beverage) => <option key={beverage.id} value={beverage.id}>{beverage.label}</option>)}</select>
+                <select aria-label={selectedOverflow ? `${selectedOverflow.label}, ${Math.round(selectedOverflow.coefficient * 100)}%` : "More beverages"} value={selectedOverflow?.id ?? ""} onChange={(event) => event.target.value && selectBeverage(event.target.value)}><option value="">Select beverage</option>{overflowBeverages.map((beverage) => <option key={beverage.id} value={beverage.id}>{beverage.label}</option>)}</select>
               </label>
             </div>
           </div>
@@ -284,7 +286,7 @@ export default function HydrationPageV2() {
             <div className="hydration-quick-add-heading"><span className="hydration-input-label">Quick Add</span></div>
             <div className="quick-add-buttons">{quickAdds.map((option, index) => {
               const isRemembered = remembered !== null && index === quickAdds.length - 1 && option.amount === remembered.amount && option.unit === remembered.unit;
-              return <button key={`${option.amount}-${option.unit}-${index}`} type="button" className="quick-add-button" disabled={isSaving} title={`${selectedCoefficientPercent}%`} aria-label={`${option.amount} ${option.unit}, ${selectedCoefficientPercent}%`} onClick={() => saveEntry(option.amount, option.unit)}><span>{isRemembered ? "★" : "+"}</span>{option.amount} {option.unit}</button>;
+              return <button key={`${option.amount}-${option.unit}-${index}`} type="button" className="quick-add-button" disabled={isSaving} title={isRemembered ? "Last manually entered amount" : undefined} onClick={() => saveEntry(option.amount, option.unit)}><span>{isRemembered ? "★" : "+"}</span>{option.amount} {option.unit}</button>;
             })}</div>
           </div>
 
