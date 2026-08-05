@@ -90,9 +90,10 @@
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
-.hydration-page .beverage-selector-button {
+.hydration-page .beverage-selector-button,
+.hydration-page .beverage-more-control {
   display: grid !important;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr auto;
   place-items: center;
   align-content: center;
   gap: 0.3rem;
@@ -114,7 +115,10 @@
 .hydration-page .beverage-selector-button.selected:focus-visible,
 .hydration-page .beverage-selector-button[aria-pressed="true"]:focus-visible,
 .hydration-page .beverage-selector-button.selected:active,
-.hydration-page .beverage-selector-button[aria-pressed="true"]:active {
+.hydration-page .beverage-selector-button[aria-pressed="true"]:active,
+.hydration-page .beverage-more-control.selected,
+.hydration-page .beverage-more-control.selected:hover,
+.hydration-page .beverage-more-control.selected:focus-within {
   color: #ffffff !important;
   background: #166534 !important;
   border-color: #14532d !important;
@@ -122,7 +126,8 @@
   transform: translateY(-1px);
 }
 
-.hydration-page .beverage-selector-button:not([aria-pressed="true"]):focus-visible {
+.hydration-page .beverage-selector-button:not([aria-pressed="true"]):focus-visible,
+.hydration-page .beverage-more-control:not(.selected):focus-within {
   color: #14532d !important;
   background: #f8fff9 !important;
   border-color: #15803d !important;
@@ -131,33 +136,37 @@
 
 .hydration-page .beverage-selector-button > span,
 .hydration-page .beverage-more-control > span {
+  grid-row: 1;
+  align-self: center;
   font-size: 1.45rem;
-}
-
-.hydration-page .beverage-selector-button > span {
-  grid-row: 2;
   line-height: 1;
 }
 
 .hydration-page .beverage-selector-button small,
 .hydration-page .beverage-more-control small {
-  color: inherit !important;
-  font-weight: 800;
-}
-
-.hydration-page .beverage-selector-button small {
-  grid-row: 1;
+  grid-row: 2;
   width: 100%;
   overflow: hidden;
+  color: inherit !important;
   font-size: 0.72rem;
+  font-weight: 800;
   line-height: 1.15;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.hydration-page .beverage-more-control {
+  position: relative;
+}
+
 .hydration-page .beverage-more-control select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   cursor: pointer;
+  opacity: 0;
 }
 
 .hydration-page .quick-add-buttons {
