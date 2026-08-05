@@ -32,6 +32,7 @@ const RoleAdminPage = lazy(() => import("./pages/RoleAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const AcceptInvitationPage = lazy(() => import("./pages/AcceptInvitationPage"));
 const RegistrationPage = lazy(() => import("./pages/RegistrationPage"));
+const VerificationPendingPage = lazy(() => import("./pages/VerificationPendingPage"));
 const WorkspaceChooserPage = lazy(() => import("./pages/WorkspaceChooserPage"));
 const SystemOperationsPage = lazy(() => import("./pages/SystemOperationsPage"));
 
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/terms" element={<Suspense fallback={<PageLoading />}><PublicInformationPage /></Suspense>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<Suspense fallback={<PageLoading />}><RegistrationPage /></Suspense>} />
+            <Route path="/verify-email" element={<Suspense fallback={<PageLoading />}><VerificationPendingPage /></Suspense>} />
             <Route path="/register" element={<Navigate to="/signup" replace />} />
             <Route path="/accept-invitation" element={<Suspense fallback={<PageLoading />}><AcceptInvitationPage /></Suspense>} />
           </Route>
