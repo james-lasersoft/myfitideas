@@ -8,6 +8,10 @@ export interface HydrationEntry {
   userId: string;
   amount: number;
   unit: HydrationUnit;
+  amountMl: number;
+  beverageType: string;
+  hydrationCoefficient: number;
+  effectiveAmountMl: number;
   loggedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -16,6 +20,7 @@ export interface HydrationEntry {
 export interface CreateHydrationInput {
   amount: number;
   unit: HydrationUnit;
+  beverageType: string;
   loggedAt?: string;
   confirmAnomaly?: boolean;
 }
@@ -25,6 +30,8 @@ export interface DailyHydrationTotal {
   timeZone?: string;
   totalMl: number;
   totalOz: number;
+  effectiveTotalMl: number;
+  effectiveTotalOz: number;
   entries: HydrationEntry[];
 }
 
