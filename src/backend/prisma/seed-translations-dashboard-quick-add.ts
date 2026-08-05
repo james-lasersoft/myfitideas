@@ -11,6 +11,9 @@ const catalog = [
   ["hydration.ofGoal", "of goal", "hydration", "da meta"],
   ["hydration.effective", "effective", "hydration", "efetivos"],
   ["hydration.remainingToGoal", "Remaining to goal", "hydration", "Restante para a meta"],
+  ["hydration.historyConsumed", "Consumed", "hydration", "Consumido"],
+  ["hydration.historyCoefficient", "Coefficient", "hydration", "Coeficiente"],
+  ["hydration.historyEffective", "Effective", "hydration", "Efetivo"],
 ] as const;
 
 async function main() {
