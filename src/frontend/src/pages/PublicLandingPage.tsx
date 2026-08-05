@@ -12,14 +12,42 @@ export default function PublicLandingPage() {
           <p className="public-kicker">{t("Body transformation, made measurable")}</p>
           <h1>{t("Build a clearer picture of your health and progress.")}</h1>
           <p>{t("MyFitIdeas brings measurements, hydration, progress trends, habits, and future AI insights into one privacy-conscious transformation platform.")}</p>
+
+          <div className="public-benefit-row" aria-label={t("MyFitIdeas value areas")}>
+            <div><span aria-hidden="true">▥</span><strong>{t("Track what matters")}</strong></div>
+            <div><span aria-hidden="true">◎</span><strong>{t("Understand patterns")}</strong></div>
+            <div><span aria-hidden="true">▣</span><strong>{t("Control your information")}</strong></div>
+          </div>
+
           <div className="public-hero-actions">
             <Link className="public-primary-action" to="/signup">{t("Create Your Account")}</Link>
             <Link className="public-secondary-action" to="/features">{t("Explore Features")}</Link>
           </div>
+          <p className="public-signup-note">{t("Initial signup collects only essential account, localization, and consent information. Measurements and goals belong in onboarding after verification or activation.")}</p>
         </div>
-        <aside className="public-hero-panel" aria-label={t("Platform highlights")}>
-          <strong>{t("Start with identity, not health data")}</strong>
-          <p>{t("Initial signup collects only essential account, localization, and consent information. Measurements and goals belong in onboarding after verification or activation.")}</p>
+
+        <aside className="public-product-preview" aria-label={t("Platform highlights")} data-no-translate="true">
+          <div className="public-preview-window">
+            <div className="public-preview-heading">
+              <strong>Dashboard</strong>
+              <span>Today</span>
+            </div>
+            <div className="public-preview-metrics">
+              <article><span>Weight</span><strong>165.2</strong><small>-2.4 lb</small></article>
+              <article><span>Body Fat</span><strong>23.1%</strong><small>-1.3%</small></article>
+              <article><span>Hydration</span><strong>72%</strong><small>+8%</small></article>
+            </div>
+            <div className="public-preview-chart" aria-hidden="true">
+              <i /><i /><i /><i /><i /><i /><i />
+            </div>
+          </div>
+          <div className="public-preview-phone">
+            <span>Progress</span>
+            <strong>165.2 lb</strong>
+            <div className="public-phone-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+            <small>Steady progress</small>
+          </div>
+          <div className="public-preview-security">🔒 Your data stays private</div>
         </aside>
       </section>
 
