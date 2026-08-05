@@ -1,19 +1,23 @@
+.hydration-page .hydration-workspace {
+  grid-template-columns: minmax(300px, 0.72fr) minmax(460px, 1.28fr);
+}
+
 .hydration-page .hydration-loading {
   min-height: 15rem;
 }
 
 .hydration-page .hydration-gauge {
-  width: min(100%, 340px);
-  min-height: 245px;
+  width: min(100%, 300px);
+  min-height: 220px;
 }
 
 .hydration-page .hydration-gauge-content {
-  width: min(66%, 185px);
+  width: min(66%, 170px);
 }
 
 .hydration-page .hydration-gauge-content strong {
   margin-top: 0;
-  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
 }
 
 .hydration-page .hydration-gauge-date {
@@ -26,19 +30,19 @@
 }
 
 .hydration-page .hydration-gauge-content p {
-  margin-top: 0.35rem;
-  font-size: 0.78rem;
+  margin-top: 0.3rem;
+  font-size: 0.76rem;
 }
 
 .hydration-page .hydration-gauge-content b {
-  min-width: 3.75rem;
-  margin-top: 0.4rem;
-  padding: 0.28rem 0.55rem;
-  font-size: 1rem;
+  min-width: 3.5rem;
+  margin-top: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.95rem;
 }
 
 .hydration-page .hydration-level-label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
 }
 
 .hydration-page .hydration-stat-grid,
@@ -47,23 +51,48 @@
 }
 
 .hydration-page .hydration-progress-card {
-  padding-bottom: 1.1rem;
+  padding-bottom: 1rem;
 }
 
-@media (max-width: 760px) {
+.hydration-page .hydration-entry-card {
+  min-height: 100%;
+}
+
+.hydration-page .quick-add-section > span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .hydration-page .hydration-workspace {
+    grid-template-columns: 1fr;
+  }
+
   .hydration-page .hydration-gauge {
     width: min(100%, 320px);
     min-height: 230px;
   }
 }
 
+@media (max-width: 760px) {
+  .hydration-page .hydration-gauge {
+    width: min(100%, 300px);
+    min-height: 215px;
+  }
+}
+
 @media (max-width: 520px) {
   .hydration-page .hydration-gauge {
-    width: min(100%, 290px);
-    min-height: 210px;
+    width: min(100%, 275px);
+    min-height: 200px;
   }
 
   .hydration-page .hydration-gauge-content strong {
-    font-size: 2.2rem;
+    font-size: 2.05rem;
   }
 }
