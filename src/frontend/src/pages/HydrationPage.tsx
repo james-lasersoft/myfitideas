@@ -551,7 +551,7 @@ export default function HydrationPage() {
             <div className="hydration-quick-add-heading">
               <span className="hydration-input-label">Quick Add</span>
               <p>
-                Logging {selectedBeverage.icon} {selectedBeverage.label} for {formatUserDate(new Date(`${entryDate}T12:00:00`), localizationPreferences)} at {entryTime}
+                Logging For {selectedBeverage.icon} {selectedBeverage.label} on {formatUserDate(new Date(`${entryDate}T12:00:00`), localizationPreferences)} at {entryTime}
               </p>
             </div>
             <div className="quick-add-buttons">
