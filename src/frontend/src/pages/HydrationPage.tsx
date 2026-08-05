@@ -25,6 +25,7 @@ import {
   type LocalizationPreferences,
 } from "../utils/localizationFormat";
 import "./HydrationPage.css";
+import "./HydrationEntryLayout.css";
 
 const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
 const LAST_BEVERAGE_KEY = "lastHydrationBeverage";
