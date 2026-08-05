@@ -9,9 +9,9 @@ export interface HydrationEntry {
   amount: number;
   unit: HydrationUnit;
   amountMl: number;
-  beverageType: string;
-  hydrationCoefficient: number;
-  effectiveAmountMl: number;
+  beverageType?: string;
+  hydrationCoefficient?: number;
+  effectiveAmountMl?: number;
   loggedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -20,7 +20,7 @@ export interface HydrationEntry {
 export interface CreateHydrationInput {
   amount: number;
   unit: HydrationUnit;
-  beverageType: string;
+  beverageType?: string;
   loggedAt?: string;
   confirmAnomaly?: boolean;
 }
@@ -30,8 +30,8 @@ export interface DailyHydrationTotal {
   timeZone?: string;
   totalMl: number;
   totalOz: number;
-  effectiveTotalMl: number;
-  effectiveTotalOz: number;
+  effectiveTotalMl?: number;
+  effectiveTotalOz?: number;
   entries: HydrationEntry[];
 }
 
@@ -52,7 +52,11 @@ export async function getHydrationEntries(): Promise<HydrationEntry[]> {
 }
 
 async function postHydration(input: CreateHydrationInput): Promise<HydrationEntry> {
-  const response = await api.post<{ message: string; hydration: HydrationEntry }>("/api/hydration", input);
+  const beverageType = input.beverageType ?? localStorage.getItem("lastHydrationBeverage") ?? "water";
+  const response = await api.post<{ message: string; hydration: HydrationEntry }>("/api/hydration", {
+    ...input,
+    beverageType,
+  });
   return response.data.hydration;
 }
 
