@@ -19,8 +19,8 @@ const catalog = [
   ["hydration.more", "More", "hydration", "Mais"],
   ["hydration.moreBeverages", "More beverages", "hydration", "Mais bebidas"],
   ["hydration.selectBeverage", "Select beverage", "hydration", "Selecionar bebida"],
-  ["hydration.logging", "Logging", "hydration", "Registrando"],
-  ["hydration.for", "for", "hydration", "para"],
+  ["hydration.loggingFor", "Logging For", "hydration", "Registrando para"],
+  ["hydration.on", "on", "hydration", "em"],
   ["hydration.at", "at", "hydration", "às"],
 ] as const;
 
