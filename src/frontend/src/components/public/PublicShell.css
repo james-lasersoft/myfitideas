@@ -216,3 +216,80 @@ html[data-theme="dark"] .public-footer p {
     font-size: 0.92rem;
   }
 }
+
+/* Premium interaction polish */
+.public-header,
+.public-brand,
+.public-navigation a,
+.public-footer a,
+.public-signup-link {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease,
+    box-shadow 180ms ease, transform 180ms ease;
+}
+
+.public-brand:hover {
+  transform: translateY(-1px);
+}
+
+.public-navigation a {
+  position: relative;
+  padding: 0.45rem 0.2rem;
+}
+
+.public-navigation a::after {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.05rem;
+  left: 0.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--workspace-member-primary);
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.55);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.public-navigation a:hover::after,
+.public-navigation a.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.public-signup-link:hover {
+  box-shadow: 0 11px 24px rgb(var(--workspace-member-shadow-rgb) / 24%);
+  transform: translateY(-2px);
+}
+
+.public-signup-link:active {
+  transform: translateY(0);
+}
+
+.public-brand:focus-visible,
+.public-navigation a:focus-visible,
+.public-footer a:focus-visible,
+.public-signup-link:focus-visible {
+  outline: 3px solid rgb(72 190 48 / 34%);
+  outline-offset: 3px;
+}
+
+.public-footer {
+  margin-top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-header,
+  .public-brand,
+  .public-navigation a,
+  .public-navigation a::after,
+  .public-footer a,
+  .public-signup-link {
+    transition: none;
+  }
+
+  .public-brand:hover,
+  .public-signup-link:hover,
+  .public-signup-link:active {
+    transform: none;
+  }
+}
