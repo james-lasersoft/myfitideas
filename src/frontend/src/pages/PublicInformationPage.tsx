@@ -12,10 +12,18 @@ const featureGroups = [
   ["Future connections", "Prepare for wearable integrations, coach collaboration, exports, and advanced analytics."],
 ] as const;
 
-const planGroups = [
+type PublicPlan = {
+  name: string;
+  audience: string;
+  featured: boolean;
+  items: readonly string[];
+};
+
+const planGroups: readonly PublicPlan[] = [
   {
     name: "Foundation",
     audience: "For starting your transformation record",
+    featured: false,
     items: ["Account and security controls", "Measurements and hydration", "Progress charts", "Localized preferences"],
   },
   {
@@ -27,16 +35,31 @@ const planGroups = [
   {
     name: "Coach and Team",
     audience: "For guided or professional support",
+    featured: false,
     items: ["Shared client progress", "Role-based access", "Coach and trainer workflows", "Organization administration"],
   },
-] as const;
+];
 
-function PageIntro({ kicker, title, description }: { kicker: string; title: string; description: string }) {
+type CheckoutStatus = "success" | "canceled" | "failed" | "pending";
+type CheckoutCopy = readonly [string, string];
+
+const checkoutCopy: Record<CheckoutStatus, CheckoutCopy> = {
+  success: ["Checkout complete", "Your payment result will be confirmed securely with the billing provider before access changes."],
+  canceled: ["Checkout canceled", "No subscription change was completed. You may return to pricing when you are ready."],
+  failed: ["Checkout could not be completed", "No access change should occur until the backend verifies a successful payment result."],
+  pending: ["Checkout confirmation pending", "This page is ready for provider-verified billing results when checkout is activated."],
+};
+
+function isCheckoutStatus(value: string): value is CheckoutStatus {
+  return value === "success" || value === "canceled" || value === "failed" || value === "pending";
+}
+
+function PageIntro({ kicker, heading, description }: { kicker: string; heading: string; description: string }) {
   const { t } = useLocale();
   return (
     <header className="public-page-intro">
       <p className="public-kicker">{t(kicker)}</p>
-      <h1>{t(title)}</h1>
+      <h1>{t(heading)}</h1>
       <p>{t(description)}</p>
     </header>
   );
@@ -46,7 +69,7 @@ function FeaturesPage() {
   const { t } = useLocale();
   return (
     <section className="public-page public-detail-page">
-      <PageIntro kicker="A connected transformation platform" title="Features built around your whole journey" description="MyFitIdeas is designed to connect the information, routines, and insights that support sustainable body transformation." />
+      <PageIntro kicker="A connected transformation platform" heading="Features built around your whole journey" description="MyFitIdeas is designed to connect the information, routines, and insights that support sustainable body transformation." />
       <div className="public-feature-grid">
         {featureGroups.map(([title, description], index) => (
           <article key={title}>
@@ -68,7 +91,7 @@ function PricingPage() {
   const { t } = useLocale();
   return (
     <section className="public-page public-detail-page">
-      <PageIntro kicker="Simple plans, before billing" title="Choose the experience that fits your journey" description="Pricing is not active yet. These plan previews show the intended product structure without creating a subscription or payment obligation." />
+      <PageIntro kicker="Simple plans, before billing" heading="Choose the experience that fits your journey" description="Pricing is not active yet. These plan previews show the intended product structure without creating a subscription or payment obligation." />
       <div className="public-plan-grid">
         {planGroups.map((plan) => (
           <article key={plan.name} className={plan.featured ? "public-plan-card featured" : "public-plan-card"}>
@@ -90,13 +113,8 @@ function CheckoutResultPage() {
   const { t } = useLocale();
   const [searchParams] = useSearchParams();
   const requestedStatus = searchParams.get("status") ?? "pending";
-  const status = ["success", "canceled", "failed", "pending"].includes(requestedStatus) ? requestedStatus : "pending";
-  const copy = {
-    success: ["Checkout complete", "Your payment result will be confirmed securely with the billing provider before access changes."],
-    canceled: ["Checkout canceled", "No subscription change was completed. You may return to pricing when you are ready."],
-    failed: ["Checkout could not be completed", "No access change should occur until the backend verifies a successful payment result."],
-    pending: ["Checkout confirmation pending", "This page is ready for provider-verified billing results when checkout is activated."],
-  }[status] as readonly [string, string];
+  const status: CheckoutStatus = isCheckoutStatus(requestedStatus) ? requestedStatus : "pending";
+  const copy = checkoutCopy[status];
 
   return (
     <section className="public-page public-result-page">
@@ -135,7 +153,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
 
   return (
     <article className="public-page public-legal-page">
-      <PageIntro kicker="Public legal information" title={privacy ? "Privacy Notice" : "Terms of Service"} description={privacy ? "This prelaunch notice explains the intended handling of account, security, consent, and health-related information." : "These prelaunch terms describe the intended rules for accessing and using MyFitIdeas."} />
+      <PageIntro kicker="Public legal information" heading={privacy ? "Privacy Notice" : "Terms of Service"} description={privacy ? "This prelaunch notice explains the intended handling of account, security, consent, and health-related information." : "These prelaunch terms describe the intended rules for accessing and using MyFitIdeas."} />
       <div className="public-legal-meta">
         <span>{t("Version")}: <strong data-no-translate="true">0.1 Draft</strong></span>
         <span>{t("Effective date")}: <strong>{t("Not yet effective")}</strong></span>
