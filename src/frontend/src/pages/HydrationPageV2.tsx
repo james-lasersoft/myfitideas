@@ -20,6 +20,7 @@ import "./HydrationProgressVisualization.css";
 const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
 const LAST_BEVERAGE_KEY = "lastHydrationBeverage";
 const BEVERAGE_USAGE_KEY = "hydrationBeverageUsage";
+const ML_PER_OUNCE = 29.5735;
 const FALLBACK_PREFERENCES: LocalizationPreferences = {
   preferredLanguage: "en",
   preferredDateFormat: "LOCALE",
@@ -28,21 +29,21 @@ const FALLBACK_PREFERENCES: LocalizationPreferences = {
 };
 
 type RememberedEntry = { amount: number; unit: HydrationUnit };
-type BeverageType = { id: string; label: string; icon: string };
+type BeverageType = { id: string; label: string; icon: string; coefficient: number };
 
 const BEVERAGES: BeverageType[] = [
-  { id: "water", label: "Water", icon: "💧" },
-  { id: "coffee", label: "Coffee", icon: "☕" },
-  { id: "tea", label: "Tea", icon: "🍵" },
-  { id: "sports-drink", label: "Sports Drink", icon: "⚡" },
-  { id: "milk", label: "Milk", icon: "🥛" },
-  { id: "juice", label: "Juice", icon: "🧃" },
-  { id: "soda", label: "Soda", icon: "🥤" },
-  { id: "sparkling-water", label: "Sparkling Water", icon: "🫧" },
-  { id: "energy-drink", label: "Energy Drink", icon: "🔋" },
-  { id: "smoothie", label: "Smoothie", icon: "🥭" },
-  { id: "oral-rehydration", label: "Oral Rehydration Drink", icon: "🧂" },
-  { id: "other", label: "Other Beverage", icon: "⋯" },
+  { id: "water", label: "Water", icon: "💧", coefficient: 1 },
+  { id: "coffee", label: "Coffee", icon: "☕", coefficient: 0.95 },
+  { id: "tea", label: "Tea", icon: "🍵", coefficient: 0.98 },
+  { id: "sports-drink", label: "Sports Drink", icon: "⚡", coefficient: 0.95 },
+  { id: "milk", label: "Milk", icon: "🥛", coefficient: 0.9 },
+  { id: "juice", label: "Juice", icon: "🧃", coefficient: 0.85 },
+  { id: "soda", label: "Soda", icon: "🥤", coefficient: 0.8 },
+  { id: "sparkling-water", label: "Sparkling Water", icon: "🫧", coefficient: 1 },
+  { id: "energy-drink", label: "Energy Drink", icon: "🔋", coefficient: 0.8 },
+  { id: "smoothie", label: "Smoothie", icon: "🥭", coefficient: 0.85 },
+  { id: "oral-rehydration", label: "Oral Rehydration Drink", icon: "🧂", coefficient: 1 },
+  { id: "other", label: "Other Beverage", icon: "⋯", coefficient: 0.8 },
 ];
 
 function localDateValue(date = new Date()): string {
@@ -81,6 +82,18 @@ function beverageUsage(): Record<string, number> {
   }
 }
 
+function beverageForEntry(entry: HydrationEntry): BeverageType {
+  return BEVERAGES.find((item) => item.id === entry.beverageType) ?? BEVERAGES[0];
+}
+
+function amountFromMl(amountMl: number, unit: HydrationUnit): number {
+  return unit === "ml" ? amountMl : amountMl / ML_PER_OUNCE;
+}
+
+function formatHydrationAmount(value: number, unit: HydrationUnit): string {
+  return unit === "ml" ? value.toFixed(0) : value.toFixed(1);
+}
+
 export default function HydrationPageV2() {
   const navigate = useNavigate();
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +119,7 @@ export default function HydrationPageV2() {
   const goal = profile?.dailyHydrationGoal ?? 0;
   const primaryTotal = preferredUnit === "ml" ? dailyTotal?.totalMl ?? 0 : dailyTotal?.totalOz ?? 0;
   const selectedBeverage = BEVERAGES.find((item) => item.id === selectedBeverageId) ?? BEVERAGES[0];
+  const selectedCoefficientPercent = Math.round(selectedBeverage.coefficient * 100);
 
   const visibleBeverages = useMemo(() => {
     const defaults = ["water", "coffee", "tea", "sports-drink", "milk"];
@@ -128,16 +142,14 @@ export default function HydrationPageV2() {
     return remembered ? [...defaults, remembered] : defaults;
   }, [preferredUnit, remembered]);
 
-  const groupedEntries = useMemo(() => {
-    return [...entries]
-      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
-      .reduce<Record<string, HydrationEntry[]>>((groups, entry) => {
-        const key = localDateValue(new Date(entry.loggedAt));
-        groups[key] ??= [];
-        groups[key].push(entry);
-        return groups;
-      }, {});
-  }, [entries]);
+  const groupedEntries = useMemo(() => [...entries]
+    .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
+    .reduce<Record<string, HydrationEntry[]>>((groups, entry) => {
+      const key = localDateValue(new Date(entry.loggedAt));
+      groups[key] ??= [];
+      groups[key].push(entry);
+      return groups;
+    }, {}), [entries]);
 
   const loadData = useCallback(async (date = summaryDate) => {
     const [allEntries, total] = await Promise.all([getHydrationEntries(), getDailyHydrationTotal(date)]);
@@ -175,7 +187,7 @@ export default function HydrationPageV2() {
     setMessage("");
     setError("");
     try {
-      await createHydrationEntry({ amount: entryAmount, unit: entryUnit, loggedAt: loggedAtValue(entryDate, entryTime) });
+      await createHydrationEntry({ amount: entryAmount, unit: entryUnit, beverageType: selectedBeverageId, loggedAt: loggedAtValue(entryDate, entryTime) });
       const nextUsage = { ...usage, [selectedBeverageId]: (usage[selectedBeverageId] ?? 0) + 1 };
       setUsage(nextUsage);
       localStorage.setItem(BEVERAGE_USAGE_KEY, JSON.stringify(nextUsage));
@@ -268,7 +280,7 @@ export default function HydrationPageV2() {
             <div className="hydration-quick-add-heading"><span className="hydration-input-label">Quick Add</span></div>
             <div className="quick-add-buttons">{quickAdds.map((option, index) => {
               const isRemembered = remembered !== null && index === quickAdds.length - 1 && option.amount === remembered.amount && option.unit === remembered.unit;
-              return <button key={`${option.amount}-${option.unit}-${index}`} type="button" className="quick-add-button" disabled={isSaving} title={isRemembered ? "Last manually entered amount" : undefined} onClick={() => saveEntry(option.amount, option.unit)}><span>{isRemembered ? "★" : "+"}</span>{option.amount} {option.unit}</button>;
+              return <button key={`${option.amount}-${option.unit}-${index}`} type="button" className="quick-add-button" disabled={isSaving} title={`${selectedCoefficientPercent}%`} aria-label={`${option.amount} ${option.unit}, ${selectedCoefficientPercent}%`} onClick={() => saveEntry(option.amount, option.unit)}><span>{isRemembered ? "★" : "+"}</span>{option.amount} {option.unit}</button>;
             })}</div>
           </div>
 
@@ -288,7 +300,29 @@ export default function HydrationPageV2() {
       <section className="dashboard-card hydration-history-card">
         <div className="hydration-card-heading"><div><h2>Hydration History</h2><p>{entries.length} {entries.length === 1 ? "entry" : "entries"}</p></div></div>
         {isLoading ? <p>Loading hydration history...</p> : entries.length === 0 ? <p>No hydration entries have been recorded yet.</p> : (
-          <div className="hydration-history">{Object.entries(groupedEntries).map(([key, dayEntries]) => <section key={key} className="hydration-date-group"><h3>{dateGroupLabel(key)}</h3><div className="hydration-date-group-items">{dayEntries.map((entry) => <article key={entry.id} className="history-item hydration-history-item"><div><strong>{entry.amount} {entry.unit}</strong><p>{formatUserTime(entry.loggedAt, preferences)}</p></div><button type="button" className="delete-button" disabled={deletingId === entry.id} onClick={() => deleteEntry(entry.id)}>{deletingId === entry.id ? "Deleting..." : "Delete"}</button></article>)}</div></section>)}</div>
+          <div className="hydration-history">{Object.entries(groupedEntries).map(([key, dayEntries]) => (
+            <section key={key} className="hydration-date-group">
+              <h3>{dateGroupLabel(key)}</h3>
+              <div className="hydration-date-group-items">{dayEntries.map((entry) => {
+                const beverage = beverageForEntry(entry);
+                const coefficient = entry.hydrationCoefficient ?? 1;
+                const effectiveMl = entry.effectiveAmountMl ?? entry.amountMl;
+                const effectiveAmount = amountFromMl(effectiveMl, entry.unit);
+                return (
+                  <article key={entry.id} className="history-item hydration-history-item">
+                    <div className="hydration-history-main">
+                      <span className="hydration-history-beverage" aria-hidden="true">{beverage.icon}</span>
+                      <div className="hydration-history-identity"><strong>{beverage.label}</strong><p>{formatUserTime(entry.loggedAt, preferences)}</p></div>
+                      <div className="hydration-history-metric"><small>Consumed</small><strong>{entry.amount} {entry.unit}</strong></div>
+                      <div className="hydration-history-metric"><small>Coefficient</small><strong>{Math.round(coefficient * 100)}%</strong></div>
+                      <div className="hydration-history-metric hydration-history-effective"><small>Effective</small><strong>{formatHydrationAmount(effectiveAmount, entry.unit)} {entry.unit}</strong></div>
+                    </div>
+                    <button type="button" className="delete-button" disabled={deletingId === entry.id} onClick={() => deleteEntry(entry.id)}>{deletingId === entry.id ? "Deleting..." : "Delete"}</button>
+                  </article>
+                );
+              })}</div>
+            </section>
+          ))}</div>
         )}
       </section>
     </main>
