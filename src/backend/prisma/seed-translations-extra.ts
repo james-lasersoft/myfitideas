@@ -37,6 +37,12 @@ const catalog = [
   ["hydration.beverageDescription", "Record beverages that contribute to your daily hydration.", "hydration", "Registre bebidas que contribuem para sua hidratação diária."],
   ["hydration.logHydration", "Log Hydration", "hydration", "Registrar Hidratação"],
   ["hydration.recordBeverageVolume", "Record water or another beverage by volume.", "hydration", "Registre água ou outra bebida por volume."],
+  ["hydration.beverage", "Beverage", "hydration", "Bebida"],
+  ["hydration.beverageType", "Beverage type", "hydration", "Tipo de bebida"],
+  ["hydration.more", "More", "hydration", "Mais"],
+  ["hydration.moreBeverages", "More beverages", "hydration", "Mais bebidas"],
+  ["hydration.selectBeverage", "Select beverage", "hydration", "Selecionar bebida"],
+  ["hydration.loggingFor", "Logging For", "hydration", "Registrando para"],
 
   ["measurements.preferenceIntro", "Entries use your profile preferences:", "measurements", "Os registros usam as preferências do seu perfil:"],
   ["measurements.forWeight", "for weight and", "measurements", "para peso e"],
