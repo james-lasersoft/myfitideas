@@ -33,9 +33,9 @@ export default function PublicLandingPage() {
               <span>{t("Today")}</span>
             </div>
             <div className="public-preview-metrics">
-              <article><span>{t("Weight")}</span><strong>165.2</strong><small>-2.4 lb</small></article>
-              <article><span>{t("Body Fat")}</span><strong>23.1%</strong><small>-1.3%</small></article>
-              <article><span>{t("Hydration")}</span><strong>72%</strong><small>+8%</small></article>
+              <article><span>{t("Weight")}</span><strong data-no-translate="true">165.2</strong><small data-no-translate="true">-2.4 lb</small></article>
+              <article><span>{t("Body Fat")}</span><strong data-no-translate="true">23.1%</strong><small data-no-translate="true">-1.3%</small></article>
+              <article><span>{t("Hydration")}</span><strong data-no-translate="true">72%</strong><small data-no-translate="true">+8%</small></article>
             </div>
             <div className="public-preview-chart" aria-hidden="true">
               <i /><i /><i /><i /><i /><i /><i />
@@ -43,7 +43,7 @@ export default function PublicLandingPage() {
           </div>
           <div className="public-preview-phone">
             <span>{t("Progress")}</span>
-            <strong>165.2 lb</strong>
+            <strong data-no-translate="true">165.2 lb</strong>
             <div className="public-phone-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             <small>{t("Steady progress")}</small>
           </div>
