@@ -66,6 +66,7 @@ model User {
   mustChangePassword         Boolean    @default(false)
   tokenVersion               Int        @default(0)
   lastLoginAt                DateTime?
+  emailVerifiedAt            DateTime?
   mfaEnabled                 Boolean    @default(false)
   mfaSecretEncrypted         String?
   mfaRecoveryCodeHashes      Json?
@@ -78,6 +79,7 @@ model User {
   preferredTimeFormat        String     @default("12")
   preferredWeekStart         String     @default("SUNDAY")
   timezone                   String     @default("UTC")
+  countryCode                String     @default("US")
   dailyHydrationGoal         Float      @default(64)
   dailyHydrationGoalMl       Float      @default(1892.7)
   targetWeight               Float?
@@ -178,29 +180,249 @@ model Permission {
 }
 
 model RolePermission {
+  id           String @id @default(uuid())
   roleId       String
   permissionId String
-  createdAt    DateTime @default(now())
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@id([roleId, permissionId])
+  @@unique([roleId, permissionId])
   @@index([permissionId])
   @@map("role_permissions")
 }
 
 model MembershipRole {
+  id           String @id @default(uuid())
   membershipId String
   roleId       String
-  assignedAt   DateTime @default(now())
 
   membership OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   role       Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@id([membershipId, roleId])
+  @@unique([membershipId, roleId])
   @@index([roleId])
   @@map("membership_roles")
+}
+
+model Invitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  email          String
+  roleId         String
+  status         InvitationStatus @default(PENDING)
+  tokenHash      String           @unique
+  expiresAt      DateTime
+  createdById    String
+  acceptedById   String?
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  acceptedBy   User?        @relation("InvitationAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([email, status])
+  @@index([expiresAt])
+  @@map("invitations")
+}
+
+model TranslationKey {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  sourceText String
+  category   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  values  TranslationValue[]
+  history TranslationHistory[]
+
+  @@index([category])
+  @@map("translation_keys")
+}
+
+model Language {
+  id          String   @id @default(uuid())
+  locale      String   @unique
+  displayName String
+  nativeName  String
+  enabled     Boolean  @default(true)
+  isSource    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  values TranslationValue[]
+
+  @@index([enabled])
+  @@map("languages")
+}
+
+model TranslationValue {
+  id               String            @id @default(uuid())
+  translationKeyId String
+  languageId       String
+  value            String
+  status           TranslationStatus @default(DRAFT)
+  publishedValue   String?
+  publishedAt      DateTime?
+  updatedById      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+  language       Language       @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([translationKeyId, languageId])
+  @@index([languageId, status])
+  @@map("translation_values")
+}
+
+model TranslationHistory {
+  id               String   @id @default(uuid())
+  translationKeyId String
+  locale           String
+  previousValue    String?
+  nextValue        String
+  action           String
+  changedById      String
+  createdAt        DateTime @default(now())
+
+  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+  changedBy      User           @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([translationKeyId, createdAt])
+  @@index([locale, createdAt])
+  @@map("translation_history")
+}
+
+model Measurement {
+  id          String   @id @default(uuid())
+  userId      String
+  date        DateTime
+  weight      Float
+  waist       Float?
+  chest       Float?
+  hips        Float?
+  bodyFat     Float?
+  weightKg    Float?
+  waistCm     Float?
+  chestCm     Float?
+  hipsCm      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("measurements")
+}
+
+model Hydration {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  unit      String
+  date      DateTime
+  amountMl  Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("hydration")
+}
+
+model UserSession {
+  id               String   @id @default(uuid())
+  userId           String
+  tokenHash        String   @unique
+  refreshTokenHash String?  @unique
+  userAgent        String?
+  ipAddress        String?
+  countryCode      String?
+  region           String?
+  city             String?
+  latitude         Float?
+  longitude        Float?
+  locationSource   String?
+  locationCapturedAt DateTime?
+  expiresAt        DateTime
+  refreshExpiresAt DateTime?
+  revokedAt        DateTime?
+  lastSeenAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([refreshExpiresAt])
+  @@map("user_sessions")
+}
+
+model AuditLog {
+  id             String      @id @default(uuid())
+  organizationId String?
+  actorUserId    String?
+  action         String
+  targetType     String
+  targetId       String?
+  result         AuditResult @default(SUCCESS)
+  ipAddress      String?
+  userAgent      String?
+  requestId      String?
+  metadata       Json?
+  beforeState    Json?
+  afterState     Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions UserSubscription[]
+  entitlements PlanEntitlement[]
+
+  @@index([isActive])
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id        String             @id @default(uuid())
+  userId    String
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startedAt DateTime           @default(now())
+  endsAt    DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([planId, status])
+  @@map("user_subscriptions")
 }
 
 model Entitlement {
@@ -218,51 +440,17 @@ model Entitlement {
   @@map("entitlements")
 }
 
-model SubscriptionPlan {
-  id          String   @id @default(uuid())
-  key         String   @unique
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  entitlements PlanEntitlement[]
-  subscriptions UserSubscription[]
-
-  @@index([isActive])
-  @@map("subscription_plans")
-}
-
 model PlanEntitlement {
+  id            String @id @default(uuid())
   planId        String
   entitlementId String
-  createdAt     DateTime @default(now())
 
   plan        SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   entitlement Entitlement      @relation(fields: [entitlementId], references: [id], onDelete: Cascade)
 
-  @@id([planId, entitlementId])
+  @@unique([planId, entitlementId])
   @@index([entitlementId])
   @@map("plan_entitlements")
-}
-
-model UserSubscription {
-  id        String             @id @default(uuid())
-  userId    String
-  planId    String
-  status    SubscriptionStatus @default(ACTIVE)
-  startsAt  DateTime           @default(now())
-  endsAt    DateTime?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-
-  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-
-  @@index([userId, status])
-  @@index([planId, status])
-  @@map("user_subscriptions")
 }
 
 model DataAssignment {
@@ -271,197 +459,29 @@ model DataAssignment {
   staffUserId    String
   subjectUserId  String
   assignmentType AssignmentType
-  isActive       Boolean        @default(true)
-  startsAt       DateTime       @default(now())
-  endsAt         DateTime?
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  revokedAt      DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   staff        User         @relation("AssignmentStaff", fields: [staffUserId], references: [id], onDelete: Cascade)
   subject      User         @relation("AssignmentSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, staffUserId, subjectUserId, assignmentType])
-  @@index([staffUserId, isActive])
-  @@index([subjectUserId, isActive])
+  @@index([subjectUserId, revokedAt])
+  @@index([staffUserId, revokedAt])
   @@map("data_assignments")
 }
 
-model Invitation {
-  id               String           @id @default(uuid())
-  organizationId   String
-  email            String
-  roleId           String?
-  tokenHash        String           @unique
-  status           InvitationStatus @default(PENDING)
-  expiresAt        DateTime
-  createdByUserId  String
-  acceptedByUserId String?
-  acceptedAt       DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+model OrganizationSetting {
+  id             String   @id @default(uuid())
+  organizationId String
+  category       String
+  key            String
+  value          Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  createdBy    User         @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  acceptedBy   User?        @relation("InvitationAcceptor", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
-
-  @@index([organizationId, status])
-  @@index([email, status])
-  @@index([expiresAt])
-  @@map("invitations")
-}
-
-model UserSession {
-  id               String   @id @default(uuid())
-  userId           String
-  tokenHash        String   @unique
-  refreshTokenHash String?  @unique
-  userAgent        String?
-  ipAddress        String?
-  expiresAt        DateTime
-  refreshExpiresAt DateTime?
-  revokedAt        DateTime?
-  lastSeenAt       DateTime @default(now())
-  createdAt        DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, revokedAt])
-  @@index([expiresAt])
-  @@index([refreshExpiresAt])
-  @@map("user_sessions")
-}
-
-model AuditLog {
-  id             String      @id @default(uuid())
-  organizationId String?
-  actorUserId    String?
-  action         String
-  targetType     String
-  targetId       String?
-  result         AuditResult @default(SUCCESS)
-  ipAddress      String?
-  userAgent      String?
-  beforeState    Json?
-  afterState     Json?
-  metadata       Json?
-  createdAt      DateTime    @default(now())
-
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  actor         User?         @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
-
-  @@index([organizationId, createdAt])
-  @@index([actorUserId, createdAt])
-  @@index([action, createdAt])
-  @@index([targetType, targetId])
-  @@map("audit_logs")
-}
-
-model Measurement {
-  id              String   @id @default(uuid())
-  userId          String
-  weight          Float?
-  waist           Float?
-  chest           Float?
-  hips            Float?
-  bodyFat         Float?
-  weightKg        Float?
-  waistCm         Float?
-  chestCm         Float?
-  hipsCm          Float?
-  measurementDate DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, measurementDate])
-  @@map("measurements")
-}
-
-model Hydration {
-  id        String   @id @default(uuid())
-  userId    String
-  amount    Float
-  unit      String   @default("oz")
-  amountMl  Float
-  loggedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, loggedAt])
-  @@map("hydration_logs")
-}
-
-model Language {
-  id           String             @id @default(uuid())
-  locale       String             @unique
-  displayName  String
-  nativeName   String
-  enabled      Boolean            @default(true)
-  isSource     Boolean            @default(false)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  translations TranslationValue[]
-
-  @@map("languages")
-}
-
-model TranslationKey {
-  id           String             @id @default(uuid())
-  key          String             @unique
-  sourceText   String
-  category     String             @default("general")
-  description  String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  translations TranslationValue[]
-  history      TranslationHistory[]
-
-  @@index([category])
-  @@map("translation_keys")
-}
-
-model TranslationValue {
-  id               String            @id @default(uuid())
-  translationKeyId String
-  languageId       String
-  value            String
-  status           TranslationStatus @default(DRAFT)
-  publishedValue   String?
-  publishedAt      DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-
-  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
-  language       Language       @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  @@unique([translationKeyId, languageId])
-  @@index([languageId, status])
-  @@map("translation_values")
-}
-
-model TranslationHistory {
-  id               String            @id @default(uuid())
-  translationKeyId String
-  languageLocale   String
-  previousValue    String?
-  newValue         String
-  previousStatus   TranslationStatus?
-  newStatus        TranslationStatus
-  action           String
-  changedByUserId  String
-  changedAt        DateTime          @default(now())
-
-  translationKey TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
-  changedBy      User           @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
-
-  @@index([translationKeyId, changedAt])
-  @@index([changedByUserId, changedAt])
-  @@map("translation_history")
+  @@unique([organizationId, key])
+  @@index([organizationId, category])
+  @@map("organization_settings")
 }
