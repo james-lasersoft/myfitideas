@@ -29,6 +29,7 @@ const catalog = [
   ["hydration.goalUpdateFailed", "Unable to update the hydration goal.", "hydration", "Não foi possível atualizar a meta de hidratação."],
   ["hydration.entryDeleted", "Hydration entry deleted successfully.", "hydration", "Registro de hidratação excluído com sucesso."],
   ["hydration.deleteFailed", "Unable to delete hydration entry.", "hydration", "Não foi possível excluir o registro de hidratação."],
+  ["hydration.goal", "Goal", "hydration", "Meta"],
   ["hydration.goalPrefix", "Goal:", "hydration", "Meta:"],
   ["hydration.dailyGoalOpen", "Daily Goal (", "hydration", "Meta Diária ("],
   ["hydration.noTotal", "No hydration total is available.", "hydration", "Nenhum total de hidratação está disponível."],
