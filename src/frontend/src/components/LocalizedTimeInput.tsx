@@ -13,27 +13,14 @@ export default function LocalizedTimeInput({
   required = false,
   onChange,
 }: LocalizedTimeInputProps) {
-  if (timeFormat === "24") {
-    return (
-      <input
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        required={required}
-        value={value}
-        placeholder="HH:mm"
-        pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-        data-no-translate
-        onChange={(event) => onChange(event.target.value)}
-      />
-    );
-  }
-
   return (
     <input
       type="time"
       required={required}
       value={value}
+      step={60}
+      lang={timeFormat === "24" ? "en-GB" : "en-US"}
+      data-time-format={timeFormat}
       onChange={(event) => onChange(event.target.value)}
     />
   );
