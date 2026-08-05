@@ -16,10 +16,12 @@ enum TranslationStatus {
 }
 
 enum UserStatus {
+  PENDING_VERIFICATION
   ACTIVE
   INACTIVE
   INVITED
   SUSPENDED
+  CLOSED
 }
 
 enum MembershipStatus {
