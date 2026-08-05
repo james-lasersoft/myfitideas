@@ -47,6 +47,20 @@ const catalog = [
   ["public.checkoutDescription", "This route is reserved for verified billing outcomes when checkout is introduced.", "public", "Esta rota está reservada para resultados de cobrança verificados quando o checkout for introduzido."],
   ["public.privacyDescription", "The public privacy notice and versioned consent language will be published here before customer launch.", "public", "O aviso público de privacidade e a linguagem de consentimento versionada serão publicados aqui antes do lançamento ao cliente."],
   ["public.termsDescription", "The public terms of service and effective version will be published here before customer launch.", "public", "Os termos públicos de serviço e a versão vigente serão publicados aqui antes do lançamento ao cliente."],
+  ["public.detailFeaturesTitle", "Features built around your whole journey", "public", "Recursos criados para toda a sua jornada"],
+  ["public.detailSecureAccount", "Start with a secure account", "public", "Comece com uma conta segura"],
+  ["public.detailOnboarding", "Health measurements and goals are collected later through guided onboarding.", "public", "Medidas de saúde e metas são coletadas depois, por meio de um onboarding guiado."],
+  ["public.detailPricingTitle", "Choose the experience that fits your journey", "public", "Escolha a experiência que combina com sua jornada"],
+  ["public.detailPremium", "Planned premium experience", "public", "Experiência premium planejada"],
+  ["public.detailPricingComing", "Pricing coming before billing launch", "public", "Preços serão divulgados antes do lançamento da cobrança"],
+  ["public.detailSeparateStates", "Creating an account does not create a paid subscription. Account status and subscription status remain separate.", "public", "Criar uma conta não gera uma assinatura paga. O status da conta e o status da assinatura permanecem separados."],
+  ["public.detailCheckoutResult", "Checkout result", "public", "Resultado do checkout"],
+  ["public.detailReturnPricing", "Return to Pricing", "public", "Voltar aos Preços"],
+  ["public.detailVersion", "Version", "public", "Versão"],
+  ["public.detailEffectiveDate", "Effective date", "public", "Data de vigência"],
+  ["public.detailNotEffective", "Not yet effective", "public", "Ainda não vigente"],
+  ["public.detailLegalReview", "Legal review required before launch", "public", "Revisão jurídica necessária antes do lançamento"],
+  ["public.detailLegalDraft", "This is a product-design draft and is not the final legally approved policy.", "public", "Este é um rascunho de design do produto e não representa a política final aprovada juridicamente."],
 ] as const;
 
 async function main() {
