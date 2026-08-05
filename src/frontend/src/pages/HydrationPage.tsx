@@ -7,6 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import LocalizedTimeInput from "../components/LocalizedTimeInput";
 import {
   createHydrationEntry,
   deleteHydrationEntry,
@@ -21,10 +22,22 @@ import {
   updateProfile,
   type UserProfile,
 } from "../services/profileService";
+import {
+  currentTimeInputValue,
+  formatUserDate,
+  formatUserTime,
+  type LocalizationPreferences,
+} from "../utils/localizationFormat";
 import "./HydrationPage.css";
 
 const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
 const ARC_LENGTH = 75;
+const FALLBACK_LOCALIZATION_PREFERENCES: LocalizationPreferences = {
+  preferredLanguage: "en",
+  preferredDateFormat: "LOCALE",
+  preferredTimeFormat: "12",
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+};
 
 interface RememberedEntry {
   amount: number;
@@ -34,13 +47,6 @@ interface RememberedEntry {
 function getLocalDateValue(date = new Date()): string {
   const timezoneOffset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
-}
-
-function getLocalTimeValue(date = new Date()): string {
-  return [
-    date.getHours().toString().padStart(2, "0"),
-    date.getMinutes().toString().padStart(2, "0"),
-  ].join(":");
 }
 
 function createLoggedAt(dateValue: string, timeValue: string): string {
@@ -55,7 +61,10 @@ function createLoggedAt(dateValue: string, timeValue: string): string {
   return loggedAt.toISOString();
 }
 
-function getDateGroupLabel(dateKey: string): string {
+function getDateGroupLabel(
+  dateKey: string,
+  preferences: LocalizationPreferences
+): string {
   const today = getLocalDateValue();
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -65,11 +74,7 @@ function getDateGroupLabel(dateKey: string): string {
   if (dateKey === yesterday) return "Yesterday";
 
   const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString([], {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatUserDate(new Date(year, month - 1, day), preferences);
 }
 
 function getRememberedEntry(): RememberedEntry | null {
@@ -112,7 +117,7 @@ export default function HydrationPage() {
   const [unit, setUnit] = useState<HydrationUnit>("oz");
   const [summaryDate, setSummaryDate] = useState(getLocalDateValue());
   const [entryDate, setEntryDate] = useState(getLocalDateValue());
-  const [entryTime, setEntryTime] = useState(getLocalTimeValue());
+  const [entryTime, setEntryTime] = useState(currentTimeInputValue());
   const [goalInput, setGoalInput] = useState("");
 
   const [message, setMessage] = useState("");
@@ -123,6 +128,8 @@ export default function HydrationPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAddAnother, setShowAddAnother] = useState(false);
 
+  const localizationPreferences: LocalizationPreferences =
+    profile ?? FALLBACK_LOCALIZATION_PREFERENCES;
   const preferredUnit = profile?.preferredHydrationUnit ?? "oz";
   const goal = profile?.dailyHydrationGoal ?? 0;
   const primaryTotal =
@@ -197,6 +204,7 @@ export default function HydrationPage() {
 
         setProfile(loadedProfile);
         setUnit(loadedProfile.preferredHydrationUnit);
+        setEntryTime(currentTimeInputValue(loadedProfile));
         setGoalInput(loadedProfile.dailyHydrationGoal.toString());
         setEntries(hydrationEntries);
         setDailyTotal(total);
@@ -244,7 +252,7 @@ export default function HydrationPage() {
       }
 
       setAmount("");
-      setEntryTime(getLocalTimeValue());
+      setEntryTime(currentTimeInputValue(localizationPreferences));
       setSummaryDate(entryDate);
       setMessage(`${entryAmount} ${entryUnit} added successfully.`);
       setShowAddAnother(true);
@@ -538,11 +546,11 @@ export default function HydrationPage() {
 
               <label>
                 Entry Time
-                <input
-                  type="time"
+                <LocalizedTimeInput
                   required
                   value={entryTime}
-                  onChange={(event) => setEntryTime(event.target.value)}
+                  timeFormat={localizationPreferences.preferredTimeFormat}
+                  onChange={setEntryTime}
                 />
               </label>
             </div>
@@ -561,7 +569,7 @@ export default function HydrationPage() {
                   onClick={() => {
                     setMessage("");
                     setShowAddAnother(false);
-                    setEntryTime(getLocalTimeValue());
+                    setEntryTime(currentTimeInputValue(localizationPreferences));
                     amountInputRef.current?.focus();
                   }}
                 >
@@ -588,18 +596,13 @@ export default function HydrationPage() {
           <div className="hydration-history">
             {Object.entries(groupedEntries).map(([dateKey, dateEntries]) => (
               <section key={dateKey} className="hydration-date-group">
-                <h3>{getDateGroupLabel(dateKey)}</h3>
+                <h3>{getDateGroupLabel(dateKey, localizationPreferences)}</h3>
                 <div className="hydration-date-group-items">
                   {dateEntries.map((entry) => (
                     <article key={entry.id} className="history-item hydration-history-item">
                       <div>
                         <strong>{entry.amount} {entry.unit}</strong>
-                        <p>
-                          {new Date(entry.loggedAt).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                        <p>{formatUserTime(entry.loggedAt, localizationPreferences)}</p>
                       </div>
                       <button
                         type="button"
