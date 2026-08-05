@@ -6,6 +6,7 @@ import './styles/brand-components.css'
 import './styles/all-pages-brand.css'
 import './styles/premium-polish.css'
 import './styles/locale.css'
+import './styles/hydration-compact-gauge.css'
 import { LocaleProvider } from './i18n/LocaleContext'
 import App from './App.tsx'
 
