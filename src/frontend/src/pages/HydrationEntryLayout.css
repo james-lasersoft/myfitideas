@@ -81,7 +81,7 @@
 
 .hydration-page .beverage-selector-button,
 .hydration-page .beverage-more-control {
-  min-height: 4.35rem;
+  min-height: 4.7rem;
   color: #166534 !important;
   background: #f8fff9 !important;
   border: 1px solid #9fceb0 !important;
@@ -90,18 +90,43 @@
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
+.hydration-page .beverage-selector-button {
+  display: grid !important;
+  grid-template-rows: auto 1fr;
+  place-items: center;
+  align-content: center;
+  gap: 0.3rem;
+  padding: 0.55rem 0.45rem !important;
+}
+
 .hydration-page .beverage-selector-button:hover,
 .hydration-page .beverage-more-control:hover {
+  color: #14532d !important;
   background: #edf9f0 !important;
   border-color: #4f9f67 !important;
   transform: translateY(-1px);
 }
 
-.hydration-page .beverage-selector-button.selected {
+.hydration-page .beverage-selector-button.selected,
+.hydration-page .beverage-selector-button[aria-pressed="true"],
+.hydration-page .beverage-selector-button.selected:hover,
+.hydration-page .beverage-selector-button[aria-pressed="true"]:hover,
+.hydration-page .beverage-selector-button.selected:focus-visible,
+.hydration-page .beverage-selector-button[aria-pressed="true"]:focus-visible,
+.hydration-page .beverage-selector-button.selected:active,
+.hydration-page .beverage-selector-button[aria-pressed="true"]:active {
   color: #ffffff !important;
   background: #166534 !important;
   border-color: #14532d !important;
-  box-shadow: 0 8px 18px rgba(22, 101, 52, 0.2) !important;
+  box-shadow: 0 8px 18px rgba(22, 101, 52, 0.24) !important;
+  transform: translateY(-1px);
+}
+
+.hydration-page .beverage-selector-button:not([aria-pressed="true"]):focus-visible {
+  color: #14532d !important;
+  background: #f8fff9 !important;
+  border-color: #15803d !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16) !important;
 }
 
 .hydration-page .beverage-selector-button > span,
@@ -109,10 +134,26 @@
   font-size: 1.45rem;
 }
 
+.hydration-page .beverage-selector-button > span {
+  grid-row: 2;
+  line-height: 1;
+}
+
 .hydration-page .beverage-selector-button small,
 .hydration-page .beverage-more-control small {
-  color: inherit;
+  color: inherit !important;
   font-weight: 800;
+}
+
+.hydration-page .beverage-selector-button small {
+  grid-row: 1;
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hydration-page .beverage-more-control select {
