@@ -3,23 +3,25 @@
   min-height: calc(100vh - var(--member-toolbar-height, 0px));
   margin: 0 auto;
   padding: 2rem 0 4rem;
-  color: var(--workspace-text, var(--brand-charcoal));
+  color: var(--workspace-text, var(--mfi-charcoal));
 }
 
 .app-page-administration {
-  --workspace-primary: var(--admin-primary);
-  --workspace-secondary: var(--admin-secondary);
-  --workspace-background: var(--admin-background);
-  --workspace-surface: var(--admin-surface);
-  --workspace-text: var(--admin-text);
+  --workspace-primary: var(--workspace-admin-primary);
+  --workspace-secondary: var(--workspace-admin-secondary);
+  --workspace-background: var(--workspace-admin-background);
+  --workspace-surface: var(--workspace-admin-surface);
+  --workspace-text: var(--workspace-admin-text);
+  --workspace-border: var(--workspace-admin-border);
 }
 
 .app-page-personal {
-  --workspace-primary: var(--personal-primary);
-  --workspace-secondary: var(--personal-accent);
-  --workspace-background: var(--personal-background);
-  --workspace-surface: var(--personal-surface);
-  --workspace-text: var(--personal-text);
+  --workspace-primary: var(--workspace-member-primary);
+  --workspace-secondary: var(--workspace-member-accent);
+  --workspace-background: var(--workspace-member-background);
+  --workspace-surface: var(--workspace-member-surface);
+  --workspace-text: var(--workspace-member-text);
+  --workspace-border: var(--workspace-member-border);
 }
 
 .app-page-header {
@@ -29,7 +31,7 @@
   gap: 1.5rem;
   margin-bottom: 1.5rem;
   padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(100, 116, 139, 0.22);
+  border: 1px solid var(--workspace-border, rgba(100, 116, 139, 0.22));
   border-radius: 16px;
   background: var(--workspace-surface, #fff);
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
@@ -64,7 +66,7 @@
 .app-card,
 .app-section-card,
 .app-metric-card {
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  border: 1px solid var(--workspace-border, rgba(100, 116, 139, 0.2));
   border-radius: 14px;
   background: var(--workspace-surface, #fff);
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
