@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocale } from "../i18n/LocaleContext";
 import type { PreferredTimeFormat } from "../services/profileService";
 import "./LocalizedTimeInput.css";
@@ -31,7 +31,7 @@ function displayTime(hour: number, minute: number, is24Hour: boolean): string {
   return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${period}`;
 }
 
-function clockPosition(index: number, total: number, radius: number): React.CSSProperties {
+function clockPosition(index: number, total: number, radius: number): CSSProperties {
   const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
   return {
     left: `calc(50% + ${Math.cos(angle) * radius}px)`,
@@ -56,6 +56,7 @@ export default function LocalizedTimeInput({
 
   useEffect(() => {
     if (!open) return;
+    dialogRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
@@ -82,11 +83,8 @@ export default function LocalizedTimeInput({
   };
 
   const selectHour = (selected: number) => {
-    if (is24Hour) {
-      setDraftHour(selected);
-    } else {
-      setDraftHour((selected % 12) + (period === "PM" ? 12 : 0));
-    }
+    if (is24Hour) setDraftHour(selected);
+    else setDraftHour((selected % 12) + (period === "PM" ? 12 : 0));
     setStep("minute");
   };
 
@@ -101,14 +99,7 @@ export default function LocalizedTimeInput({
 
   return (
     <>
-      <button
-        type="button"
-        className="localized-time-trigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={t("Entry Time")}
-        onClick={openPicker}
-      >
+      <button type="button" className="localized-time-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={t("Entry Time")} onClick={openPicker}>
         <span>{displayTime(current.hour, current.minute, is24Hour)}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
       </button>
@@ -116,7 +107,7 @@ export default function LocalizedTimeInput({
 
       {open && (
         <div className="localized-time-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
-          <div ref={dialogRef} className="localized-time-dialog" role="dialog" aria-modal="true" aria-label={t("Select time")}>
+          <div ref={dialogRef} className="localized-time-dialog" role="dialog" aria-modal="true" aria-label={t("Select time")} tabIndex={-1}>
             <div className="localized-time-display">
               <button type="button" className={step === "hour" ? "active" : ""} onClick={() => setStep("hour")}>{String(displayHour).padStart(is24Hour ? 2 : 1, "0")}</button>
               <span>:</span>
@@ -136,29 +127,9 @@ export default function LocalizedTimeInput({
                 const positionIndex = is24Hour ? option % 12 : index;
                 const radius = is24Hour && !outer ? 66 : 102;
                 const selected = option === draftHour || (!is24Hour && option === displayHour);
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    className={selected ? "selected" : ""}
-                    style={clockPosition(positionIndex, 12, radius)}
-                    aria-label={`${t("Hour")} ${option}`}
-                    onClick={() => selectHour(option)}
-                  >
-                    {String(option).padStart(is24Hour ? 2 : 1, "0")}
-                  </button>
-                );
+                return <button key={option} type="button" className={selected ? "selected" : ""} style={clockPosition(positionIndex, 12, radius)} aria-label={`${t("Hour")} ${option}`} onClick={() => selectHour(option)}>{String(option).padStart(is24Hour ? 2 : 1, "0")}</button>;
               }) : minuteOptions.map((option, index) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={option === draftMinute ? "selected" : ""}
-                  style={clockPosition(index, 12, 102)}
-                  aria-label={`${t("Minute")} ${option}`}
-                  onClick={() => setDraftMinute(option)}
-                >
-                  {String(option).padStart(2, "0")}
-                </button>
+                <button key={option} type="button" className={option === draftMinute ? "selected" : ""} style={clockPosition(index, 12, 102)} aria-label={`${t("Minute")} ${option}`} onClick={() => setDraftMinute(option)}>{String(option).padStart(2, "0")}</button>
               ))}
               <span className="localized-clock-center" />
             </div>
