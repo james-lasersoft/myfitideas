@@ -1,0 +1,42 @@
+:root {
+  /* Brand v1.0 */
+  --mfi-deep-stem: #1f8b43;
+  --mfi-top-leaf: #48be30;
+  --mfi-growth: #5fcb3c;
+  --mfi-spring-bud: #a6e84a;
+  --mfi-charcoal: #263238;
+  --mfi-morning-dew: #f5fdf0;
+  --mfi-white: #ffffff;
+
+  /* Personal workspace */
+  --workspace-member-primary: var(--mfi-deep-stem);
+  --workspace-member-primary-dark: #176d34;
+  --workspace-member-accent: var(--mfi-top-leaf);
+  --workspace-member-highlight: var(--mfi-spring-bud);
+  --workspace-member-background: var(--mfi-morning-dew);
+  --workspace-member-surface: var(--mfi-white);
+  --workspace-member-text: var(--mfi-charcoal);
+  --workspace-member-border: #dbe5df;
+  --workspace-member-shadow-rgb: 31 81 52;
+
+  /* Administration workspace */
+  --workspace-admin-primary: #17324f;
+  --workspace-admin-secondary: #244866;
+  --workspace-admin-slate: #334155;
+  --workspace-admin-background: #f7f9fc;
+  --workspace-admin-surface: var(--mfi-white);
+  --workspace-admin-text: #1f2937;
+  --workspace-admin-border: #d8e0e8;
+  --workspace-admin-shadow-rgb: 17 36 56;
+
+  /* Shared workspace chrome */
+  --workspace-control-surface: rgb(255 255 255 / 96%);
+  --workspace-control-border: rgb(255 255 255 / 22%);
+  --workspace-logo-surface: rgb(255 255 255 / 94%);
+}
+
+html[data-theme="dark"] {
+  --workspace-control-surface: rgb(20 31 43 / 96%);
+  --workspace-control-border: rgb(255 255 255 / 18%);
+  --workspace-logo-surface: rgb(246 249 247 / 96%);
+}
