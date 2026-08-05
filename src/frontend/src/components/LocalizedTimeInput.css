@@ -110,7 +110,7 @@
   width: 17rem;
   height: 17rem;
   margin: 0 auto;
-  background: #f1f8f3;
+  background: #f6fbf7;
   border: 1px solid #d7eadc;
   border-radius: 50%;
 }
@@ -124,21 +124,31 @@
   height: 2.15rem;
   padding: 0;
   color: #244c32;
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  box-shadow: none;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
   font-size: 0.8rem;
   font-weight: 800;
   transform: translate(-50%, -50%);
+  transition: color 120ms ease, transform 120ms ease;
 }
 
 .localized-clock-face > button:hover,
-.localized-clock-face > button:focus-visible,
-.localized-clock-face > button.selected {
-  color: #ffffff;
-  background: #166534;
+.localized-clock-face > button:focus-visible {
+  color: #15803d;
+  background: transparent !important;
   outline: none;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.localized-clock-face > button.selected {
+  color: #14532d;
+  background: transparent !important;
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18rem;
 }
 
 .localized-clock-hand {
@@ -151,18 +161,6 @@
   background: #72b487;
   transform-origin: 50% 0;
   pointer-events: none;
-}
-
-.localized-clock-center {
-  position: absolute;
-  z-index: 3;
-  top: 50%;
-  left: 50%;
-  width: 0.55rem;
-  height: 0.55rem;
-  background: #166534;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .localized-time-actions {
@@ -192,5 +190,9 @@
 @media (prefers-reduced-motion: reduce) {
   .localized-time-backdrop {
     backdrop-filter: none;
+  }
+
+  .localized-clock-face > button {
+    transition: none;
   }
 }
