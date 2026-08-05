@@ -120,6 +120,10 @@ export default function HydrationPageV2() {
   const primaryTotal = preferredUnit === "ml" ? dailyTotal?.totalMl ?? 0 : dailyTotal?.totalOz ?? 0;
   const selectedBeverage = BEVERAGES.find((item) => item.id === selectedBeverageId) ?? BEVERAGES[0];
   const selectedCoefficientPercent = Math.round(selectedBeverage.coefficient * 100);
+  const selectedEntryCount = useMemo(
+    () => entries.filter((entry) => localDateValue(new Date(entry.loggedAt)) === summaryDate).length,
+    [entries, summaryDate]
+  );
 
   const visibleBeverages = useMemo(() => {
     const defaults = ["water", "coffee", "tea", "sports-drink", "milk"];
@@ -255,7 +259,7 @@ export default function HydrationPageV2() {
       <section className="hydration-workspace">
         <article className="dashboard-card hydration-progress-card">
           <div className="hydration-card-heading">
-            <div><h2>Daily Progress</h2><p>{dailyTotal?.entries.length ?? 0} {(dailyTotal?.entries.length ?? 0) === 1 ? "entry" : "entries"}</p></div>
+            <div><h2>Daily Progress</h2><p>{selectedEntryCount} {selectedEntryCount === 1 ? "entry" : "entries"}</p></div>
             <label className="hydration-date-filter">Select Date<input type="date" value={summaryDate} max={localDateValue()} onChange={(event) => { setIsLoading(true); setError(""); setSummaryDate(event.target.value); }} /></label>
           </div>
           {isLoading ? <p className="hydration-loading">Loading daily total...</p> : dailyTotal ? (
