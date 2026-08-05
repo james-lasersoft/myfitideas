@@ -1,0 +1,89 @@
+.hydration-history-day-header,
+.hydration-history-main {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(5.5rem, 0.7fr) minmax(6rem, 1fr) minmax(5.5rem, 0.8fr) minmax(6rem, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hydration-history-day-header {
+  padding: 0.45rem 4.8rem 0.45rem 0.8rem;
+  color: #64748b;
+  background: #f8fbf9;
+  border-bottom: 1px solid #e4eee7;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hydration-history-day-header span:first-child {
+  grid-column: 2;
+}
+
+.hydration-history-item {
+  min-height: 2.35rem;
+  padding: 0.35rem 0.8rem;
+}
+
+.hydration-history-main {
+  min-width: 0;
+}
+
+.hydration-history-beverage {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.hydration-history-time,
+.hydration-history-value {
+  min-width: 0;
+  margin: 0;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hydration-history-value {
+  color: #163324;
+}
+
+.hydration-history-effective-value {
+  color: #166534;
+  font-weight: 800;
+}
+
+.hydration-history-item .delete-button {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 760px) {
+  .hydration-history-day-header,
+  .hydration-history-main {
+    grid-template-columns: 2rem minmax(4.5rem, 0.8fr) minmax(5.2rem, 1fr) minmax(4.5rem, 0.8fr) minmax(5.2rem, 1fr);
+    gap: 0.45rem;
+  }
+
+  .hydration-history-day-header {
+    padding-right: 4.2rem;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .hydration-date-group {
+    overflow-x: auto;
+  }
+
+  .hydration-history-day-header,
+  .hydration-history-main {
+    min-width: 31rem;
+  }
+}
