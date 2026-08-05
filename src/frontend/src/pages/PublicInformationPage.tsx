@@ -1,6 +1,7 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useLocale } from "../i18n/LocaleContext";
 import "./PublicPages.css";
+import "./PublicDetailPages.css";
 
 const featureGroups = [
   ["Body tracking", "Record weight, body measurements, hydration, and progress history in one consistent place."],
