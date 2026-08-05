@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type PointerEvent } from "react";
+import { useLocale } from "../i18n/LocaleContext";
 import type { HydrationEntry, HydrationUnit } from "../services/hydrationService";
 
 const ARC_LENGTH = 75;
@@ -10,6 +11,7 @@ const ARC_LABEL_RADIUS = 143;
 const ARC_LEVELS = [0, 25, 50, 75, 100] as const;
 
 type ProgressMode = "daily" | "weekly";
+type TooltipKind = "consumed" | "effective" | null;
 
 interface HydrationProgressVisualizationProps {
   entries: HydrationEntry[];
@@ -26,6 +28,12 @@ interface WeeklyDay {
   total: number;
 }
 
+interface TooltipState {
+  kind: TooltipKind;
+  x: number;
+  y: number;
+}
+
 function localDateKey(date: Date): string {
   const offset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
@@ -34,6 +42,10 @@ function localDateKey(date: Date): string {
 function convertAmount(amount: number, from: HydrationUnit, to: HydrationUnit): number {
   if (from === to) return amount;
   return to === "ml" ? amount * ML_PER_OUNCE : amount / ML_PER_OUNCE;
+}
+
+function fromMilliliters(amountMl: number, unit: HydrationUnit): number {
+  return unit === "ml" ? amountMl : amountMl / ML_PER_OUNCE;
 }
 
 function formatAmount(value: number, unit: HydrationUnit): string {
@@ -55,10 +67,30 @@ export default function HydrationProgressVisualization({
   selectedDate,
   dailyTotal,
 }: HydrationProgressVisualizationProps) {
+  const { t } = useLocale();
   const [mode, setMode] = useState<ProgressMode>("daily");
-  const rawGoalProgress = goal > 0 ? (dailyTotal / goal) * 100 : 0;
-  const goalProgress = Math.min(rawGoalProgress, 100);
-  const progressArc = (goalProgress / 100) * ARC_LENGTH;
+  const [tooltip, setTooltip] = useState<TooltipState>({ kind: null, x: 180, y: 42 });
+
+  const selectedEntries = useMemo(
+    () => entries.filter((entry) => localDateKey(new Date(entry.loggedAt)) === selectedDate),
+    [entries, selectedDate]
+  );
+
+  const effectiveTotal = useMemo(
+    () => selectedEntries.reduce(
+      (total, entry) => total + fromMilliliters(entry.effectiveAmountMl ?? entry.amountMl, preferredUnit),
+      0
+    ),
+    [preferredUnit, selectedEntries]
+  );
+
+  const consumedGoalProgress = goal > 0 ? (dailyTotal / goal) * 100 : 0;
+  const effectiveGoalProgress = goal > 0 ? (effectiveTotal / goal) * 100 : 0;
+  const cappedConsumedProgress = Math.min(consumedGoalProgress, 100);
+  const cappedEffectiveProgress = Math.min(effectiveGoalProgress, 100);
+  const consumedArc = (cappedConsumedProgress / 100) * ARC_LENGTH;
+  const effectiveArc = (cappedEffectiveProgress / 100) * ARC_LENGTH;
+  const remaining = Math.max(goal - effectiveTotal, 0);
 
   const weeklyDays = useMemo<WeeklyDay[]>(() => {
     const [year, month, day] = selectedDate.split("-").map(Number);
@@ -67,10 +99,7 @@ export default function HydrationProgressVisualization({
 
     entries.forEach((entry) => {
       const key = localDateKey(new Date(entry.loggedAt));
-      totals.set(
-        key,
-        (totals.get(key) ?? 0) + convertAmount(entry.amount, entry.unit, preferredUnit)
-      );
+      totals.set(key, (totals.get(key) ?? 0) + convertAmount(entry.amount, entry.unit, preferredUnit));
     });
 
     return Array.from({ length: 7 }, (_, index) => {
@@ -88,125 +117,111 @@ export default function HydrationProgressVisualization({
 
   const chartMaximum = Math.max(goal, ...weeklyDays.map((day) => day.total), 1);
 
+  const showPointerTooltip = (kind: Exclude<TooltipKind, null>, event: PointerEvent<SVGCircleElement>) => {
+    const bounds = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+    if (!bounds) return;
+    setTooltip({
+      kind,
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    });
+  };
+
+  const tooltipTitle = tooltip.kind === "effective" ? t("Effective hydration") : t("Beverages consumed");
+  const tooltipValue = tooltip.kind === "effective" ? effectiveTotal : dailyTotal;
+
   return (
     <div className="hydration-progress-visualization">
-      <div className="hydration-progress-toggle" role="group" aria-label="Progress view">
-        <button
-          type="button"
-          className={mode === "daily" ? "selected" : ""}
-          aria-pressed={mode === "daily"}
-          onClick={() => setMode("daily")}
-        >
-          Daily
+      <div className="hydration-progress-toggle" role="group" aria-label={t("Progress view")}>
+        <button type="button" className={mode === "daily" ? "selected" : ""} aria-pressed={mode === "daily"} onClick={() => setMode("daily")}>
+          {t("Daily")}
         </button>
-        <button
-          type="button"
-          className={mode === "weekly" ? "selected" : ""}
-          aria-pressed={mode === "weekly"}
-          onClick={() => setMode("weekly")}
-        >
-          7 Days
+        <button type="button" className={mode === "weekly" ? "selected" : ""} aria-pressed={mode === "weekly"} onClick={() => setMode("weekly")}>
+          {t("7 Days")}
         </button>
       </div>
 
       {mode === "daily" ? (
-        <div
-          className="hydration-gauge"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(goalProgress)}
-        >
-          <svg viewBox="0 0 360 300" aria-hidden="true">
-            <defs>
-              <linearGradient id="hydrationArcGradient" x1="0" y1="1" x2="1" y2="0">
-                <stop offset="0%" stopColor="#a3e635" />
-                <stop offset="38%" stopColor="#4ade80" />
-                <stop offset="72%" stopColor="#16a34a" />
-                <stop offset="100%" stopColor="#047857" />
-              </linearGradient>
-              <filter id="hydrationArcGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
+        <div className="hydration-gauge" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(cappedEffectiveProgress)}>
+          <svg viewBox="0 0 360 300" aria-hidden="false">
+            <circle className="hydration-gauge-track" cx={ARC_CENTER_X} cy={ARC_CENTER_Y} r={ARC_RADIUS} pathLength="100" transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`} />
             <circle
-              className="hydration-gauge-track"
+              className="hydration-gauge-consumed"
               cx={ARC_CENTER_X}
               cy={ARC_CENTER_Y}
               r={ARC_RADIUS}
               pathLength="100"
               transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`}
+              style={{ strokeDasharray: `${consumedArc} ${100 - consumedArc}` }}
+              tabIndex={0}
+              role="img"
+              aria-label={`${t("Beverages consumed")}: ${formatAmount(dailyTotal, preferredUnit)} ${preferredUnit}`}
+              onPointerEnter={(event) => showPointerTooltip("consumed", event)}
+              onPointerMove={(event) => showPointerTooltip("consumed", event)}
+              onPointerLeave={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onFocus={() => setTooltip({ kind: "consumed", x: 180, y: 45 })}
+              onBlur={() => setTooltip((current) => ({ ...current, kind: null }))}
             />
             <circle
-              className="hydration-gauge-progress"
+              className="hydration-gauge-effective"
               cx={ARC_CENTER_X}
               cy={ARC_CENTER_Y}
               r={ARC_RADIUS}
               pathLength="100"
               transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`}
-              style={{ strokeDasharray: `${progressArc} ${100 - progressArc}` }}
+              style={{ strokeDasharray: `${effectiveArc} ${100 - effectiveArc}` }}
+              tabIndex={0}
+              role="img"
+              aria-label={`${t("Effective hydration")}: ${formatAmount(effectiveTotal, preferredUnit)} ${preferredUnit}`}
+              onPointerEnter={(event) => showPointerTooltip("effective", event)}
+              onPointerMove={(event) => showPointerTooltip("effective", event)}
+              onPointerLeave={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onFocus={() => setTooltip({ kind: "effective", x: 180, y: 45 })}
+              onBlur={() => setTooltip((current) => ({ ...current, kind: null }))}
             />
             {ARC_LEVELS.map((level) => {
               const vertex = getArcPoint(level, ARC_RADIUS);
               const label = getArcPoint(level, ARC_LABEL_RADIUS);
               return (
                 <g key={level}>
-                  <circle
-                    className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
-                    cx={vertex.x}
-                    cy={vertex.y}
-                    r="5"
-                  />
-                  <text
-                    className="hydration-arc-label"
-                    x={label.x}
-                    y={label.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {level}%
-                  </text>
+                  <circle className={level <= cappedEffectiveProgress ? "hydration-level hydration-level-active" : "hydration-level"} cx={vertex.x} cy={vertex.y} r="5" />
+                  <text className="hydration-arc-label" x={label.x} y={label.y} textAnchor="middle" dominantBaseline="middle">{level}%</text>
                 </g>
               );
             })}
           </svg>
 
+          {tooltip.kind && (
+            <div className="hydration-arc-tooltip" role="status" style={{ left: tooltip.x, top: tooltip.y }}>
+              <strong>{tooltipTitle}</strong>
+              <span>{formatAmount(tooltipValue, preferredUnit)} {preferredUnit}</span>
+              {tooltip.kind === "effective" ? (
+                <small>{Math.round(effectiveGoalProgress)}% {t("of goal")}</small>
+              ) : (
+                <small>{formatAmount(effectiveTotal, preferredUnit)} {preferredUnit} {t("effective")}</small>
+              )}
+            </div>
+          )}
+
           <div className="hydration-gauge-content">
-            <strong>{formatAmount(dailyTotal, preferredUnit)}</strong>
+            <strong>{formatAmount(effectiveTotal, preferredUnit)}</strong>
             <span className="hydration-gauge-unit">{preferredUnit}</span>
-            <p>Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
-            <b>{Math.round(rawGoalProgress)}%</b>
+            <p>{t("Goal:")} {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
+            <b>{Math.round(effectiveGoalProgress)}%</b>
           </div>
+          <span className="hydration-gauge-remaining" aria-label={`${t("Remaining to goal")}: ${formatAmount(remaining, preferredUnit)} ${preferredUnit}`} />
         </div>
       ) : (
-        <div className="hydration-weekly-chart" aria-label="Last 7 days hydration">
+        <div className="hydration-weekly-chart" aria-label={t("Last 7 days hydration")}>
           <div className="hydration-weekly-plot">
-            {goal > 0 && (
-              <div
-                className="hydration-weekly-goal-line"
-                style={{ bottom: `${Math.min((goal / chartMaximum) * 100, 100)}%` }}
-              >
-                <span>Goal</span>
-              </div>
-            )}
+            {goal > 0 && <div className="hydration-weekly-goal-line" style={{ bottom: `${Math.min((goal / chartMaximum) * 100, 100)}%` }}><span>{t("Goal")}</span></div>}
             {weeklyDays.map((day) => {
               const height = day.total > 0 ? Math.max((day.total / chartMaximum) * 100, 3) : 0;
               const metGoal = goal > 0 && day.total >= goal;
               return (
                 <div className="hydration-weekly-column" key={day.dateKey}>
-                  <div className="hydration-weekly-value">
-                    {formatAmount(day.total, preferredUnit)}
-                  </div>
-                  <div className="hydration-weekly-bar-track">
-                    <div
-                      className={metGoal ? "hydration-weekly-bar goal-met" : "hydration-weekly-bar"}
-                      style={{ height: `${height}%` }}
-                    />
-                  </div>
+                  <div className="hydration-weekly-value">{formatAmount(day.total, preferredUnit)}</div>
+                  <div className="hydration-weekly-bar-track"><div className={metGoal ? "hydration-weekly-bar goal-met" : "hydration-weekly-bar"} style={{ height: `${height}%` }} /></div>
                   <strong>{day.dayLabel}</strong>
                   <span>{day.dateLabel}</span>
                 </div>
