@@ -1,51 +1,244 @@
 .hydration-page {
-  width: min(1180px, 100%);
+  width: min(1240px, 100%);
   margin: 0 auto;
 }
 
 .hydration-page .dashboard-header,
-.hydration-page .hydration-summary,
+.hydration-page .hydration-workspace,
 .hydration-page .hydration-history-card {
-  max-width: 1100px;
+  max-width: 1160px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .hydration-page .dashboard-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid color-mix(in srgb, var(--workspace-accent, #15803d) 16%, #e2e8f0);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
 }
 
-.hydration-summary {
+.hydration-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
   align-items: start;
+  gap: 1.25rem;
 }
 
-.hydration-total {
-  gap: 0.5rem;
+.hydration-progress-card,
+.hydration-entry-card {
+  min-width: 0;
 }
 
-.hydration-progress-header {
+.hydration-card-heading {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.hydration-card-heading h2,
+.hydration-card-heading p {
+  margin: 0;
+}
+
+.hydration-card-heading p {
+  margin-top: 0.25rem;
+  color: #64748b;
+}
+
+.hydration-date-filter {
+  display: grid;
+  gap: 0.35rem;
   color: #475569;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hydration-date-filter input {
+  min-width: 150px;
+  padding: 0.7rem 0.8rem;
+  color: #163324;
+  background: #f7fff9;
+  border: 1px solid #bbdfc5;
+  border-radius: 0.75rem;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.hydration-loading {
+  min-height: 30rem;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+}
+
+.hydration-gauge {
+  position: relative;
+  width: min(100%, 660px);
+  min-height: 490px;
+  margin: 0 auto;
+}
+
+.hydration-gauge svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.hydration-gauge-track,
+.hydration-gauge-progress {
+  fill: none;
+  stroke-width: 24;
+  stroke-linecap: round;
+}
+
+.hydration-gauge-track {
+  stroke: #e6f3e9;
+  stroke-dasharray: 75 25;
+}
+
+.hydration-gauge-progress {
+  stroke: url(#hydrationArcGradient);
+  filter: url(#hydrationArcGlow);
+  transition: stroke-dasharray 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: hydration-arc-flow 3.6s ease-in-out infinite alternate;
+}
+
+.hydration-level {
+  fill: #d8eadc;
+  stroke: #ffffff;
+  stroke-width: 3;
+  transition: fill 500ms ease, transform 500ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.hydration-level-active {
+  fill: #f7fee7;
+  stroke: #16a34a;
+  transform: scale(1.35);
+}
+
+.hydration-gauge-content {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: min(66%, 360px);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.hydration-gauge-date,
+.hydration-gauge-unit {
+  color: #166534;
+  font-weight: 800;
+}
+
+.hydration-gauge-content strong {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: #0f2f1f;
+  font-size: clamp(3.4rem, 8vw, 5.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.hydration-gauge-unit {
+  margin-left: 0.4rem;
+  font-size: 1.25rem;
+}
+
+.hydration-gauge-content p {
+  margin: 0.65rem 0 0;
+  color: #64748b;
   font-weight: 700;
 }
 
-.hydration-progress-track {
-  width: 100%;
-  height: 0.8rem;
-  overflow: hidden;
-  background: #e2e8f0;
+.hydration-gauge-content b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6rem;
+  margin-top: 0.8rem;
+  padding: 0.5rem 1rem;
+  color: #166534;
+  background: linear-gradient(135deg, #f7fee7, #dcfce7);
+  border: 1px solid #bbf7d0;
   border-radius: 999px;
+  font-size: 1.55rem;
 }
 
-.hydration-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #38bdf8, #2563eb);
-  border-radius: inherit;
-  transition: width 0.3s ease;
+.hydration-level-label {
+  position: absolute;
+  z-index: 2;
+  color: #667a6e;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.hydration-level-label-start {
+  left: 12%;
+  bottom: 9%;
+}
+
+.hydration-level-label-quarter {
+  left: 5%;
+  top: 51%;
+}
+
+.hydration-level-label-half {
+  left: 22%;
+  top: 16%;
+}
+
+.hydration-level-label-three-quarter {
+  right: 22%;
+  top: 16%;
+}
+
+.hydration-level-label-goal {
+  right: 8%;
+  top: 51%;
+}
+
+.hydration-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  margin-top: -1rem;
+  background: #fbfefc;
+  border: 1px solid #dbece0;
+  border-radius: 1rem;
+}
+
+.hydration-stat {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 1rem;
+  text-align: center;
+}
+
+.hydration-stat + .hydration-stat {
+  border-left: 1px solid #dbece0;
+}
+
+.hydration-stat span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hydration-stat strong {
+  overflow-wrap: anywhere;
+  color: #163324;
+  font-size: 1rem;
 }
 
 .hydration-goal-editor {
@@ -54,50 +247,59 @@
   align-items: end;
   gap: 0.75rem;
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fff9, #f1fbf4);
+  border: 1px solid #d7eadc;
+  border-radius: 1rem;
 }
 
-.hydration-goal-editor label {
+.hydration-goal-editor label,
+.hydration-form label {
   display: grid;
   gap: 0.4rem;
-  font-weight: 600;
-}
-
-.hydration-goal-editor input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-}
-
-.quick-add-section {
-  margin-bottom: 1.25rem;
-}
-
-.quick-add-section > span {
-  display: block;
-  margin-bottom: 0.6rem;
+  color: #334155;
   font-weight: 700;
+}
+
+.hydration-goal-editor input,
+.hydration-form input,
+.hydration-form select {
+  width: 100%;
+  padding: 0.78rem;
+  color: #172b20;
+  background: #ffffff;
+  border: 1px solid #c9ddce;
+  border-radius: 0.7rem;
 }
 
 .quick-add-buttons {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
 }
 
 .quick-add-button {
-  min-height: 3rem;
-  padding: 0.7rem 0.6rem;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe !important;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 3.25rem;
+  padding: 0.75rem;
+  color: #166534;
+  background: linear-gradient(135deg, #f7fee7, #ecfdf3);
+  border: 1px solid #bbdfc5 !important;
+  border-radius: 0.85rem;
+  font-weight: 800;
+}
+
+.quick-add-button span {
+  font-size: 1.05rem;
 }
 
 .quick-add-button:hover {
-  background: #dbeafe;
+  background: linear-gradient(135deg, #ecfccb, #dcfce7);
+  transform: translateY(-1px);
 }
 
 .quick-add-button:disabled {
@@ -105,10 +307,15 @@
   opacity: 0.6;
 }
 
+.hydration-form {
+  display: grid;
+  gap: 1rem;
+}
+
 .hydration-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .hydration-form-actions {
@@ -118,7 +325,11 @@
 }
 
 .hydration-form-actions button {
-  flex: 1 1 180px;
+  flex: 1 1 170px;
+}
+
+.hydration-history-card {
+  margin-top: 1.25rem;
 }
 
 .hydration-date-group {
@@ -139,14 +350,17 @@
 
 .hydration-date-group-items {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 .hydration-history-item {
-  background: #f8fafc;
+  background: #f8fcf9;
+  border: 1px solid #dcebe0;
 }
 
 .hydration-history-item strong {
+  color: #163324;
   font-size: 1.05rem;
 }
 
@@ -154,13 +368,46 @@
   color: #64748b;
 }
 
-@media (max-width: 800px) {
-  .quick-add-buttons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@keyframes hydration-arc-flow {
+  from {
+    filter: url(#hydrationArcGlow) saturate(0.95) brightness(0.98);
+  }
+  to {
+    filter: url(#hydrationArcGlow) saturate(1.22) brightness(1.08);
   }
 }
 
-@media (max-width: 700px) {
+@media (prefers-reduced-motion: reduce) {
+  .hydration-gauge-progress,
+  .hydration-level,
+  .quick-add-button {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .hydration-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .hydration-entry-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+    gap: 1.25rem;
+  }
+
+  .hydration-entry-card .hydration-card-heading {
+    grid-column: 1 / -1;
+  }
+
+  .quick-add-buttons {
+    align-content: start;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 760px) {
   .hydration-page {
     padding: 1rem;
   }
@@ -175,22 +422,71 @@
     width: 100%;
   }
 
+  .hydration-card-heading,
+  .hydration-entry-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hydration-date-filter,
+  .hydration-date-filter input {
+    width: 100%;
+  }
+
+  .hydration-gauge {
+    min-height: 390px;
+  }
+
+  .hydration-stat-grid,
+  .hydration-date-group-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hydration-stat:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #dbece0;
+  }
+
+  .hydration-stat:nth-child(4) {
+    border-top: 1px solid #dbece0;
+  }
+
   .hydration-form-grid,
   .hydration-goal-editor {
     grid-template-columns: 1fr;
   }
-
-  .hydration-history-item {
-    width: 100%;
-  }
-
-  .hydration-history-item .delete-button {
-    width: 100%;
-  }
 }
 
-@media (max-width: 420px) {
-  .quick-add-buttons {
+@media (max-width: 520px) {
+  .hydration-gauge {
+    min-height: 320px;
+  }
+
+  .hydration-gauge-content {
+    top: 43%;
+  }
+
+  .hydration-gauge-content strong {
+    font-size: 3rem;
+  }
+
+  .hydration-level-label {
+    display: none;
+  }
+
+  .quick-add-buttons,
+  .hydration-stat-grid,
+  .hydration-date-group-items {
     grid-template-columns: 1fr;
+  }
+
+  .hydration-stat + .hydration-stat {
+    border-left: 0;
+    border-top: 1px solid #dbece0;
+  }
+
+  .hydration-history-item,
+  .hydration-history-item .delete-button {
+    width: 100%;
   }
 }
