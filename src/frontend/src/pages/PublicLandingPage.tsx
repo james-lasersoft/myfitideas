@@ -20,10 +20,10 @@ export default function PublicLandingPage() {
           </div>
 
           <div className="public-hero-actions">
-            <Link className="public-primary-action" to="/signup">{t("Create Your Account")}</Link>
+            <Link className="public-primary-action" to="/create-account">{t("Create Your Account")}</Link>
             <Link className="public-secondary-action" to="/features">{t("Explore Features")}</Link>
           </div>
-          <p className="public-signup-note">{t("Initial signup collects only essential account, localization, and consent information. Measurements and goals belong in onboarding after verification or activation.")}</p>
+          <p className="public-signup-note">{t("Initial account creation collects only essential account, localization, and consent information. Measurements and goals belong in onboarding after verification or activation.")}</p>
         </div>
 
         <aside className="public-product-preview" aria-label={t("Platform highlights")}>
