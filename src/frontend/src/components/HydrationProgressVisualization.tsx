@@ -11,7 +11,7 @@ const ARC_LABEL_RADIUS = 143;
 const ARC_LEVELS = [0, 25, 50, 75, 100] as const;
 
 type ProgressMode = "daily" | "weekly";
-type TooltipKind = "consumed" | "effective" | null;
+type TooltipKind = "remaining" | "consumed" | "effective" | null;
 
 interface HydrationProgressVisualizationProps {
   entries: HydrationEntry[];
@@ -127,8 +127,18 @@ export default function HydrationProgressVisualization({
     });
   };
 
-  const tooltipTitle = tooltip.kind === "effective" ? t("Effective hydration") : t("Beverages consumed");
-  const tooltipValue = tooltip.kind === "effective" ? effectiveTotal : dailyTotal;
+  const hideTooltip = () => setTooltip((current) => ({ ...current, kind: null }));
+
+  const tooltipTitle = tooltip.kind === "effective"
+    ? t("Effective hydration")
+    : tooltip.kind === "consumed"
+      ? t("Beverages consumed")
+      : t("Remaining to goal");
+  const tooltipValue = tooltip.kind === "effective"
+    ? effectiveTotal
+    : tooltip.kind === "consumed"
+      ? dailyTotal
+      : remaining;
 
   return (
     <div className="hydration-progress-visualization">
@@ -142,9 +152,32 @@ export default function HydrationProgressVisualization({
       </div>
 
       {mode === "daily" ? (
-        <div className="hydration-gauge" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(cappedEffectiveProgress)}>
+        <div
+          className="hydration-gauge"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(cappedEffectiveProgress)}
+          aria-valuetext={`${formatAmount(effectiveTotal, preferredUnit)} ${preferredUnit} ${t("effective")}`}
+          onPointerLeave={hideTooltip}
+        >
           <svg viewBox="0 0 360 300" aria-hidden="false">
-            <circle className="hydration-gauge-track" cx={ARC_CENTER_X} cy={ARC_CENTER_Y} r={ARC_RADIUS} pathLength="100" transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`} />
+            <circle
+              className="hydration-gauge-track"
+              cx={ARC_CENTER_X}
+              cy={ARC_CENTER_Y}
+              r={ARC_RADIUS}
+              pathLength="100"
+              transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`}
+              tabIndex={0}
+              role="img"
+              aria-label={`${t("Remaining to goal")}: ${formatAmount(remaining, preferredUnit)} ${preferredUnit}`}
+              onPointerEnter={(event) => showPointerTooltip("remaining", event)}
+              onPointerMove={(event) => showPointerTooltip("remaining", event)}
+              onPointerDown={(event) => showPointerTooltip("remaining", event)}
+              onFocus={() => setTooltip({ kind: "remaining", x: 180, y: 45 })}
+              onBlur={hideTooltip}
+            />
             <circle
               className="hydration-gauge-consumed"
               cx={ARC_CENTER_X}
@@ -158,9 +191,9 @@ export default function HydrationProgressVisualization({
               aria-label={`${t("Beverages consumed")}: ${formatAmount(dailyTotal, preferredUnit)} ${preferredUnit}`}
               onPointerEnter={(event) => showPointerTooltip("consumed", event)}
               onPointerMove={(event) => showPointerTooltip("consumed", event)}
-              onPointerLeave={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onPointerDown={(event) => showPointerTooltip("consumed", event)}
               onFocus={() => setTooltip({ kind: "consumed", x: 180, y: 45 })}
-              onBlur={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onBlur={hideTooltip}
             />
             <circle
               className="hydration-gauge-effective"
@@ -175,9 +208,9 @@ export default function HydrationProgressVisualization({
               aria-label={`${t("Effective hydration")}: ${formatAmount(effectiveTotal, preferredUnit)} ${preferredUnit}`}
               onPointerEnter={(event) => showPointerTooltip("effective", event)}
               onPointerMove={(event) => showPointerTooltip("effective", event)}
-              onPointerLeave={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onPointerDown={(event) => showPointerTooltip("effective", event)}
               onFocus={() => setTooltip({ kind: "effective", x: 180, y: 45 })}
-              onBlur={() => setTooltip((current) => ({ ...current, kind: null }))}
+              onBlur={hideTooltip}
             />
             {ARC_LEVELS.map((level) => {
               const vertex = getArcPoint(level, ARC_RADIUS);
@@ -195,11 +228,8 @@ export default function HydrationProgressVisualization({
             <div className="hydration-arc-tooltip" role="status" style={{ left: tooltip.x, top: tooltip.y }}>
               <strong>{tooltipTitle}</strong>
               <span>{formatAmount(tooltipValue, preferredUnit)} {preferredUnit}</span>
-              {tooltip.kind === "effective" ? (
-                <small>{Math.round(effectiveGoalProgress)}% {t("of goal")}</small>
-              ) : (
-                <small>{formatAmount(effectiveTotal, preferredUnit)} {preferredUnit} {t("effective")}</small>
-              )}
+              {tooltip.kind === "effective" && <small>{Math.round(effectiveGoalProgress)}% {t("of goal")}</small>}
+              {tooltip.kind === "consumed" && <small>{formatAmount(effectiveTotal, preferredUnit)} {preferredUnit} {t("effective")}</small>}
             </div>
           )}
 
@@ -207,9 +237,7 @@ export default function HydrationProgressVisualization({
             <strong>{formatAmount(effectiveTotal, preferredUnit)}</strong>
             <span className="hydration-gauge-unit">{preferredUnit}</span>
             <p>{t("Goal:")} {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
-            <b>{Math.round(effectiveGoalProgress)}%</b>
           </div>
-          <span className="hydration-gauge-remaining" aria-label={`${t("Remaining to goal")}: ${formatAmount(remaining, preferredUnit)} ${preferredUnit}`} />
         </div>
       ) : (
         <div className="hydration-weekly-chart" aria-label={t("Last 7 days hydration")}>
