@@ -23,7 +23,7 @@ export default function LocalizedTimeInput({
         value={value}
         placeholder="HH:mm"
         pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-        title="Use 24-hour time in HH:mm format."
+        data-no-translate
         onChange={(event) => onChange(event.target.value)}
       />
     );
