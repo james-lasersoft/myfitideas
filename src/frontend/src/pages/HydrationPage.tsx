@@ -212,6 +212,10 @@ export default function HydrationPage() {
     [visibleBeverages]
   );
 
+  const selectedOverflowBeverage =
+    overflowBeverages.find((beverage) => beverage.id === selectedBeverageId) ??
+    null;
+
   const quickAddOptions = useMemo<RememberedEntry[]>(() => {
     const defaults =
       preferredUnit === "ml"
@@ -521,18 +525,20 @@ export default function HydrationPage() {
                 </button>
               ))}
 
-              <label className="beverage-more-control">
-                <span aria-hidden="true">＋</span>
-                <small>More</small>
+              <label
+                className={
+                  selectedOverflowBeverage
+                    ? "beverage-more-control selected"
+                    : "beverage-more-control"
+                }
+              >
+                <span aria-hidden="true">
+                  {selectedOverflowBeverage?.icon ?? "＋"}
+                </span>
+                <small>{selectedOverflowBeverage?.label ?? "More"}</small>
                 <select
                   aria-label="More beverages"
-                  value={
-                    overflowBeverages.some(
-                      (beverage) => beverage.id === selectedBeverageId
-                    )
-                      ? selectedBeverageId
-                      : ""
-                  }
+                  value={selectedOverflowBeverage?.id ?? ""}
                   onChange={(event) => {
                     if (event.target.value) selectBeverage(event.target.value);
                   }}
