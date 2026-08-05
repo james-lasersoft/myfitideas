@@ -17,6 +17,9 @@ const catalog = [
   ["localization.hour", "Hour", "localization", "Hora"],
   ["localization.minute", "Minute", "localization", "Minuto"],
   ["localization.timePeriod", "Time period", "localization", "Período do dia"],
+  ["localization.selectTime", "Select time", "localization", "Selecionar horário"],
+  ["localization.cancel", "Cancel", "localization", "Cancelar"],
+  ["localization.ok", "OK", "localization", "OK"],
 ] as const;
 
 async function main() {
