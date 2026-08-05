@@ -43,6 +43,10 @@ const catalog = [
   ["hydration.moreBeverages", "More beverages", "hydration", "Mais bebidas"],
   ["hydration.selectBeverage", "Select beverage", "hydration", "Selecionar bebida"],
   ["hydration.loggingFor", "Logging For", "hydration", "Registrando para"],
+  ["hydration.progressView", "Progress view", "hydration", "Visualização do progresso"],
+  ["hydration.daily", "Daily", "hydration", "Diário"],
+  ["hydration.sevenDays", "7 Days", "hydration", "7 Dias"],
+  ["hydration.lastSevenDays", "Last 7 days hydration", "hydration", "Hidratação dos últimos 7 dias"],
 
   ["measurements.preferenceIntro", "Entries use your profile preferences:", "measurements", "Os registros usam as preferências do seu perfil:"],
   ["measurements.forWeight", "for weight and", "measurements", "para peso e"],
