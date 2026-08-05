@@ -3,6 +3,11 @@ import type { HydrationEntry, HydrationUnit } from "../services/hydrationService
 
 const ARC_LENGTH = 75;
 const ML_PER_OUNCE = 29.5735;
+const ARC_CENTER_X = 180;
+const ARC_CENTER_Y = 160;
+const ARC_RADIUS = 116;
+const ARC_LABEL_RADIUS = 143;
+const ARC_LEVELS = [0, 25, 50, 75, 100] as const;
 
 type ProgressMode = "daily" | "weekly";
 
@@ -33,6 +38,14 @@ function convertAmount(amount: number, from: HydrationUnit, to: HydrationUnit): 
 
 function formatAmount(value: number, unit: HydrationUnit): string {
   return unit === "ml" ? value.toFixed(0) : value.toFixed(1);
+}
+
+function getArcPoint(level: number, radius: number): { x: number; y: number } {
+  const angle = (135 + (270 * level) / 100) * (Math.PI / 180);
+  return {
+    x: ARC_CENTER_X + radius * Math.cos(angle),
+    y: ARC_CENTER_Y + radius * Math.sin(angle),
+  };
 }
 
 export default function HydrationProgressVisualization({
@@ -120,27 +133,44 @@ export default function HydrationProgressVisualization({
                 </feMerge>
               </filter>
             </defs>
-            <circle className="hydration-gauge-track" cx="180" cy="160" r="116" pathLength="100" transform="rotate(135 180 160)" />
+            <circle
+              className="hydration-gauge-track"
+              cx={ARC_CENTER_X}
+              cy={ARC_CENTER_Y}
+              r={ARC_RADIUS}
+              pathLength="100"
+              transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`}
+            />
             <circle
               className="hydration-gauge-progress"
-              cx="180"
-              cy="160"
-              r="116"
+              cx={ARC_CENTER_X}
+              cy={ARC_CENTER_Y}
+              r={ARC_RADIUS}
               pathLength="100"
-              transform="rotate(135 180 160)"
+              transform={`rotate(135 ${ARC_CENTER_X} ${ARC_CENTER_Y})`}
               style={{ strokeDasharray: `${progressArc} ${100 - progressArc}` }}
             />
-            {[0, 25, 50, 75, 100].map((level) => {
-              const angle = (135 + (270 * level) / 100) * (Math.PI / 180);
-              const radius = 116;
+            {ARC_LEVELS.map((level) => {
+              const vertex = getArcPoint(level, ARC_RADIUS);
+              const label = getArcPoint(level, ARC_LABEL_RADIUS);
               return (
-                <circle
-                  key={level}
-                  className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
-                  cx={180 + radius * Math.cos(angle)}
-                  cy={160 + radius * Math.sin(angle)}
-                  r="5"
-                />
+                <g key={level}>
+                  <circle
+                    className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
+                    cx={vertex.x}
+                    cy={vertex.y}
+                    r="5"
+                  />
+                  <text
+                    className="hydration-arc-label"
+                    x={label.x}
+                    y={label.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {level}%
+                  </text>
+                </g>
               );
             })}
           </svg>
@@ -151,12 +181,6 @@ export default function HydrationProgressVisualization({
             <p>Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
             <b>{Math.round(rawGoalProgress)}%</b>
           </div>
-
-          <div className="hydration-level-label hydration-level-label-start">0%</div>
-          <div className="hydration-level-label hydration-level-label-quarter">25%</div>
-          <div className="hydration-level-label hydration-level-label-half">50%</div>
-          <div className="hydration-level-label hydration-level-label-three-quarter">75%</div>
-          <div className="hydration-level-label hydration-level-label-goal">100%</div>
         </div>
       ) : (
         <div className="hydration-weekly-chart" aria-label="Last 7 days hydration">
