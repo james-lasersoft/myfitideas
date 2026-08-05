@@ -84,8 +84,8 @@ export default function App() {
           <Route path="/admin/users" element={<AuthorizedPage permission="users.read"><UserAdminPage /></AuthorizedPage>} />
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
           <Route path="/admin/audit" element={<AuthorizedPage permission="audit.read"><AuditLogPage /></AuthorizedPage>} />
-          <Route path="/admin/synthetic-data" element={<ProtectedPage><SuperAdminRoute><SyntheticDataPage /></SuperAdminRoute></ProtectedPage>} />
           <Route path="/system-operations" element={<ProtectedPage><SuperAdminRoute><SystemOperationsPage /></SuperAdminRoute></ProtectedPage>} />
+          <Route path="/system-operations/synthetic-data" element={<ProtectedPage><SuperAdminRoute><SyntheticDataPage /></SuperAdminRoute></ProtectedPage>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthorizationProvider>
