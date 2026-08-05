@@ -6,6 +6,11 @@ const catalog = [
   ["dashboard.quickAdd", "Quick Add", "dashboard", "Adição Rápida"],
   ["dashboard.adding", "Adding...", "dashboard", "Adicionando..."],
   ["dashboard.hydrationAdded", "Hydration entry added.", "dashboard", "Registro de hidratação adicionado."],
+  ["hydration.effectiveHydration", "Effective hydration", "hydration", "Hidratação efetiva"],
+  ["hydration.beveragesConsumed", "Beverages consumed", "hydration", "Bebidas consumidas"],
+  ["hydration.ofGoal", "of goal", "hydration", "da meta"],
+  ["hydration.effective", "effective", "hydration", "efetivos"],
+  ["hydration.remainingToGoal", "Remaining to goal", "hydration", "Restante para a meta"],
 ] as const;
 
 async function main() {
