@@ -24,6 +24,7 @@ import {
 import "./HydrationPage.css";
 
 const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
+const ARC_LENGTH = 75;
 
 interface RememberedEntry {
   amount: number;
@@ -134,7 +135,10 @@ export default function HydrationPage() {
       ? dailyTotal?.totalMl ?? 0
       : dailyTotal?.totalOz ?? 0;
 
-  const goalProgress = goal > 0 ? Math.min((primaryTotal / goal) * 100, 100) : 0;
+  const rawGoalProgress = goal > 0 ? (primaryTotal / goal) * 100 : 0;
+  const goalProgress = Math.min(rawGoalProgress, 100);
+  const progressArc = (goalProgress / 100) * ARC_LENGTH;
+  const remaining = Math.max(goal - primaryTotal, 0);
 
   const quickAddOptions = useMemo<RememberedEntry[]>(() => {
     const defaults =
@@ -321,54 +325,121 @@ export default function HydrationPage() {
         </button>
       </header>
 
-      <section className="hydration-summary">
-        <article className="dashboard-card">
-          <h2>Daily Progress</h2>
-          <label className="hydration-date-filter">
-            Select Date
-            <input
-              type="date"
-              value={summaryDate}
-              max={getLocalDateValue()}
-              onChange={(event) => {
-                setIsLoading(true);
-                setError("");
-                setSummaryDate(event.target.value);
-              }}
-            />
-          </label>
+      <section className="hydration-workspace">
+        <article className="dashboard-card hydration-progress-card">
+          <div className="hydration-card-heading">
+            <div>
+              <h2>Daily Progress</h2>
+              <p>{dailyTotal?.entries.length ?? 0} {(dailyTotal?.entries.length ?? 0) === 1 ? "entry" : "entries"}</p>
+            </div>
+            <label className="hydration-date-filter">
+              Select Date
+              <input
+                type="date"
+                value={summaryDate}
+                max={getLocalDateValue()}
+                onChange={(event) => {
+                  setIsLoading(true);
+                  setError("");
+                  setSummaryDate(event.target.value);
+                }}
+              />
+            </label>
+          </div>
 
           {isLoading ? (
-            <p>Loading daily total...</p>
+            <p className="hydration-loading">Loading daily total...</p>
           ) : dailyTotal ? (
-            <div className="hydration-total">
-              <strong>
-                {formatAmount(primaryTotal, preferredUnit)} {preferredUnit}
-              </strong>
-              <span>
-                {formatAmount(secondaryTotal, secondaryUnit)} {secondaryUnit}
-              </span>
-              <p>
-                {dailyTotal.entries.length} {dailyTotal.entries.length === 1 ? "entry" : "entries"}
-              </p>
-
-              <div className="hydration-progress-header">
-                <span>{Math.round(goalProgress)}%</span>
-                <span>
-                  Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}
-                </span>
-              </div>
+            <>
               <div
-                className="hydration-progress-track"
+                className="hydration-gauge"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={Math.round(goalProgress)}
               >
-                <div
-                  className="hydration-progress-fill"
-                  style={{ width: `${goalProgress}%` }}
-                />
+                <svg viewBox="0 0 360 300" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="hydrationArcGradient" x1="0" y1="1" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#a3e635" />
+                      <stop offset="38%" stopColor="#4ade80" />
+                      <stop offset="72%" stopColor="#16a34a" />
+                      <stop offset="100%" stopColor="#047857" />
+                    </linearGradient>
+                    <filter id="hydrationArcGlow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feGaussianBlur stdDeviation="5" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <circle
+                    className="hydration-gauge-track"
+                    cx="180"
+                    cy="160"
+                    r="116"
+                    pathLength="100"
+                    transform="rotate(135 180 160)"
+                  />
+                  <circle
+                    className="hydration-gauge-progress"
+                    cx="180"
+                    cy="160"
+                    r="116"
+                    pathLength="100"
+                    transform="rotate(135 180 160)"
+                    style={{ strokeDasharray: `${progressArc} ${100 - progressArc}` }}
+                  />
+                  {[0, 25, 50, 75, 100].map((level) => {
+                    const angle = (135 + (270 * level) / 100) * (Math.PI / 180);
+                    const radius = 116;
+                    const x = 180 + radius * Math.cos(angle);
+                    const y = 160 + radius * Math.sin(angle);
+                    return (
+                      <circle
+                        key={level}
+                        className={level <= goalProgress ? "hydration-level hydration-level-active" : "hydration-level"}
+                        cx={x}
+                        cy={y}
+                        r="5"
+                      />
+                    );
+                  })}
+                </svg>
+
+                <div className="hydration-gauge-content">
+                  <span className="hydration-gauge-date">Today</span>
+                  <strong>{formatAmount(primaryTotal, preferredUnit)}</strong>
+                  <span className="hydration-gauge-unit">{preferredUnit}</span>
+                  <p>Goal: {formatAmount(goal, preferredUnit)} {preferredUnit}</p>
+                  <b>{Math.round(rawGoalProgress)}%</b>
+                </div>
+
+                <div className="hydration-level-label hydration-level-label-start">0%</div>
+                <div className="hydration-level-label hydration-level-label-quarter">25%</div>
+                <div className="hydration-level-label hydration-level-label-half">50%</div>
+                <div className="hydration-level-label hydration-level-label-three-quarter">75%</div>
+                <div className="hydration-level-label hydration-level-label-goal">100%</div>
+              </div>
+
+              <div className="hydration-stat-grid">
+                <div className="hydration-stat">
+                  <span>Daily Goal</span>
+                  <strong>{formatAmount(goal, preferredUnit)} {preferredUnit}</strong>
+                </div>
+                <div className="hydration-stat">
+                  <span>Today</span>
+                  <strong>{formatAmount(primaryTotal, preferredUnit)} {preferredUnit}</strong>
+                </div>
+                <div className="hydration-stat">
+                  <span>{remaining > 0 ? "Goal" : "Daily Progress"}</span>
+                  <strong>{remaining > 0 ? `${formatAmount(remaining, preferredUnit)} ${preferredUnit}` : "100%"}</strong>
+                </div>
+                <div className="hydration-stat">
+                  <span>{secondaryUnit}</span>
+                  <strong>{formatAmount(secondaryTotal, secondaryUnit)} {secondaryUnit}</strong>
+                </div>
               </div>
 
               <div className="hydration-goal-editor">
@@ -390,39 +461,42 @@ export default function HydrationPage() {
                   {isSavingGoal ? "Updating..." : "Update Goal"}
                 </button>
               </div>
-            </div>
+            </>
           ) : (
             <p>No hydration total is available.</p>
           )}
         </article>
 
-        <article className="dashboard-card">
-          <h2>Add Water Intake</h2>
-          <div className="quick-add-section">
-            <span>Quick Add</span>
-            <div className="quick-add-buttons">
-              {quickAddOptions.map((option, index) => {
-                const isRemembered =
-                  rememberedEntry !== null &&
-                  index === quickAddOptions.length - 1 &&
-                  option.amount === rememberedEntry.amount &&
-                  option.unit === rememberedEntry.unit;
-
-                return (
-                  <button
-                    key={`${option.amount}-${option.unit}-${index}`}
-                    type="button"
-                    className="quick-add-button"
-                    disabled={isSaving}
-                    title={isRemembered ? "Last manually entered amount" : undefined}
-                    onClick={() => saveEntry(option.amount, option.unit)}
-                  >
-                    {isRemembered ? "★ " : "+"}
-                    {option.amount} {option.unit}
-                  </button>
-                );
-              })}
+        <article className="dashboard-card hydration-entry-card">
+          <div className="hydration-card-heading">
+            <div>
+              <h2>Add Water Intake</h2>
+              <p>Quick Add</p>
             </div>
+          </div>
+
+          <div className="quick-add-buttons">
+            {quickAddOptions.map((option, index) => {
+              const isRemembered =
+                rememberedEntry !== null &&
+                index === quickAddOptions.length - 1 &&
+                option.amount === rememberedEntry.amount &&
+                option.unit === rememberedEntry.unit;
+
+              return (
+                <button
+                  key={`${option.amount}-${option.unit}-${index}`}
+                  type="button"
+                  className="quick-add-button"
+                  disabled={isSaving}
+                  title={isRemembered ? "Last manually entered amount" : undefined}
+                  onClick={() => saveEntry(option.amount, option.unit)}
+                >
+                  <span>{isRemembered ? "★" : "+"}</span>
+                  {option.amount} {option.unit}
+                </button>
+              );
+            })}
           </div>
 
           <form className="hydration-form" onSubmit={handleSubmit}>
@@ -444,9 +518,7 @@ export default function HydrationPage() {
                 Unit
                 <select
                   value={unit}
-                  onChange={(event) =>
-                    setUnit(event.target.value as HydrationUnit)
-                  }
+                  onChange={(event) => setUnit(event.target.value as HydrationUnit)}
                 >
                   <option value="oz">Ounces</option>
                   <option value="ml">Milliliters</option>
@@ -502,7 +574,12 @@ export default function HydrationPage() {
       </section>
 
       <section className="dashboard-card hydration-history-card">
-        <h2>Hydration History</h2>
+        <div className="hydration-card-heading">
+          <div>
+            <h2>Hydration History</h2>
+            <p>{entries.length} {entries.length === 1 ? "entry" : "entries"}</p>
+          </div>
+        </div>
         {isLoading ? (
           <p>Loading hydration history...</p>
         ) : entries.length === 0 ? (
@@ -514,14 +591,9 @@ export default function HydrationPage() {
                 <h3>{getDateGroupLabel(dateKey)}</h3>
                 <div className="hydration-date-group-items">
                   {dateEntries.map((entry) => (
-                    <article
-                      key={entry.id}
-                      className="history-item hydration-history-item"
-                    >
+                    <article key={entry.id} className="history-item hydration-history-item">
                       <div>
-                        <strong>
-                          {entry.amount} {entry.unit}
-                        </strong>
+                        <strong>{entry.amount} {entry.unit}</strong>
                         <p>
                           {new Date(entry.loggedAt).toLocaleTimeString([], {
                             hour: "numeric",
