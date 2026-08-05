@@ -27,6 +27,8 @@ import {
 import "./HydrationPage.css";
 
 const LAST_MANUAL_ENTRY_KEY = "lastManualHydrationEntry";
+const LAST_BEVERAGE_KEY = "lastHydrationBeverage";
+const BEVERAGE_USAGE_KEY = "hydrationBeverageUsage";
 const ARC_LENGTH = 75;
 const FALLBACK_LOCALIZATION_PREFERENCES: LocalizationPreferences = {
   preferredLanguage: "en",
@@ -39,6 +41,27 @@ interface RememberedEntry {
   amount: number;
   unit: HydrationUnit;
 }
+
+interface BeverageType {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+const BEVERAGE_TYPES: BeverageType[] = [
+  { id: "water", label: "Water", icon: "💧" },
+  { id: "coffee", label: "Coffee", icon: "☕" },
+  { id: "tea", label: "Tea", icon: "🍵" },
+  { id: "sports-drink", label: "Sports Drink", icon: "⚡" },
+  { id: "milk", label: "Milk", icon: "🥛" },
+  { id: "juice", label: "Juice", icon: "🧃" },
+  { id: "soda", label: "Soda", icon: "🥤" },
+  { id: "sparkling-water", label: "Sparkling Water", icon: "🫧" },
+  { id: "energy-drink", label: "Energy Drink", icon: "🔋" },
+  { id: "smoothie", label: "Smoothie", icon: "🥭" },
+  { id: "oral-rehydration", label: "Oral Rehydration Drink", icon: "🧂" },
+  { id: "other", label: "Other Beverage", icon: "⋯" },
+];
 
 function getLocalDateValue(date = new Date()): string {
   const timezoneOffset = date.getTimezoneOffset() * 60_000;
@@ -94,6 +117,31 @@ function getRememberedEntry(): RememberedEntry | null {
   }
 }
 
+function getInitialBeverage(): string {
+  const saved = localStorage.getItem(LAST_BEVERAGE_KEY);
+  return BEVERAGE_TYPES.some((beverage) => beverage.id === saved)
+    ? saved ?? "water"
+    : "water";
+}
+
+function getBeverageUsage(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(BEVERAGE_USAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([key, value]) =>
+          BEVERAGE_TYPES.some((beverage) => beverage.id === key) &&
+          typeof value === "number" &&
+          Number.isFinite(value)
+      )
+    ) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
 function formatAmount(value: number, unit: HydrationUnit): string {
   return unit === "ml" ? value.toFixed(0) : value.toFixed(1);
 }
@@ -107,6 +155,10 @@ export default function HydrationPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [rememberedEntry, setRememberedEntry] = useState<RememberedEntry | null>(
     getRememberedEntry()
+  );
+  const [selectedBeverageId, setSelectedBeverageId] = useState(getInitialBeverage);
+  const [beverageUsage, setBeverageUsage] = useState<Record<string, number>>(
+    getBeverageUsage
   );
 
   const [amount, setAmount] = useState("");
@@ -133,6 +185,31 @@ export default function HydrationPage() {
   const rawGoalProgress = goal > 0 ? (primaryTotal / goal) * 100 : 0;
   const goalProgress = Math.min(rawGoalProgress, 100);
   const progressArc = (goalProgress / 100) * ARC_LENGTH;
+  const selectedBeverage =
+    BEVERAGE_TYPES.find((beverage) => beverage.id === selectedBeverageId) ??
+    BEVERAGE_TYPES[0];
+
+  const visibleBeverages = useMemo(() => {
+    const defaults = ["water", "coffee", "tea", "sports-drink", "milk"];
+    return [...BEVERAGE_TYPES]
+      .filter((beverage) => beverage.id !== "other")
+      .sort((left, right) => {
+        const usageDifference =
+          (beverageUsage[right.id] ?? 0) - (beverageUsage[left.id] ?? 0);
+        if (usageDifference !== 0) return usageDifference;
+        return defaults.indexOf(left.id) - defaults.indexOf(right.id);
+      })
+      .slice(0, 5);
+  }, [beverageUsage]);
+
+  const overflowBeverages = useMemo(
+    () =>
+      BEVERAGE_TYPES.filter(
+        (beverage) =>
+          !visibleBeverages.some((visible) => visible.id === beverage.id)
+      ),
+    [visibleBeverages]
+  );
 
   const quickAddOptions = useMemo<RememberedEntry[]>(() => {
     const defaults =
@@ -207,6 +284,23 @@ export default function HydrationPage() {
     };
   }, [summaryDate]);
 
+  const selectBeverage = (beverageId: string): void => {
+    setSelectedBeverageId(beverageId);
+    localStorage.setItem(LAST_BEVERAGE_KEY, beverageId);
+  };
+
+  const recordBeverageUse = (): void => {
+    setBeverageUsage((current) => {
+      const next = {
+        ...current,
+        [selectedBeverageId]: (current[selectedBeverageId] ?? 0) + 1,
+      };
+      localStorage.setItem(BEVERAGE_USAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(LAST_BEVERAGE_KEY, selectedBeverageId);
+      return next;
+    });
+  };
+
   const saveEntry = async (
     entryAmount: number,
     entryUnit: HydrationUnit,
@@ -228,6 +322,8 @@ export default function HydrationPage() {
         loggedAt: createLoggedAt(entryDate, entryTime),
       });
 
+      recordBeverageUse();
+
       if (rememberManualEntry) {
         const nextRemembered = { amount: entryAmount, unit: entryUnit };
         localStorage.setItem(
@@ -240,7 +336,9 @@ export default function HydrationPage() {
       setAmount("");
       setEntryTime(currentTimeInputValue(localizationPreferences));
       setSummaryDate(entryDate);
-      setMessage(`${entryAmount} ${entryUnit} added successfully.`);
+      setMessage(
+        `${selectedBeverage.label}: ${entryAmount} ${entryUnit} added successfully.`
+      );
       setShowAddAnother(true);
       await loadHydrationData(entryDate);
     } catch {
@@ -402,8 +500,60 @@ export default function HydrationPage() {
             </div>
           </div>
 
+          <div className="beverage-selector-section">
+            <span className="hydration-input-label">Beverage</span>
+            <div className="beverage-selector-row" role="group" aria-label="Beverage type">
+              {visibleBeverages.map((beverage) => (
+                <button
+                  key={beverage.id}
+                  type="button"
+                  className={
+                    beverage.id === selectedBeverageId
+                      ? "beverage-selector-button selected"
+                      : "beverage-selector-button"
+                  }
+                  aria-pressed={beverage.id === selectedBeverageId}
+                  onClick={() => selectBeverage(beverage.id)}
+                >
+                  <span aria-hidden="true">{beverage.icon}</span>
+                  <small>{beverage.label}</small>
+                </button>
+              ))}
+
+              <label className="beverage-more-control">
+                <span aria-hidden="true">＋</span>
+                <small>More</small>
+                <select
+                  aria-label="More beverages"
+                  value={
+                    overflowBeverages.some(
+                      (beverage) => beverage.id === selectedBeverageId
+                    )
+                      ? selectedBeverageId
+                      : ""
+                  }
+                  onChange={(event) => {
+                    if (event.target.value) selectBeverage(event.target.value);
+                  }}
+                >
+                  <option value="">Select beverage</option>
+                  {overflowBeverages.map((beverage) => (
+                    <option key={beverage.id} value={beverage.id}>
+                      {beverage.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
           <div className="quick-add-section">
-            <span>Quick Add</span>
+            <div className="hydration-quick-add-heading">
+              <span className="hydration-input-label">Quick Add</span>
+              <p>
+                Logging {selectedBeverage.icon} {selectedBeverage.label} for {formatUserDate(new Date(`${entryDate}T12:00:00`), localizationPreferences)} at {entryTime}
+              </p>
+            </div>
             <div className="quick-add-buttons">
               {quickAddOptions.map((option, index) => {
                 const isRemembered =
