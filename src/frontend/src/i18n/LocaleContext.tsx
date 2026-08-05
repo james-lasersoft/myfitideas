@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import api from "../services/api";
+import { publicTranslations } from "./publicTranslations";
 import { translations, type SupportedLocale } from "./translations";
 
 const STORAGE_KEY = "myfitideas.locale";
@@ -52,6 +53,11 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
+function bundledTranslation(source: string, locale: SupportedLocale): string | undefined {
+  if (locale !== "pt-BR") return undefined;
+  return publicTranslations[source] ?? translations[locale][source];
+}
+
 function translateText(text: string, locale: SupportedLocale): string {
   const leading = text.match(/^\s*/)?.[0] ?? "";
   const trailing = text.match(/\s*$/)?.[0] ?? "";
@@ -59,7 +65,7 @@ function translateText(text: string, locale: SupportedLocale): string {
   if (!core) return text;
   if (locale === "en-US") return `${leading}${core}${trailing}`;
 
-  const direct = publishedCatalog[core] ?? translations[locale][core];
+  const direct = publishedCatalog[core] ?? bundledTranslation(core, locale);
   if (direct) return `${leading}${direct}${trailing}`;
 
   const replacements: Array<[RegExp, string]> = [
@@ -139,7 +145,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     (text: string) => {
       const source = canonicalSource(text);
       if (locale === "en-US") return source;
-      return publishedCatalog[source] ?? translations[locale][source] ?? source;
+      return publishedCatalog[source] ?? bundledTranslation(source, locale) ?? source;
     },
     [locale]
   );
