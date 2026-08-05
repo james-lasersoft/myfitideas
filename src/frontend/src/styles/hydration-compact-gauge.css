@@ -1,0 +1,64 @@
+.hydration-page .hydration-loading {
+  min-height: 15rem;
+}
+
+.hydration-page .hydration-gauge {
+  width: min(100%, 340px);
+  min-height: 245px;
+}
+
+.hydration-page .hydration-gauge-content {
+  width: min(66%, 185px);
+}
+
+.hydration-page .hydration-gauge-content strong {
+  margin-top: 0.2rem;
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+}
+
+.hydration-page .hydration-gauge-date,
+.hydration-page .hydration-gauge-unit {
+  font-size: 0.78rem;
+}
+
+.hydration-page .hydration-gauge-unit {
+  margin-left: 0.2rem;
+}
+
+.hydration-page .hydration-gauge-content p {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.hydration-page .hydration-gauge-content b {
+  min-width: 3.75rem;
+  margin-top: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  font-size: 1rem;
+}
+
+.hydration-page .hydration-level-label {
+  font-size: 0.65rem;
+}
+
+.hydration-page .hydration-stat-grid {
+  margin-top: -0.25rem;
+}
+
+@media (max-width: 760px) {
+  .hydration-page .hydration-gauge {
+    width: min(100%, 320px);
+    min-height: 230px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hydration-page .hydration-gauge {
+    width: min(100%, 290px);
+    min-height: 210px;
+  }
+
+  .hydration-page .hydration-gauge-content strong {
+    font-size: 2.2rem;
+  }
+}
