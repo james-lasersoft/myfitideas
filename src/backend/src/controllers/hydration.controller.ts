@@ -15,6 +15,11 @@ import {
   validateHydrationAmountMl,
   validateHydrationDate,
 } from "../utils/data-integrity.js";
+import {
+  getHydrationCoefficient,
+  isBeverageType,
+  type BeverageType,
+} from "../domain/hydration-coefficients.js";
 
 const SUPPORTED_UNITS = ["oz", "ml"] as const;
 const DUPLICATE_WINDOW_MS = 30_000;
@@ -33,6 +38,11 @@ function isValidTimeZone(value: string): boolean {
   }
 }
 
+function normalizeBeverageType(value: unknown): BeverageType {
+  const normalized = String(value ?? "water").trim().toLowerCase();
+  return isBeverageType(normalized) ? normalized : "other";
+}
+
 export async function createHydrationEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const userId = req.user?.id;
@@ -47,7 +57,7 @@ export async function createHydrationEntry(req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const { amount, unit = user.preferredHydrationUnit, loggedAt, confirmAnomaly } = req.body;
+    const { amount, unit = user.preferredHydrationUnit, loggedAt, confirmAnomaly, beverageType } = req.body;
     const numericAmount = Number(amount);
     const normalizedUnit = String(unit).toLowerCase();
     if (!isSupportedUnit(normalizedUnit)) {
@@ -61,6 +71,10 @@ export async function createHydrationEntry(req: AuthenticatedRequest, res: Respo
       res.status(400).json({ code: "HYDRATION_OUT_OF_RANGE", error: amountError });
       return;
     }
+
+    const normalizedBeverageType = normalizeBeverageType(beverageType);
+    const hydrationCoefficient = getHydrationCoefficient(normalizedBeverageType);
+    const effectiveAmountMl = amountMl * hydrationCoefficient;
 
     const parsedLoggedAt = loggedAt ? new Date(loggedAt) : new Date();
     const dateError = validateHydrationDate(parsedLoggedAt);
@@ -113,6 +127,9 @@ export async function createHydrationEntry(req: AuthenticatedRequest, res: Respo
         amount: numericAmount,
         unit: normalizedUnit,
         amountMl,
+        beverageType: normalizedBeverageType,
+        hydrationCoefficient,
+        effectiveAmountMl,
         loggedAt: parsedLoggedAt,
       },
     });
@@ -143,6 +160,7 @@ export async function getHydrationEntries(req: AuthenticatedRequest, res: Respon
     const hydration = rows.map((row) => ({
       ...row,
       amount: roundMeasurement(fromMilliliters(row.amountMl, unit)),
+      effectiveAmount: roundMeasurement(fromMilliliters(row.effectiveAmountMl, unit)),
       unit,
     }));
     res.status(200).json({ hydration });
@@ -169,19 +187,14 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
       return;
     }
 
-    const requestedTimeZone =
-      typeof req.query.timeZone === "string" ? req.query.timeZone : undefined;
-
+    const requestedTimeZone = typeof req.query.timeZone === "string" ? req.query.timeZone : undefined;
     if (requestedTimeZone && !isValidTimeZone(requestedTimeZone)) {
       res.status(400).json({ error: "The requested timezone is invalid." });
       return;
     }
 
     const timeZone = requestedTimeZone ?? user.timezone ?? "UTC";
-    const requestedDate =
-      typeof req.query.date === "string"
-        ? req.query.date
-        : getDateKeyInTimeZone(new Date(), timeZone);
+    const requestedDate = typeof req.query.date === "string" ? req.query.date : getDateKeyInTimeZone(new Date(), timeZone);
 
     let dayRange: { start: Date; endExclusive: Date };
     try {
@@ -194,20 +207,20 @@ export async function getDailyHydrationTotal(req: AuthenticatedRequest, res: Res
     const entries = await prisma.hydration.findMany({
       where: {
         userId,
-        loggedAt: {
-          gte: dayRange.start,
-          lt: dayRange.endExclusive,
-        },
+        loggedAt: { gte: dayRange.start, lt: dayRange.endExclusive },
       },
       orderBy: { loggedAt: "asc" },
     });
     const totalMl = entries.reduce((total, entry) => total + entry.amountMl, 0);
+    const effectiveTotalMl = entries.reduce((total, entry) => total + entry.effectiveAmountMl, 0);
 
     res.status(200).json({
       date: requestedDate,
       timeZone,
       totalMl: roundMeasurement(totalMl),
       totalOz: roundMeasurement(fromMilliliters(totalMl, "oz")),
+      effectiveTotalMl: roundMeasurement(effectiveTotalMl),
+      effectiveTotalOz: roundMeasurement(fromMilliliters(effectiveTotalMl, "oz")),
       entries,
     });
   } catch (error) {
