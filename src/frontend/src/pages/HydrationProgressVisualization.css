@@ -43,6 +43,86 @@
   box-shadow: 0 4px 10px rgba(22, 101, 52, 0.2);
 }
 
+.hydration-gauge {
+  overflow: visible;
+}
+
+.hydration-gauge svg {
+  overflow: visible;
+}
+
+.hydration-gauge-track,
+.hydration-gauge-consumed,
+.hydration-gauge-effective {
+  fill: none;
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-dasharray: 75 25;
+}
+
+.hydration-gauge-track {
+  stroke: #d9f2df;
+}
+
+.hydration-gauge-consumed {
+  stroke: #4fbf78;
+  cursor: help;
+  transition: stroke-dasharray 500ms cubic-bezier(0.22, 1, 0.36, 1), filter 160ms ease;
+}
+
+.hydration-gauge-effective {
+  stroke: #166534;
+  cursor: help;
+  transition: stroke-dasharray 500ms cubic-bezier(0.22, 1, 0.36, 1), filter 160ms ease;
+}
+
+.hydration-gauge-consumed:hover,
+.hydration-gauge-consumed:focus,
+.hydration-gauge-effective:hover,
+.hydration-gauge-effective:focus {
+  filter: drop-shadow(0 0 5px rgba(22, 101, 52, 0.35));
+  outline: none;
+}
+
+.hydration-arc-tooltip {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  gap: 0.12rem;
+  min-width: 9.5rem;
+  padding: 0.55rem 0.7rem;
+  color: #ffffff;
+  background: rgba(20, 83, 45, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.65rem;
+  box-shadow: 0 10px 24px rgba(20, 83, 45, 0.24);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.75rem));
+  white-space: nowrap;
+}
+
+.hydration-arc-tooltip strong {
+  font-size: 0.76rem;
+}
+
+.hydration-arc-tooltip span {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.hydration-arc-tooltip small {
+  color: #dcfce7;
+  font-size: 0.68rem;
+}
+
+.hydration-gauge-remaining {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 .hydration-arc-label {
   fill: #4f6f5c;
   font-family: inherit;
@@ -187,6 +267,11 @@
 
   .hydration-arc-label {
     font-size: 11px;
+  }
+
+  .hydration-arc-tooltip {
+    min-width: 8rem;
+    white-space: normal;
   }
 
   .hydration-weekly-chart {
