@@ -189,7 +189,7 @@ export default function CompanySettingsPage() {
                 <input value={integrations.email.secondaryCredentialEnvironmentVariable} onChange={(event) => updateEmail({ secondaryCredentialEnvironmentVariable: event.target.value.toUpperCase() })} placeholder="EMAIL_PROVIDER_SECRET" autoComplete="off" />
               </label>
               <label>{t("From address")}
-                <input value={integrations.email.configuration.fromAddress ?? ""} onChange={(event) => updateEmail({ configuration: { ...integrations.email.configuration, fromAddress: event.target.value } })} placeholder="noreply@example.com" autoComplete="off" />
+                <input value={integrations.email.configuration.fromAddress ?? ""} onChange={(event) => updateEmail({ configuration: { ...integrations.email.configuration, fromAddress: event.target.value } })} placeholder="noreply@example.com" data-no-translate="true" autoComplete="off" />
               </label>
               <label>{t("From name")}
                 <input value={integrations.email.configuration.fromName ?? ""} onChange={(event) => updateEmail({ configuration: { ...integrations.email.configuration, fromName: event.target.value } })} placeholder="MyFitIdeas" autoComplete="off" />
