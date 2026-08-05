@@ -103,8 +103,8 @@ export default function SyntheticDataPage() {
         eyebrow={t("Super administrator tools")}
         title={t("Synthetic Test Data")}
         description={t("Create realistic development-only history for an existing test user. Generated records will be identifiable and removable as one batch.")}
-        backLabel={t("Back to Admin Center")}
-        onBack={() => navigate("/admin")}
+        backLabel={t("Back to System Operations")}
+        onBack={() => navigate("/system-operations")}
       />
 
       <section className="synthetic-data-layout">
@@ -122,22 +122,14 @@ export default function SyntheticDataPage() {
               <select disabled={loadingUsers || users.length === 0} value={userId} onChange={(event) => setUserId(event.target.value)}>
                 {loadingUsers ? <option value="">{t("Loading users")}</option> : null}
                 {!loadingUsers && users.length === 0 ? <option value="">{t("No active users available")}</option> : null}
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName ?? ""} ({user.email})
-                  </option>
-                ))}
+                {users.map((user) => <option key={user.id} value={user.id}>{user.firstName} {user.lastName ?? ""} ({user.email})</option>)}
               </select>
             </label>
 
             <fieldset>
               <legend>{t("Simulation period")}</legend>
               <div className="segmented-control">
-                {[30, 60, 90].map((days) => (
-                  <button key={days} type="button" className={periodDays === days ? "is-selected" : ""} onClick={() => setPeriodDays(days as PeriodDays)}>
-                    {t(`${days} days`)}
-                  </button>
-                ))}
+                {[30, 60, 90].map((days) => <button key={days} type="button" className={periodDays === days ? "is-selected" : ""} onClick={() => setPeriodDays(days as PeriodDays)}>{t(`${days} days`)}</button>)}
               </div>
             </fieldset>
 
@@ -148,40 +140,10 @@ export default function SyntheticDataPage() {
               <label className="checkbox-row"><input type="checkbox" checked={dailyHydration} onChange={(event) => setDailyHydration(event.target.checked)} /> {t("Daily hydration")}</label>
             </fieldset>
 
-            <label>
-              <span>{t("Sex reference")}</span>
-              <select value={sexReference} onChange={(event) => setSexReference(event.target.value as SyntheticSexReference)}>
-                <option value="MALE">{t("Male")}</option>
-                <option value="FEMALE">{t("Female")}</option>
-              </select>
-            </label>
-
-            <label>
-              <span>{t("Simulated age")}</span>
-              <input type="number" min={18} max={90} value={age} onChange={(event) => setAge(Number(event.target.value))} />
-            </label>
-
-            <label>
-              <span>{t("Body profile")}</span>
-              <select value={bodyProfile} onChange={(event) => setBodyProfile(event.target.value as SyntheticBodyProfile)}>
-                <option value="UNDERWEIGHT">{t("Underweight")}</option>
-                <option value="NORMAL">{t("Normal range")}</option>
-                <option value="OVERWEIGHT">{t("Overweight")}</option>
-                <option value="OBESITY">{t("Obesity range")}</option>
-                <option value="ATHLETIC">{t("Athletic")}</option>
-              </select>
-            </label>
-
-            <label>
-              <span>{t("Trend")}</span>
-              <select value={trend} onChange={(event) => setTrend(event.target.value as SyntheticTrend)}>
-                <option value="STABLE">{t("Stable")}</option>
-                <option value="LOSS">{t("Gradual weight loss")}</option>
-                <option value="GAIN">{t("Gradual weight gain")}</option>
-                <option value="RECOMPOSITION">{t("Body recomposition")}</option>
-                <option value="IRREGULAR">{t("Irregular adherence")}</option>
-              </select>
-            </label>
+            <label><span>{t("Sex reference")}</span><select value={sexReference} onChange={(event) => setSexReference(event.target.value as SyntheticSexReference)}><option value="MALE">{t("Male")}</option><option value="FEMALE">{t("Female")}</option></select></label>
+            <label><span>{t("Simulated age")}</span><input type="number" min={18} max={90} value={age} onChange={(event) => setAge(Number(event.target.value))} /></label>
+            <label><span>{t("Body profile")}</span><select value={bodyProfile} onChange={(event) => setBodyProfile(event.target.value as SyntheticBodyProfile)}><option value="UNDERWEIGHT">{t("Underweight")}</option><option value="NORMAL">{t("Normal range")}</option><option value="OVERWEIGHT">{t("Overweight")}</option><option value="OBESITY">{t("Obesity range")}</option><option value="ATHLETIC">{t("Athletic")}</option></select></label>
+            <label><span>{t("Trend")}</span><select value={trend} onChange={(event) => setTrend(event.target.value as SyntheticTrend)}><option value="STABLE">{t("Stable")}</option><option value="LOSS">{t("Gradual weight loss")}</option><option value="GAIN">{t("Gradual weight gain")}</option><option value="RECOMPOSITION">{t("Body recomposition")}</option><option value="IRREGULAR">{t("Irregular adherence")}</option></select></label>
           </div>
         </article>
 
@@ -191,12 +153,8 @@ export default function SyntheticDataPage() {
           <strong>{preview.measurementEntries}</strong><span>{t("measurement entries")}</span>
           <strong>{preview.hydrationEntries}</strong><span>{t("hydration entries")}</span>
           <strong>{preview.total}</strong><span>{t("total records")}</span>
-          <div className="preview-summary">
-            {t("Scenario")}: {t(bodyProfile.toLowerCase())}, {t(sexReference.toLowerCase())}, {age}, {t(trend.toLowerCase())}
-          </div>
-          <button type="button" className="admin-primary-action" disabled={!canPreview} onClick={() => void handlePreview()}>
-            {previewing ? t("Preparing preview") : t("Preview generation")}
-          </button>
+          <div className="preview-summary">{t("Scenario")}: {t(bodyProfile.toLowerCase())}, {t(sexReference.toLowerCase())}, {age}, {t(trend.toLowerCase())}</div>
+          <button type="button" className="admin-primary-action" disabled={!canPreview} onClick={() => void handlePreview()}>{previewing ? t("Preparing preview") : t("Preview generation")}</button>
           {serverPreview ? <p>{t("Preview validated by the development backend. Record generation remains disabled until batch tracking is connected.")}</p> : null}
         </aside>
       </section>
