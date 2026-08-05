@@ -1,33 +1,3 @@
-.hydration-page .hydration-workspace {
-  align-items: stretch;
-}
-
-.hydration-page .hydration-progress-card,
-.hydration-page .hydration-entry-card {
-  height: 100%;
-}
-
-.hydration-page .hydration-progress-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.hydration-page .hydration-progress-card .hydration-gauge {
-  flex: 1 1 auto;
-  display: grid;
-  place-items: center;
-  align-self: stretch;
-}
-
-.hydration-page .hydration-progress-card .hydration-gauge > svg {
-  grid-area: 1 / 1;
-}
-
-.hydration-page .hydration-progress-card .hydration-gauge-content,
-.hydration-page .hydration-progress-card .hydration-level-label {
-  z-index: 2;
-}
-
 .hydration-page .hydration-entry-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(135px, 0.38fr) minmax(120px, 0.34fr);
@@ -87,9 +57,7 @@
 }
 
 .hydration-page .hydration-entry-card .hydration-form-actions > .secondary-button {
-  grid-column: 1 / -1;
-  grid-row: 6;
-  justify-self: start;
+  display: none;
 }
 
 .hydration-page .hydration-entry-card .success-message,
@@ -97,6 +65,10 @@
   grid-column: 1 / -1;
   grid-row: 5;
   margin: 0;
+}
+
+.hydration-page .hydration-entry-card .success-message {
+  animation: hydration-confirmation-dismiss 2.6s ease forwards;
 }
 
 .hydration-page .hydration-quick-add-heading p {
@@ -208,16 +180,23 @@
   min-height: 3rem;
 }
 
+@keyframes hydration-confirmation-dismiss {
+  0%, 72% {
+    opacity: 1;
+  }
+  100% {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hydration-page .hydration-entry-card .success-message {
+    animation: none;
+  }
+}
+
 @media (max-width: 980px) {
-  .hydration-page .hydration-workspace {
-    align-items: start;
-  }
-
-  .hydration-page .hydration-progress-card,
-  .hydration-page .hydration-entry-card {
-    height: auto;
-  }
-
   .hydration-page .hydration-entry-card {
     grid-template-columns: minmax(0, 1fr) minmax(140px, 0.45fr) minmax(130px, 0.4fr);
   }
