@@ -45,6 +45,13 @@ const scenarios: ScenarioPreset[] = [
   { key: "underweight", label: "Underweight Recovery", description: "Gradual gain toward a normal range with uneven adherence.", profile: "UNDERWEIGHT", sex: "FEMALE", age: 24, trend: "GAIN", adherence: "REALISTIC", hydration: "AVERAGE" },
 ];
 
+function formatMessage(message: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (formatted, [key, value]) => formatted.replaceAll(`{${key}}`, String(value)),
+    message
+  );
+}
+
 function readApiError(error: unknown): string {
   if (typeof error === "object" && error && "response" in error) {
     const response = (error as { response?: { data?: { error?: string } } }).response;
@@ -163,7 +170,10 @@ export default function SyntheticDataPage() {
 
   async function handleGenerate() {
     if (!serverPreview || !selectedUser) return;
-    const confirmed = window.confirm(t(`Generate ${preview.total} synthetic records for ${selectedUser.firstName} ${selectedUser.lastName ?? ""}?`));
+    const confirmed = window.confirm(formatMessage(
+      t("Generate {count} synthetic records for {name}?"),
+      { count: preview.total, name: `${selectedUser.firstName} ${selectedUser.lastName ?? ""}`.trim() }
+    ));
     if (!confirmed) return;
     setError("");
     setSuccess("");
@@ -171,7 +181,10 @@ export default function SyntheticDataPage() {
     try {
       const result = await generateSyntheticData(input);
       await loadBatches();
-      setSuccess(t(`Synthetic batch created with ${result.batch.counts.total} records. Seed: ${result.batch.seed}.`));
+      setSuccess(formatMessage(
+        t("Synthetic batch created with {count} records. Seed: {seed}."),
+        { count: result.batch.counts.total, seed: result.batch.seed }
+      ));
       setServerPreview(null);
     } catch (requestError) {
       setError(readApiError(requestError));
@@ -181,7 +194,10 @@ export default function SyntheticDataPage() {
   }
 
   async function handleDelete(batch: SyntheticDataBatch) {
-    const confirmed = window.confirm(t(`Delete batch ${batch.id.slice(0, 8)} and all ${batch.recordCounts.total} generated records?`));
+    const confirmed = window.confirm(formatMessage(
+      t("Delete batch {batchId} and all {count} generated records?"),
+      { batchId: batch.id.slice(0, 8), count: batch.recordCounts.total }
+    ));
     if (!confirmed) return;
     setError("");
     setSuccess("");
@@ -199,6 +215,20 @@ export default function SyntheticDataPage() {
 
   const canPreview = Boolean(userId) && !previewing && !generating && (dailyWeight || weeklyMeasurements || dailyHydration);
   const canGenerate = Boolean(serverPreview?.generationEnabled) && !generating && !previewing;
+  const selectedScenarioLabel = scenarios.find((scenario) => scenario.key === selectedScenario)?.label ?? selectedScenario;
+  const trendLabel = {
+    STABLE: "Maintain",
+    LOSS: "Weight loss",
+    GAIN: "Weight gain",
+    RECOMPOSITION: "Body recomposition",
+    IRREGULAR: "Irregular",
+  }[trend];
+  const adherenceLabel = {
+    PERFECT: "Perfect",
+    REALISTIC: "Realistic",
+    CHAOTIC: "Chaotic",
+  }[adherence];
+  const sexReferenceLabel = sexReference === "MALE" ? "Male" : "Female";
 
   return (
     <main className="ops-page synthetic-lab-page">
@@ -215,7 +245,7 @@ export default function SyntheticDataPage() {
         <article className="ops-panel lab-target-panel">
           <div className="ops-panel-heading"><div><p>{t("Target")}</p><h2>{t("Test user")}</h2></div><span className="ops-badge">{t("Existing account")}</span></div>
           <label className="lab-field"><span>{t("User")}</span><select disabled={loading || users.length === 0} value={userId} onChange={(event) => { setUserId(event.target.value); invalidatePreview(); }}>{loading ? <option value="">{t("Loading users")}</option> : null}{!loading && users.length === 0 ? <option value="">{t("No active users available")}</option> : null}{users.map((user) => <option key={user.id} value={user.id}>{user.firstName} {user.lastName ?? ""} ({user.email})</option>)}</select></label>
-          <dl className="lab-user-summary"><div><dt>{t("Name")}</dt><dd>{selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName ?? ""}` : t("Not selected")}</dd></div><div><dt>{t("Email")}</dt><dd>{selectedUser?.email ?? t("Not selected")}</dd></div><div><dt>{t("Age")}</dt><dd>{age}</dd></div><div><dt>{t("Sex reference")}</dt><dd>{t(sexReference.toLowerCase())}</dd></div></dl>
+          <dl className="lab-user-summary"><div><dt>{t("Name")}</dt><dd>{selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName ?? ""}` : t("Not selected")}</dd></div><div><dt>{t("Email")}</dt><dd>{selectedUser?.email ?? t("Not selected")}</dd></div><div><dt>{t("Age")}</dt><dd>{age}</dd></div><div><dt>{t("Sex reference")}</dt><dd>{t(sexReferenceLabel)}</dd></div></dl>
           <SyntheticAccessPanel userId={userId} />
         </article>
 
@@ -248,7 +278,7 @@ export default function SyntheticDataPage() {
           <div className="ops-panel-heading"><div><p>{t("Preview")}</p><h2>{t("Projected history")}</h2></div><span className="ops-badge planned">{t("Deterministic")}</span></div>
           <div className="lab-chart" aria-label={t("Projected weight trend")}>{projectedWeightPoints.map((value, index) => <div key={`${value}-${index}`}><span style={{ height: `${Math.max(22, 38 + (value - projectedWeightPoints[0]) * 7)}%` }} /><small>{value}</small></div>)}</div>
           <div className="lab-counts"><div><strong>{preview.weightEntries}</strong><span>{t("Weight")}</span></div><div><strong>{preview.measurementEntries}</strong><span>{t("Measurements")}</span></div><div><strong>{preview.hydrationEntries}</strong><span>{t("Hydration")}</span></div><div><strong>{preview.total}</strong><span>{t("Total")}</span></div></div>
-          <div className="preview-summary">{t("Scenario")}: {t(selectedScenario)}, {age}, {t(trend.toLowerCase())}, {t(adherence.toLowerCase())}</div>
+          <div className="preview-summary">{t("Scenario")}: {t(selectedScenarioLabel)}, {age}, {t(trendLabel)}, {t(adherenceLabel)}</div>
           <button type="button" className="lab-primary-action" disabled={!canPreview} onClick={() => void handlePreview()}>{previewing ? t("Preparing preview") : t("Validate preview")}</button>
           <button type="button" className="lab-generate-action" disabled={!canGenerate} onClick={() => void handleGenerate()}>{generating ? t("Generating batch") : t("Generate batch")}</button>
           <p>{serverPreview ? t("Preview validated. Confirm generation to write a rollback-safe batch.") : t("Validate the scenario before generation.")}</p>

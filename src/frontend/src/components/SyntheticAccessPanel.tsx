@@ -76,7 +76,7 @@ export default function SyntheticAccessPanel({ userId }: { userId: string }) {
       </div>
       {access?.activeSubscription ? (
         <div className="synthetic-access-current">
-          <strong>{access.activeSubscription.plan.name}</strong>
+          <strong>{t(access.activeSubscription.plan.name)}</strong>
           <span>{t("Existing active subscriptions are never replaced by this tool.")}</span>
         </div>
       ) : (
@@ -84,7 +84,7 @@ export default function SyntheticAccessPanel({ userId }: { userId: string }) {
           <label className="lab-field">
             <span>{t("Plan")}</span>
             <select value={planKey} disabled={loading || saving} onChange={(event) => setPlanKey(event.target.value)}>
-              {(access?.plans ?? []).map((plan) => <option key={plan.id} value={plan.key}>{plan.name}</option>)}
+              {(access?.plans ?? []).map((plan) => <option key={plan.id} value={plan.key}>{t(plan.name)}</option>)}
             </select>
           </label>
           <button type="button" className="access-provision-action" disabled={!userId || loading || saving || !planKey} onClick={() => void handleProvision()}>
