@@ -72,6 +72,18 @@
 .measurement-modal-controls span { color: #66736b; font-size: .82rem; }
 .measurement-modal-footer { display: flex; justify-content: flex-end; gap: .75rem; padding: 1rem 1.25rem; background: #fff; border-top: 1px solid rgba(33,54,42,.12); }
 .measurement-modal-footer button { min-width: 110px; min-height: 44px; }
+.measurement-history-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+.measurement-compare-button { min-height: 40px; }
+.measurement-comparison-modal { width: min(1180px, 100%); }
+.measurement-comparison-selectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.measurement-comparison-selectors label { display: grid; gap: .35rem; font-weight: 700; }
+.measurement-comparison-dates { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: #536159; }
+.measurement-comparison-note { margin: 0; color: #66736b; font-size: .85rem; }
+.measurement-comparison-table { min-width: 980px; }
+.measurement-comparison-pair { display: grid; gap: .3rem; }
+.measurement-comparison-unavailable { color: #6d7a72; font-style: italic; white-space: normal; }
+.measurement-comparison-section-row th { background: rgba(47,115,85,.08); color: #284b3a; }
+.measurement-comparison-method { display: block; max-width: 180px; margin-top: .2rem; color: #66736b; white-space: normal; }
 .measurement-detail-modal { width: min(860px, 100%); }
 .measurement-detail-section { display: grid; gap: .75rem; }
 .measurement-detail-section h3 { margin: 0; color: #20352a; }
@@ -104,7 +116,7 @@
 @media (max-width: 1100px) { .measurement-quick-actions, .measurements-top-grid { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
   .measurements-header { align-items: flex-start; gap: 1rem; }
-  .daily-weight-form, .measurement-metric-grid, .measurement-input-grid, .measurement-pair-grid, .measurement-detail-calculations, .novice-review dl { grid-template-columns: 1fr; }
+  .daily-weight-form, .measurement-metric-grid, .measurement-input-grid, .measurement-pair-grid, .measurement-detail-calculations, .measurement-comparison-selectors, .novice-review dl { grid-template-columns: 1fr; }
   .daily-weight-form button { width: 100%; }
   .measurement-section-heading { flex-direction: column; }
   .measurement-section-heading select { width: 100%; }

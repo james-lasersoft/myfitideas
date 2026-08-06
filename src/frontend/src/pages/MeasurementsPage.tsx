@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import MeasurementComparisonModal from "../components/measurements/MeasurementComparisonModal";
 import MeasurementHistoryTable from "../components/measurements/MeasurementHistoryTable";
 import MeasurementSessionDetailModal from "../components/measurements/MeasurementSessionDetailModal";
 import MeasurementSessionModal from "../components/measurements/MeasurementSessionModal";
@@ -9,6 +10,8 @@ import { useLocale } from "../i18n/LocaleContext";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
 import {
   createMeasurement,
+  getMeasurementComparison,
+  getMeasurementComparisonError,
   getMeasurementData,
   getMeasurementError,
   getMeasurementGuardrail,
@@ -16,6 +19,7 @@ import {
   type Measurement,
   type MeasurementDisplayUnits,
   type MeasurementProfileMetrics,
+  type MeasurementSessionComparison,
 } from "../services/measurementService";
 import { getMeasurementStep } from "../utils/measurementFormat";
 import "./MeasurementsPage.css";
@@ -71,6 +75,13 @@ export default function MeasurementsPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Measurement | null>(null);
   const detailTriggerRef = useRef<HTMLTableRowElement | null>(null);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [baselineSessionId, setBaselineSessionId] = useState("");
+  const [comparisonSessionId, setComparisonSessionId] = useState("");
+  const [sessionComparison, setSessionComparison] = useState<MeasurementSessionComparison | null>(null);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+  const [comparisonError, setComparisonError] = useState("");
+  const comparisonTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [weightRecordedAt, setWeightRecordedAt] = useState(getLocalDateTimeValue());
   const [weightValue, setWeightValue] = useState("");
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
@@ -89,6 +100,16 @@ export default function MeasurementsPage() {
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!isComparisonOpen || !baselineSessionId || !comparisonSessionId || baselineSessionId === comparisonSessionId) return;
+    let cancelled = false;
+    getMeasurementComparison(baselineSessionId, comparisonSessionId)
+      .then((result) => { if (!cancelled) setSessionComparison(result); })
+      .catch((caught) => { if (!cancelled) setComparisonError(getMeasurementComparisonError(caught)); })
+      .finally(() => { if (!cancelled) setIsComparisonLoading(false); });
+    return () => { cancelled = true; };
+  }, [baselineSessionId, comparisonSessionId, isComparisonOpen]);
 
   const latestWeight = weights[0] ?? null;
   const latestSession = measurements[0] ?? null;
@@ -110,6 +131,34 @@ export default function MeasurementsPage() {
   const closeSessionDetails = useCallback((): void => {
     setSelectedSession(null);
     requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }, []);
+  const openComparison = (): void => {
+    if (measurements.length < 2) return;
+    const recent = measurements.slice().sort((left, right) => new Date(right.measurementDate).getTime() - new Date(left.measurementDate).getTime());
+    setBaselineSessionId(recent[1].id);
+    setComparisonSessionId(recent[0].id);
+    setSessionComparison(null);
+    setComparisonError("");
+    setIsComparisonLoading(true);
+    setIsComparisonOpen(true);
+  };
+  const changeBaselineSession = (sessionId: string): void => {
+    if (sessionId === comparisonSessionId) return;
+    setSessionComparison(null);
+    setComparisonError("");
+    setIsComparisonLoading(true);
+    setBaselineSessionId(sessionId);
+  };
+  const changeComparisonSession = (sessionId: string): void => {
+    if (sessionId === baselineSessionId) return;
+    setSessionComparison(null);
+    setComparisonError("");
+    setIsComparisonLoading(true);
+    setComparisonSessionId(sessionId);
+  };
+  const closeComparison = useCallback((): void => {
+    setIsComparisonOpen(false);
+    requestAnimationFrame(() => comparisonTriggerRef.current?.focus());
   }, []);
 
   const submitMeasurement = async (input: CreateMeasurementInput): Promise<void> => {
@@ -192,7 +241,20 @@ export default function MeasurementsPage() {
     </section>
 
     <section className="dashboard-card measurement-history-card">
-      <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("History")}</span><h2>{t("Body measurement sessions")}</h2></div><span className="measurement-record-count">{measurements.length} {t(measurements.length === 1 ? "session" : "sessions")}</span></div>
+      <div className="measurement-section-heading">
+        <div><span className="measurement-eyebrow">{t("History")}</span><h2>{t("Body measurement sessions")}</h2></div>
+        <div className="measurement-history-actions">
+          <span className="measurement-record-count">{measurements.length} {t(measurements.length === 1 ? "session" : "sessions")}</span>
+          <button
+            ref={comparisonTriggerRef}
+            type="button"
+            className="secondary-button measurement-compare-button"
+            onClick={openComparison}
+            disabled={measurements.length < 2}
+            title={measurements.length < 2 ? t("At least two sessions are required to compare.") : undefined}
+          >{t("Compare sessions")}</button>
+        </div>
+      </div>
       {isLoading ? <p>{t("Loading measurements...")}</p>
         : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Record weight separately or complete your first guided body-measurement session.")}</p></div>
           : <MeasurementHistoryTable measurements={measurements} fallbackUnits={displayUnits} onSelect={openSessionDetails} />}
@@ -202,6 +264,18 @@ export default function MeasurementsPage() {
       measurement={selectedSession}
       fallbackUnits={displayUnits}
       onClose={closeSessionDetails}
+    />}
+
+    {isComparisonOpen && <MeasurementComparisonModal
+      sessions={measurements}
+      baselineSessionId={baselineSessionId}
+      comparisonSessionId={comparisonSessionId}
+      comparison={sessionComparison}
+      isLoading={isComparisonLoading}
+      error={comparisonError}
+      onBaselineChange={changeBaselineSession}
+      onComparisonChange={changeComparisonSession}
+      onClose={closeComparison}
     />}
 
     <MeasurementSessionModal

@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
 import { useLocale } from "../../i18n/LocaleContext";
 import type { Measurement, MeasurementDisplayUnits } from "../../services/measurementService";
 import MeasurementDetailsTable from "./MeasurementDetailsTable";
 import { calculationMethodLabel, formatMeasurementValue } from "./measurementSessionModel";
+import { useReadOnlyMeasurementModal } from "./useReadOnlyMeasurementModal";
 
 interface MeasurementSessionDetailModalProps {
   measurement: Measurement;
@@ -12,43 +12,8 @@ interface MeasurementSessionDetailModalProps {
 
 export default function MeasurementSessionDetailModal({ measurement, fallbackUnits, onClose }: MeasurementSessionDetailModalProps) {
   const { locale, t } = useLocale();
-  const modalRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const { modalRef, headingRef } = useReadOnlyMeasurementModal(onClose);
   const units = measurement.displayUnits ?? fallbackUnits;
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    headingRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-      const modal = modalRef.current;
-      if (event.key !== "Tab" || !modal) return;
-      const focusable = Array.from(modal.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex]:not([tabindex='-1'])"));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const activeElement = document.activeElement;
-      if (event.shiftKey && (activeElement === first || !focusable.includes(activeElement as HTMLElement))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
-
   const unavailable = <span className="measurement-not-recorded">{t("Not recorded")}</span>;
 
   return <div className="measurement-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>

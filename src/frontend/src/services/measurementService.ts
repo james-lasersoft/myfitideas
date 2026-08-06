@@ -112,6 +112,43 @@ export interface MeasurementListResponse {
   profileMetrics: MeasurementProfileMetrics;
 }
 
+export type MeasurementComparisonStatus =
+  | "COMPARABLE"
+  | "MISSING_BASELINE"
+  | "MISSING_COMPARISON"
+  | "MISSING_BOTH"
+  | "ZERO_BASELINE";
+export type MeasurementComparisonUnit = "cm" | "kg" | "percent" | "ratio";
+
+export interface MeasurementComparisonValue {
+  baselineValue: number | null;
+  comparisonValue: number | null;
+  displayUnit: MeasurementComparisonUnit;
+  absoluteChange: number | null;
+  percentageChange: number | null;
+  status: MeasurementComparisonStatus;
+}
+
+export interface MeasurementSessionComparison {
+  baselineSession: { id: string; recordedAt: string };
+  comparisonSession: { id: string; recordedAt: string };
+  coreMeasurements: Array<{
+    field: "neck" | "chest" | "waist" | "abdomen" | "hips";
+    value: MeasurementComparisonValue;
+  }>;
+  pairedMeasurements: Array<{
+    field: "upperArms" | "forearms" | "thighs" | "calves";
+    left: MeasurementComparisonValue;
+    right: MeasurementComparisonValue;
+  }>;
+  calculatedMetrics: Array<{
+    field: "bodyFat" | "waistToHeightRatio" | "fatMass" | "leanMass";
+    value: MeasurementComparisonValue;
+    baselineMethod: string | null;
+    comparisonMethod: string | null;
+  }>;
+}
+
 export async function getMeasurementData(): Promise<MeasurementListResponse> {
   const response = await api.get<MeasurementListResponse>("/api/measurements");
   return response.data;
@@ -120,6 +157,24 @@ export async function getMeasurementData(): Promise<MeasurementListResponse> {
 export async function getMeasurements(): Promise<Measurement[]> {
   const data = await getMeasurementData();
   return data.measurementSessions ?? data.measurements;
+}
+
+export async function getMeasurementComparison(
+  baselineSessionId: string,
+  comparisonSessionId: string
+): Promise<MeasurementSessionComparison> {
+  const response = await api.get<MeasurementSessionComparison>("/api/measurements/compare", {
+    params: { baselineSessionId, comparisonSessionId },
+  });
+  return response.data;
+}
+
+export function getMeasurementComparisonError(error: unknown): string {
+  if (!axios.isAxiosError(error)) return "Unable to compare measurement sessions.";
+  const data = error.response?.data as { code?: string } | undefined;
+  if (data?.code === "IDENTICAL_MEASUREMENT_SESSION_IDS") return "Choose two different sessions to compare.";
+  if (data?.code === "MEASUREMENT_SESSION_NOT_FOUND") return "One or both selected sessions are no longer available.";
+  return "Unable to compare measurement sessions.";
 }
 
 export async function createMeasurement(input: CreateMeasurementInput): Promise<Measurement> {

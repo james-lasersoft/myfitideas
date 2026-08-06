@@ -4,11 +4,20 @@ import { MemoryRouter } from "react-router-dom";
 import { LocaleProvider } from "../i18n/LocaleContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import MeasurementsPage from "./MeasurementsPage";
-import { createMeasurement, getMeasurementData, type Measurement } from "../services/measurementService";
+import {
+  createMeasurement,
+  getMeasurementComparison,
+  getMeasurementData,
+  type Measurement,
+  type MeasurementComparisonValue,
+  type MeasurementSessionComparison,
+} from "../services/measurementService";
 
 vi.mock("../services/measurementService", () => ({
   createMeasurement: vi.fn(),
   getMeasurementData: vi.fn(),
+  getMeasurementComparison: vi.fn(),
+  getMeasurementComparisonError: vi.fn(() => "One or both selected sessions are no longer available."),
   getMeasurementError: vi.fn(() => "Unable to save measurement."),
   getMeasurementGuardrail: vi.fn(() => null),
 }));
@@ -264,5 +273,160 @@ describe("Historical measurement session details", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await waitFor(() => expect(row).toHaveFocus());
+  });
+});
+
+
+const newerHistoricalSession: Measurement = {
+  ...historicalSession,
+  id: "session-2",
+  measurementSessionId: "session-2",
+  measurementDate: "2026-08-15T14:30:00.000Z",
+  neck: 15.5,
+  waist: 31,
+};
+
+const comparisonValue = (
+  baselineValue: number | null,
+  comparisonValue: number | null,
+  displayUnit: MeasurementComparisonValue["displayUnit"],
+  status: MeasurementComparisonValue["status"] = "COMPARABLE",
+  absoluteChange: number | null = comparisonValue == null || baselineValue == null ? null : comparisonValue - baselineValue,
+  percentageChange: number | null = baselineValue ? ((comparisonValue! - baselineValue) / baselineValue) * 100 : null
+): MeasurementComparisonValue => ({
+  baselineValue,
+  comparisonValue,
+  displayUnit,
+  absoluteChange,
+  percentageChange,
+  status,
+});
+
+const comparisonResponse: MeasurementSessionComparison = {
+  baselineSession: { id: "session-1", recordedAt: historicalSession.measurementDate },
+  comparisonSession: { id: "session-2", recordedAt: newerHistoricalSession.measurementDate },
+  coreMeasurements: [
+    { field: "neck", value: comparisonValue(38.1, 39.37, "cm", "COMPARABLE", 1.27, 3.3333) },
+    { field: "chest", value: comparisonValue(null, null, "cm", "MISSING_BOTH") },
+    { field: "waist", value: comparisonValue(81.28, 78.74, "cm", "COMPARABLE", -2.54, -3.125) },
+    { field: "abdomen", value: comparisonValue(86.36, 83.82, "cm") },
+    { field: "hips", value: comparisonValue(96.52, 95.25, "cm") },
+  ],
+  pairedMeasurements: [
+    { field: "upperArms", left: comparisonValue(30.48, 31.75, "cm"), right: comparisonValue(31.75, 33.02, "cm") },
+    { field: "forearms", left: comparisonValue(25.4, 26.67, "cm"), right: comparisonValue(null, 26, "cm", "MISSING_BASELINE") },
+    { field: "thighs", left: comparisonValue(55.88, 57.15, "cm"), right: comparisonValue(57.15, 58.42, "cm") },
+    { field: "calves", left: comparisonValue(null, null, "cm", "MISSING_BOTH"), right: comparisonValue(null, null, "cm", "MISSING_BOTH") },
+  ],
+  calculatedMetrics: [
+    { field: "bodyFat", value: comparisonValue(18.5, 17.5, "percent", "COMPARABLE", -1, -5.4054), baselineMethod: "US_NAVY_CIRCUMFERENCE", comparisonMethod: "US_NAVY_CIRCUMFERENCE" },
+    { field: "waistToHeightRatio", value: comparisonValue(0.465, 0.45, "ratio", "COMPARABLE", -0.015, -3.2258), baselineMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM", comparisonMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM" },
+    { field: "fatMass", value: comparisonValue(13.61, 12.7, "kg"), baselineMethod: "US_NAVY_CIRCUMFERENCE", comparisonMethod: "US_NAVY_CIRCUMFERENCE" },
+    { field: "leanMass", value: comparisonValue(61.23, 62.14, "kg"), baselineMethod: "US_NAVY_CIRCUMFERENCE", comparisonMethod: "US_NAVY_CIRCUMFERENCE" },
+  ],
+};
+
+async function renderComparisonHistory(
+  sessions: Measurement[] = [newerHistoricalSession, historicalSession]
+) {
+  vi.mocked(getMeasurementData).mockResolvedValue({
+    ...historicalMeasurementData,
+    measurementSessions: sessions,
+    measurements: sessions,
+  });
+  vi.mocked(getMeasurementComparison).mockResolvedValue(comparisonResponse);
+  const user = userEvent.setup();
+  render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+  const trigger = await screen.findByRole("button", { name: "Compare sessions" });
+  return { user, trigger };
+}
+
+describe("Historical measurement session comparison", () => {
+  it("disables comparison until at least two sessions exist", async () => {
+    vi.mocked(getMeasurementData).mockResolvedValue(historicalMeasurementData);
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+    expect(await screen.findByRole("button", { name: "Compare sessions" })).toBeDisabled();
+  });
+
+  it("defaults to the two most recent sessions, loads from the API, and prevents identical selection", async () => {
+    const { user, trigger } = await renderComparisonHistory();
+    await user.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Compare measurement sessions" });
+    await waitFor(() => expect(getMeasurementComparison).toHaveBeenCalledWith("session-1", "session-2"));
+    const baselineSelect = within(dialog).getByRole("combobox", { name: "Baseline session" });
+    const comparisonSelect = within(dialog).getByRole("combobox", { name: "Comparison session" });
+    expect(baselineSelect).toHaveValue("session-1");
+    expect(comparisonSelect).toHaveValue("session-2");
+    expect(within(baselineSelect).getByRole("option", { name: new Date(newerHistoricalSession.measurementDate).toLocaleString("en-US") })).toBeDisabled();
+    expect(within(comparisonSelect).getByRole("option", { name: new Date(historicalSession.measurementDate).toLocaleString("en-US") })).toBeDisabled();
+  });
+
+  it("requests a new backend comparison when the user changes a selection", async () => {
+    const oldestSession = {
+      ...historicalSession,
+      id: "session-0",
+      measurementDate: "2026-06-15T14:30:00.000Z",
+    };
+    const { user, trigger } = await renderComparisonHistory([
+      newerHistoricalSession,
+      historicalSession,
+      oldestSession,
+    ]);
+    await user.click(trigger);
+    const baselineSelect = within(screen.getByRole("dialog")).getByRole("combobox", { name: "Baseline session" });
+    await user.selectOptions(baselineSelect, "session-0");
+    await waitFor(() => expect(getMeasurementComparison).toHaveBeenLastCalledWith("session-0", "session-2"));
+  });
+
+  it("shows API loading and renders backend-provided core, paired, calculated, and unavailable results", async () => {
+    let resolveComparison!: (value: MeasurementSessionComparison) => void;
+    const { user, trigger } = await renderComparisonHistory();
+    vi.mocked(getMeasurementComparison).mockImplementation(() => new Promise((resolve) => { resolveComparison = resolve; }));
+
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Compare measurement sessions" });
+    expect(within(dialog).getByText("Loading comparison...")).toBeInTheDocument();
+    resolveComparison(comparisonResponse);
+
+    const table = await within(dialog).findByRole("table", { name: /Body measurement changes/ });
+    expect(within(table).getAllByRole("rowheader").map((cell) => cell.textContent)).toEqual([
+      "Neck", "Chest", "Waist", "Abdomen", "Hips",
+      "Upper arms", "Forearms", "Thighs", "Calves",
+      "Calculated metrics", "Body fat", "Waist-to-height", "Fat mass", "Lean mass",
+    ]);
+    expect(within(table).getByRole("row", { name: /Neck 38.1 cm 39.37 cm [+]1.27 cm [+]3.33 %/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Upper arms Left: 30.48 cmRight: 31.75 cm/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Chest Not recorded Not recorded Neither session recorded this measurement/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Body fat 18.5 %U.S. Navy circumference estimate 17.5 %/ })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("shows inaccessible comparison errors returned through the mocked API boundary", async () => {
+    const { user, trigger } = await renderComparisonHistory();
+    vi.mocked(getMeasurementComparison).mockRejectedValue(new Error("not found"));
+    await user.click(trigger);
+    expect(await screen.findByRole("alert")).toHaveTextContent("One or both selected sessions are no longer available.");
+  });
+
+  it("traps focus, closes with Escape, and restores focus to the opener", async () => {
+    const { user, trigger } = await renderComparisonHistory();
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Compare measurement sessions" });
+    expect(within(dialog).getByRole("heading", { name: "Compare measurement sessions" })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(within(dialog).getByRole("button", { name: "Close" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("closes with the explicit Close button and restores focus", async () => {
+    const { user, trigger } = await renderComparisonHistory();
+    await user.click(trigger);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
