@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import MeasurementSessionModal from "../components/measurements/MeasurementSessionModal";
+import { FIELD_LABELS, getLocalDateTimeValue, optionalNumber, type SessionField } from "../components/measurements/measurementSessionModel";
 import { useLocale } from "../i18n/LocaleContext";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
 import {
@@ -19,74 +21,7 @@ import { formatMeasurement, getMeasurementStep } from "../utils/measurementForma
 import "./MeasurementsPage.css";
 
 const DEFAULT_DISPLAY_UNITS: MeasurementDisplayUnits = { weight: "lb", length: "in" };
-type EntryMode = "NEWBIE" | "NORMAL" | "PRO";
 type TrendMetric = "weight" | "bodyFat" | "waistToHeightRatio" | "waist";
-type SessionField = Exclude<keyof CreateMeasurementInput, "weight" | "weightUnit" | "lengthUnit" | "measurementDate" | "confirmAnomaly" | "bodyFat">;
-
-interface WizardStep {
-  title: string;
-  description: string;
-  fields: SessionField[];
-}
-
-const FIELD_LABELS: Record<SessionField, string> = {
-  waist: "Waist", chest: "Chest", hips: "Hips", neck: "Neck", abdomen: "Abdomen",
-  leftBicep: "Left upper arm", rightBicep: "Right upper arm", leftForearm: "Left forearm",
-  rightForearm: "Right forearm", leftThigh: "Left thigh", rightThigh: "Right thigh",
-  leftCalf: "Left calf", rightCalf: "Right calf",
-};
-
-const GUIDANCE: Partial<Record<SessionField, string>> = {
-  neck: "Place the tape just below the larynx. Keep it level and comfortably snug without compressing the skin.",
-  chest: "Measure around the fullest part of the chest. Keep the tape parallel to the floor and breathe normally.",
-  waist: "Measure at the natural waist or narrowest point of the torso after a normal exhale.",
-  abdomen: "Measure level with the navel after a normal exhale. Keep the abdomen relaxed.",
-  hips: "Measure around the widest point of the hips and glutes with feet together.",
-  leftBicep: "Measure the midpoint of each relaxed upper arm using the same position on both sides.",
-  leftForearm: "Measure around the widest part of each relaxed forearm.",
-  leftThigh: "Measure around the widest part of each upper thigh while standing evenly.",
-  leftCalf: "Measure around the widest part of each calf while standing evenly.",
-};
-
-const MODE_FIELDS: Record<EntryMode, SessionField[]> = {
-  NEWBIE: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftCalf", "rightCalf"],
-  NORMAL: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftThigh", "rightThigh"],
-  PRO: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftCalf", "rightCalf"],
-};
-
-const NOVICE_STEPS: WizardStep[] = [
-  { title: "Neck", description: GUIDANCE.neck ?? "", fields: ["neck"] },
-  { title: "Chest", description: GUIDANCE.chest ?? "", fields: ["chest"] },
-  { title: "Waist", description: GUIDANCE.waist ?? "", fields: ["waist"] },
-  { title: "Abdomen", description: GUIDANCE.abdomen ?? "", fields: ["abdomen"] },
-  { title: "Hips", description: GUIDANCE.hips ?? "", fields: ["hips"] },
-  { title: "Upper arms", description: GUIDANCE.leftBicep ?? "", fields: ["leftBicep", "rightBicep"] },
-  { title: "Forearms", description: GUIDANCE.leftForearm ?? "", fields: ["leftForearm", "rightForearm"] },
-  { title: "Thighs", description: GUIDANCE.leftThigh ?? "", fields: ["leftThigh", "rightThigh"] },
-  { title: "Calves", description: GUIDANCE.leftCalf ?? "", fields: ["leftCalf", "rightCalf"] },
-];
-
-const CORE_REVIEW_FIELDS: Array<{ field: SessionField; stepIndex: number }> = [
-  { field: "neck", stepIndex: 0 },
-  { field: "chest", stepIndex: 1 },
-  { field: "waist", stepIndex: 2 },
-  { field: "abdomen", stepIndex: 3 },
-  { field: "hips", stepIndex: 4 },
-];
-
-const PAIRED_REVIEW_FIELDS: Array<{ title: string; left: SessionField; right: SessionField; stepIndex: number }> = [
-  { title: "Upper arms", left: "leftBicep", right: "rightBicep", stepIndex: 5 },
-  { title: "Forearms", left: "leftForearm", right: "rightForearm", stepIndex: 6 },
-  { title: "Thighs", left: "leftThigh", right: "rightThigh", stepIndex: 7 },
-  { title: "Calves", left: "leftCalf", right: "rightCalf", stepIndex: 8 },
-];
-
-const MODE_DESCRIPTIONS: Record<EntryMode, string> = {
-  NEWBIE: "One guided step at a time with paired left and right measurements.",
-  NORMAL: "Balanced weekly tracking with grouped measurements.",
-  PRO: "Complete bilateral detail with minimal guidance.",
-};
-
 const TREND_LABELS: Record<TrendMetric, string> = {
   weight: "Weight",
   bodyFat: "Body fat",
@@ -94,11 +29,6 @@ const TREND_LABELS: Record<TrendMetric, string> = {
   waist: "Waist",
 };
 
-function getLocalDateTimeValue(date = new Date()): string {
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-function optionalNumber(value: string): number | undefined { return value.trim() === "" ? undefined : Number(value); }
 function methodLabel(method: string | null): string {
   if (!method) return "Not calculated";
   if (method === "US_NAVY_CIRCUMFERENCE") return "U.S. Navy circumference estimate";
@@ -109,11 +39,6 @@ function methodLabel(method: string | null): string {
 function formatValue(value: number | null | undefined, unit = ""): string {
   if (value == null) return "—";
   return `${formatMeasurement(value, unit as WeightUnit | LengthUnit | "%")} ${unit}`.trim();
-}
-function modeLabel(mode: EntryMode): string {
-  if (mode === "NEWBIE") return "Novice";
-  if (mode === "NORMAL") return "Standard";
-  return "Advanced";
 }
 function referenceLabel(reference: MeasurementProfileMetrics["bodyCompositionReference"]): string {
   if (reference === "MALE") return "male reference";
@@ -149,24 +74,16 @@ function MiniTrendChart({ points, label, unit }: { points: TrendPoint[]; label: 
 export default function MeasurementsPage() {
   const navigate = useNavigate();
   const { locale, t } = useLocale();
-  const modalRef = useRef<HTMLElement>(null);
-  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
-  const measurementInputRefs = useRef<Partial<Record<SessionField, HTMLInputElement | null>>>({});
-  const reviewReadyRef = useRef(false);
   const [weights, setWeights] = useState<BodyWeight[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [profileMetrics, setProfileMetrics] = useState<MeasurementProfileMetrics | null>(null);
   const [displayUnits, setDisplayUnits] = useState<MeasurementDisplayUnits>(DEFAULT_DISPLAY_UNITS);
-  const [entryMode, setEntryMode] = useState<EntryMode>("NEWBIE");
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("weight");
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [noviceStep, setNoviceStep] = useState(0);
-  const [measurementDate, setMeasurementDate] = useState(getLocalDateTimeValue());
   const [weightRecordedAt, setWeightRecordedAt] = useState(getLocalDateTimeValue());
   const [weightValue, setWeightValue] = useState("");
-  const [formValues, setFormValues] = useState<Record<SessionField, string>>(() => Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true); const [isSaving, setIsSaving] = useState(false); const [isSavingWeight, setIsSavingWeight] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); const [isSavingWeight, setIsSavingWeight] = useState(false);
 
   const applyData = (data: Awaited<ReturnType<typeof getMeasurementData>>): void => {
     setWeights(data.weights); setMeasurements(data.measurementSessions); setProfileMetrics(data.profileMetrics);
@@ -182,48 +99,11 @@ export default function MeasurementsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!isSessionActive) return;
-    const previousOverflow = document.body.style.overflow;
-    const modal = modalRef.current;
-    modal?.focus();
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape" && !isSaving) {
-        setIsSessionActive(false);
-        return;
-      }
-      if (event.key !== "Tab" || !modal) return;
-      const focusable = Array.from(modal.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"));
-      if (focusable.length === 0) return;
-      const first = focusable[0]; const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", handleKeyDown); };
-  }, [isSaving, isSessionActive]);
-
   const latestWeight = weights[0] ?? null;
   const latestSession = measurements[0] ?? null;
   const latestWithBodyFat = measurements.find((item) => item.bodyFat != null) ?? null;
   const latestWithRatio = measurements.find((item) => item.waistToHeightRatio != null) ?? null;
   const latestWithComposition = measurements.find((item) => item.fatMass != null || item.leanMass != null) ?? null;
-  const isNoviceReview = noviceStep === NOVICE_STEPS.length;
-  const currentNoviceStep = NOVICE_STEPS[Math.min(noviceStep, NOVICE_STEPS.length - 1)];
-
-  useEffect(() => {
-    if (!isSessionActive || entryMode !== "NEWBIE") return;
-    if (isNoviceReview) {
-      stepHeadingRef.current?.focus();
-      return;
-    }
-    const firstField = currentNoviceStep.fields[0];
-    requestAnimationFrame(() => {
-      if (firstField) measurementInputRefs.current[firstField]?.focus();
-    });
-  }, [currentNoviceStep, entryMode, isNoviceReview, isSessionActive, noviceStep]);
-
   const trend = useMemo(() => {
     const label = t(TREND_LABELS[trendMetric]);
     if (trendMetric === "weight") return { label, unit: displayUnits.weight, points: weights.slice().reverse().map((item) => ({ date: item.recordedAt, value: item.weight })) };
@@ -231,14 +111,7 @@ export default function MeasurementsPage() {
     return { label, unit, points: measurements.slice().reverse().map((item) => ({ date: item.measurementDate, value: item[trendMetric] as number | null })).filter((point): point is TrendPoint => point.value != null) };
   }, [displayUnits, measurements, t, trendMetric, weights]);
 
-  const setField = (field: SessionField, value: string): void => setFormValues((current) => ({ ...current, [field]: value }));
-  const clearForm = (): void => {
-    reviewReadyRef.current = false;
-    setFormValues(Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
-    setMeasurementDate(getLocalDateTimeValue()); setNoviceStep(0);
-  };
-  const startSession = (): void => { setMessage(""); setError(""); clearForm(); setIsSessionActive(true); };
-  const cancelSession = (): void => { if (isSaving) return; clearForm(); setError(""); setIsSessionActive(false); };
+  const startSession = (): void => { setMessage(""); setError(""); setIsSessionActive(true); };
 
   const submitMeasurement = async (input: CreateMeasurementInput): Promise<void> => {
     try { await createMeasurement(input); }
@@ -266,108 +139,18 @@ export default function MeasurementsPage() {
     finally { setIsSavingWeight(false); }
   };
 
-  const validateNoviceFields = (fields: SessionField[]): boolean => {
-    const invalidField = fields.find((field) => {
-      const value = optionalNumber(formValues[field]);
-      return value !== undefined && (!Number.isFinite(value) || value <= 0);
-    });
-    if (!invalidField) return true;
-    setError(`${t(FIELD_LABELS[invalidField])} ${t("must be a positive number or left blank.")}`);
-    requestAnimationFrame(() => measurementInputRefs.current[invalidField]?.focus());
-    return false;
-  };
-
-  const showNoviceReview = (): void => {
-    reviewReadyRef.current = false;
-    setNoviceStep(NOVICE_STEPS.length);
-    requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
-  };
-
-  const advanceNovice = (): void => {
+  const handleSessionSave = async (input: CreateMeasurementInput): Promise<void> => {
+    setMessage("");
     setError("");
-    if (isNoviceReview) return;
-    if (!validateNoviceFields(currentNoviceStep.fields)) return;
-    if (noviceStep === NOVICE_STEPS.length - 1) {
-      showNoviceReview();
-      return;
+    try {
+      await submitMeasurement(input);
+      await refreshMeasurements();
+      setIsSessionActive(false);
+      setMessage("Body measurement session saved successfully.");
+    } catch (caught) {
+      throw new Error(caught instanceof Error && caught.message === "ENTRY_REVIEW_REQUESTED" ? "Measurement was not saved." : getMeasurementError(caught), { cause: caught });
     }
-    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
   };
-
-  const editNoviceStep = (stepIndex: number): void => {
-    reviewReadyRef.current = false;
-    setError("");
-    setNoviceStep(stepIndex);
-  };
-
-  const handleReviewRowKeyDown = (event: ReactKeyboardEvent<HTMLTableRowElement>, stepIndex: number): void => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    editNoviceStep(stepIndex);
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    if (entryMode === "NEWBIE" && !isNoviceReview) {
-      advanceNovice();
-      return;
-    }
-    if (entryMode === "NEWBIE" && !reviewReadyRef.current) {
-      reviewReadyRef.current = true;
-      return;
-    }
-    setMessage(""); setError("");
-    const observedAt = new Date(measurementDate);
-    if (Number.isNaN(observedAt.getTime())) { setError("Enter a valid session observation date and time."); return; }
-    const visibleFields = MODE_FIELDS[entryMode];
-    const input = visibleFields.reduce<CreateMeasurementInput>((result, field) => { const value = optionalNumber(formValues[field]); if (value !== undefined) result[field] = value; return result; }, { lengthUnit: displayUnits.length, measurementDate: observedAt.toISOString() });
-    const supplied = visibleFields.filter((field) => input[field] !== undefined);
-    if (supplied.length === 0) { setError("Enter at least one body measurement."); return; }
-    if (supplied.some((field) => !Number.isFinite(input[field]) || Number(input[field]) <= 0)) { setError("Measurement values must be positive numbers."); return; }
-    setIsSaving(true);
-    try { await submitMeasurement(input); await refreshMeasurements(); clearForm(); setIsSessionActive(false); setMessage("Body measurement session saved successfully."); }
-    catch (caught) { setError(caught instanceof Error && caught.message === "ENTRY_REVIEW_REQUESTED" ? "Measurement was not saved." : getMeasurementError(caught)); }
-    finally { setIsSaving(false); }
-  };
-
-  const skipNoviceStep = (): void => {
-    currentNoviceStep.fields.forEach((field) => setField(field, ""));
-    if (noviceStep === NOVICE_STEPS.length - 1) {
-      setError("");
-      showNoviceReview();
-      return;
-    }
-    setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
-  };
-
-  const handleNoviceInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>, field: SessionField): void => {
-    if (event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
-    const fieldIndex = currentNoviceStep.fields.indexOf(field);
-    if (fieldIndex < 0) return;
-    const nextField = currentNoviceStep.fields[fieldIndex + 1];
-    if (nextField) {
-      if (!validateNoviceFields([field])) return;
-      measurementInputRefs.current[nextField]?.focus();
-      return;
-    }
-    advanceNovice();
-  };
-
-  const renderMeasurementInput = (field: SessionField, useGuidedKeyboard = false) => <label key={field} className="measurement-input">
-    <span>{t(FIELD_LABELS[field])} <em>{displayUnits.length}</em></span>
-    <input
-      ref={(element) => { measurementInputRefs.current[field] = element; }}
-      type="number"
-      min="0"
-      step={getMeasurementStep(displayUnits.length)}
-      value={formValues[field]}
-      onChange={(event) => setField(field, event.target.value)}
-      onKeyDown={useGuidedKeyboard ? (event) => handleNoviceInputKeyDown(event, field) : undefined}
-      inputMode="decimal"
-      aria-describedby={useGuidedKeyboard ? "novice-enter-instruction" : undefined}
-    />
-  </label>;
 
   return <main className="dashboard-page measurements-page">
     <header className="dashboard-header page-brand-header measurements-header">
@@ -414,75 +197,11 @@ export default function MeasurementsPage() {
       {isLoading ? <p>{t("Loading measurements...")}</p> : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Record weight separately or complete your first guided body-measurement session.")}</p></div> : <div className="measurement-table-wrap"><table className="measurement-table"><thead><tr><th>{t("Observed at")}</th><th>{t("Waist")}</th><th>{t("Body fat")}</th><th>{t("Waist / height")}</th><th>{t("Lean mass")}</th><th>{t("Method")}</th></tr></thead><tbody>{measurements.map((measurement) => { const units = measurement.displayUnits ?? displayUnits; return <tr key={measurement.id}><td><strong>{new Date(measurement.measurementDate).toLocaleString(locale)}</strong></td><td>{formatValue(measurement.waist, units.length)}</td><td>{formatValue(measurement.bodyFat, "%")}</td><td>{measurement.waistToHeightRatio?.toFixed(3) ?? "—"}</td><td>{formatValue(measurement.leanMass, units.weight)}</td><td><span className="measurement-method-chip" title={`${t("Body fat")}: ${t(methodLabel(measurement.bodyFatMethod))}. ${t("Waist-to-height")}: ${t(methodLabel(measurement.waistToHeightRatioMethod))}.`}>{t(measurement.bodyFatMethod ? "Calculated" : measurement.waistToHeightRatioMethod ? "Ratio only" : "Recorded")}</span></td></tr>; })}</tbody></table></div>}
     </section>
 
-    {isSessionActive && <div className="measurement-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) cancelSession(); }}>
-      <section ref={modalRef} tabIndex={-1} className="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title" aria-describedby="measurement-modal-description">
-        <header className="measurement-modal-header">
-          <div><span className="measurement-eyebrow">{t("Active session")}</span><h2 id="measurement-modal-title">{t("Body measurement session")}</h2><p id="measurement-modal-description">{t("Observed")} {new Date(measurementDate).toLocaleString(locale)}</p></div>
-          <button type="button" className="measurement-modal-close" onClick={cancelSession} disabled={isSaving} aria-label={t("Close measurement session")}>×</button>
-        </header>
-        <div className="measurement-modal-body">
-          {error && <div className="measurement-banner measurement-banner-error" role="alert">{t(error)}</div>}
-          <div className="measurement-modal-controls">
-            <div><strong>{t("Entry experience")}</strong><span>{t(MODE_DESCRIPTIONS[entryMode])}</span></div>
-            <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label={t("Measurement guidance level")}>{(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={entryMode === mode ? "active" : ""} onClick={() => { reviewReadyRef.current = false; setEntryMode(mode); setNoviceStep(0); setError(""); }} aria-pressed={entryMode === mode}>{t(modeLabel(mode))}</button>)}</div>
-          </div>
-          <form id="measurement-session-form" className="measurement-wizard" onSubmit={handleSubmit}>
-            <label className="measurement-date-field"><span>{t("Observed at")}</span><input type="datetime-local" max={getLocalDateTimeValue()} value={measurementDate} onChange={(event) => setMeasurementDate(event.target.value)} required /></label>
-            {entryMode === "NEWBIE" ? <div className="novice-wizard">
-              <div className="novice-progress" aria-label={`${t("Step")} ${Math.min(noviceStep + 1, NOVICE_STEPS.length + 1)} ${t("of")} ${NOVICE_STEPS.length + 1}`}>
-                <span>{t("Step")} {Math.min(noviceStep + 1, NOVICE_STEPS.length + 1)} {t("of")} {NOVICE_STEPS.length + 1}</span>
-                <progress value={noviceStep + 1} max={NOVICE_STEPS.length + 1} />
-              </div>
-              <div className="sr-only" aria-live="polite">{isNoviceReview ? t("Review measurements") : `${t(currentNoviceStep.title)}. ${t("Step")} ${noviceStep + 1} ${t("of")} ${NOVICE_STEPS.length + 1}`}</div>
-              <p id="novice-enter-instruction" className="sr-only">{t("Press Enter to continue. For paired measurements, Enter moves from the left field to the right field before continuing.")}</p>
-              {isNoviceReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
-                <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{t("Review your measurements")}</h3>
-                <p>{t("Review the compact summary below. Double-click a row, or focus it and press Enter or Space, to edit that measurement.")}</p>
-                <div className="measurement-table-wrap">
-                  <table className="measurement-table novice-review-table">
-                    <caption className="sr-only">{t("Entered and skipped measurements. Each row opens its matching edit step.")}</caption>
-                    <thead><tr><th>{t("Measurement")}</th><th>{t("Entered value")}</th><th>{t("Status")}</th></tr></thead>
-                    <tbody>
-                      {CORE_REVIEW_FIELDS.map(({ field, stepIndex }) => {
-                        const entered = formValues[field].trim() !== "";
-                        return <tr key={field} tabIndex={0} onDoubleClick={() => editNoviceStep(stepIndex)} onKeyDown={(event) => handleReviewRowKeyDown(event, stepIndex)} aria-label={`${t("Edit")} ${t(FIELD_LABELS[field])}`}>
-                          <th scope="row">{t(FIELD_LABELS[field])}</th>
-                          <td>{entered ? `${formValues[field]} ${displayUnits.length}` : "—"}</td>
-                          <td>{t(entered ? "Entered" : "Skipped")}</td>
-                        </tr>;
-                      })}
-                      {PAIRED_REVIEW_FIELDS.map(({ title, left, right, stepIndex }) => {
-                        const leftEntered = formValues[left].trim() !== "";
-                        const rightEntered = formValues[right].trim() !== "";
-                        const values = [leftEntered ? `${t("Left")} ${formValues[left]} ${displayUnits.length}` : t("Left skipped"), rightEntered ? `${t("Right")} ${formValues[right]} ${displayUnits.length}` : t("Right skipped")];
-                        const status = t(leftEntered && rightEntered ? "Entered" : leftEntered || rightEntered ? "Partially entered" : "Skipped");
-                        return <tr key={title} tabIndex={0} onDoubleClick={() => editNoviceStep(stepIndex)} onKeyDown={(event) => handleReviewRowKeyDown(event, stepIndex)} aria-label={`${t("Edit")} ${t(title)}`}>
-                          <th scope="row">{t(title)}</th>
-                          <td>{values.join(" · ")}</td>
-                          <td>{status}</td>
-                        </tr>;
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
-                <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{t(currentNoviceStep.title)}</h3>
-                <p>{t(currentNoviceStep.description)}</p>
-                <fieldset><legend>{currentNoviceStep.fields.length === 2 ? `${t(currentNoviceStep.title)}: ${t("left and right")}` : t(currentNoviceStep.title)}</legend><div className={currentNoviceStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>{currentNoviceStep.fields.map((field) => renderMeasurementInput(field, true))}</div></fieldset>
-              </section>}
-            </div> : <div className="measurement-input-grid">{MODE_FIELDS[entryMode].map((field) => renderMeasurementInput(field))}</div>}
-            <div className="measurement-calculation-note"><strong>{t("Calculated automatically")}</strong><span>{t("Body fat, fat mass, lean mass, and waist-to-height ratio are derived after saving when required profile and circumference values are available. Body fat is not entered manually in this workflow.")}</span></div>
-          </form>
-        </div>
-        <footer className="measurement-modal-footer">
-          <button type="button" className="secondary-button" onClick={cancelSession} disabled={isSaving}>{t("Cancel")}</button>
-          {entryMode === "NEWBIE" ? <>
-            <button type="button" className="secondary-button" onClick={() => { reviewReadyRef.current = false; setNoviceStep((step) => Math.max(0, step - 1)); }} disabled={isSaving || noviceStep === 0}>{t("Back")}</button>
-            {!isNoviceReview && <button type="button" className="secondary-button" onClick={skipNoviceStep} disabled={isSaving}>{t("Skip")}</button>}
-            {isNoviceReview ? <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? t("Saving...") : t("Save session")}</button> : <button type="button" onClick={advanceNovice} disabled={isSaving}>{t("Next")}</button>}
-          </> : <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? t("Saving...") : t("Save session")}</button>}
-        </footer>
-      </section>
-    </div>}
+    <MeasurementSessionModal
+      isOpen={isSessionActive}
+      lengthUnit={displayUnits.length}
+      onCancel={() => setIsSessionActive(false)}
+      onSave={handleSessionSave}
+    />
   </main>;
 }
