@@ -1,75 +1,66 @@
-# React + TypeScript + Vite
+# MyFitIdeas frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a React and TypeScript application built with Vite.
 
-Currently, two official plugins are available:
+## Local validation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From `src/frontend`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+/usr/bin/npm ci
+/usr/bin/npm test
+/usr/bin/npm run lint
+/usr/bin/npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Vitest and React Testing Library cover isolated components and mocked service boundaries. Playwright covers browser behavior against the real frontend, backend, authentication flow, and database.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Playwright end-to-end tests
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The Phase 7 measurement suite uses a deterministic user in the reserved `.test` domain. Its reset script refuses to run with `NODE_ENV=production` and deletes only that user's measurement fixture data.
 
+Prerequisites:
+
+1. Install and migrate the backend database.
+2. Seed the backend RBAC and translation prerequisites when setting up a new database:
+
+   ```bash
+   cd ../backend
+   /usr/bin/npm run seed:rbac
+   /usr/bin/npm run seed:translations
+   ```
+
+3. Install the Chromium browser binary from `src/frontend`:
+
+   ```bash
+   /usr/bin/npm exec playwright install chromium
+   ```
+
+   On a new Ubuntu or WSL image, install the required operating-system packages once with `playwright install-deps chromium` using the environment's normal privilege workflow.
+
+Run the baseline desktop and mobile Chromium projects:
+
+```bash
+/usr/bin/npm run test:e2e
 ```
+
+Useful interactive commands:
+
+```bash
+/usr/bin/npm run test:e2e:headed
+/usr/bin/npm run test:e2e:ui
+/usr/bin/npm run test:e2e:report
+```
+
+Playwright reuses frontend and backend services already listening on ports 5173 and 3000 during local development. If they are not running, the configuration starts them for the test run. CI always starts deterministic services through the configured commands. The test reset is safe to repeat and runs before each test, so tests do not depend on execution order.
+
+Optional environment variables:
+
+- `E2E_BASE_URL` - frontend origin; defaults to `http://localhost:5173`.
+- `E2E_API_URL` - backend origin; defaults to `http://localhost:3000`.
+- `E2E_USER_EMAIL` - fixture login; must end in `.test`.
+- `E2E_USER_PASSWORD` - fixture password.
+- `E2E_NPM_EXECUTABLE` - npm binary used by the reset helper; defaults to `/usr/bin/npm`.
+- `PLAYWRIGHT_OPTIONAL_BROWSERS=true` - adds Firefox and WebKit desktop projects after installing their browser binaries.
+
+Failure screenshots, retained videos, and retry traces are written to `test-results/`. The HTML report is written to `playwright-report/`. These generated artifacts and the authenticated storage state are ignored by Git.
