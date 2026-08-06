@@ -53,7 +53,11 @@ describe("MeasurementSessionModal", () => {
 
     const launcher = screen.getByRole("button", { name: "Start measurement session" });
     await user.click(launcher);
-    await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveClass("measurement-modal");
+    expect(dialog.parentElement).toHaveClass("measurement-modal-backdrop");
+    expect(screen.getByRole("button", { name: "Close measurement session" })).toHaveClass("measurement-modal-close");
+    expect(document.body.style.overflow).toBe("hidden");
 
     await user.keyboard("{Escape}");
 

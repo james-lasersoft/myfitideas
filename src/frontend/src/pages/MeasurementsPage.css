@@ -59,8 +59,8 @@
 .measurement-method-chip { display: inline-flex; padding: .28rem .58rem; border-radius: 999px; background: rgba(47,115,85,.09); color: #2f7355; font-size: .75rem; font-weight: 800; cursor: help; }
 .measurement-empty-state { text-align: center; padding: 1.75rem 1rem; color: #69756e; }
 .measurement-empty-state h3 { color: #263b30; margin-bottom: .4rem; }
-.measurement-modal-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 1.5rem; background: rgba(12, 23, 17, .62); backdrop-filter: blur(5px); }
-.measurement-modal { width: min(1020px, 100%); max-height: min(90vh, 900px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border-radius: 22px; background: #f8fbf9; box-shadow: 0 26px 80px rgba(10, 24, 16, .34); border: 1px solid rgba(255,255,255,.58); outline: none; }
+.measurement-modal-backdrop { position: fixed; inset: var(--member-toolbar-height, 0) 0 0; z-index: 1200; display: grid; place-items: center; padding: 1.5rem; background: rgba(12, 23, 17, .62); backdrop-filter: blur(5px); }
+.measurement-modal { width: min(1020px, 100%); max-height: min(calc(100dvh - var(--member-toolbar-height, 0px) - 3rem), 900px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border-radius: 22px; background: #f8fbf9; box-shadow: 0 26px 80px rgba(10, 24, 16, .34); border: 1px solid rgba(255,255,255,.58); outline: none; }
 .measurement-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.15rem 1.25rem; background: #fff; border-bottom: 1px solid rgba(33,54,42,.12); }
 .measurement-modal-header h2 { margin: .12rem 0 .2rem; color: #20352a; }
 .measurement-modal-header p { margin: 0; color: #66736b; }
@@ -124,7 +124,7 @@
   .measurement-section-heading { flex-direction: column; }
   .measurement-section-heading select { width: 100%; }
   .measurement-modal-backdrop { padding: 0; }
-  .measurement-modal { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+  .measurement-modal { width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
   .measurement-modal-controls { grid-template-columns: 1fr; }
   .measurement-mode-selector { grid-template-columns: repeat(3, 1fr); }
   .measurement-mode-selector button { padding: .65rem .4rem; font-size: .82rem; }
