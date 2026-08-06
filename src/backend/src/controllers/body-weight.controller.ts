@@ -29,15 +29,14 @@ function parseInput(req: AuthenticatedRequest): BodyWeightInput {
     source: body.source,
     notes: body.notes,
     measurementSessionId: body.measurementSessionId,
+    timezoneOffsetMinutes: body.timezoneOffsetMinutes,
   };
 }
 
 function routeId(req: AuthenticatedRequest): string {
   const value = req.params.id;
   const id = Array.isArray(value) ? value[0] : value;
-  if (!id) {
-    throw new TypeError("A body weight entry ID is required.");
-  }
+  if (!id) throw new TypeError("A body weight entry ID is required.");
   return id;
 }
 
@@ -52,88 +51,48 @@ function handleError(res: Response, error: unknown): void {
 
 export async function createWeight(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication is required." });
-      return;
-    }
+    if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
     const row = await createBodyWeight(req.user.id, parseInput(req));
     const unit = await resolveWeightUnit(req.user.id);
     res.status(201).json({ weight: formatBodyWeight(row, unit) });
-  } catch (error) {
-    handleError(res, error);
-  }
+  } catch (error) { handleError(res, error); }
 }
 
 export async function latestWeight(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication is required." });
-      return;
-    }
-    const [row, unit] = await Promise.all([
-      getLatestBodyWeight(req.user.id),
-      resolveWeightUnit(req.user.id),
-    ]);
+    if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
+    const [row, unit] = await Promise.all([getLatestBodyWeight(req.user.id), resolveWeightUnit(req.user.id)]);
     res.status(200).json({ weight: row ? formatBodyWeight(row, unit) : null });
-  } catch (error) {
-    handleError(res, error);
-  }
+  } catch (error) { handleError(res, error); }
 }
 
 export async function weightHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication is required." });
-      return;
-    }
+    if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
     const requestedLimit = Number(req.query.limit ?? 90);
     const requestedOffset = Number(req.query.offset ?? 0);
     const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 365) : 90;
     const offset = Number.isInteger(requestedOffset) ? Math.max(requestedOffset, 0) : 0;
-    const [rows, unit] = await Promise.all([
-      getBodyWeightHistory(req.user.id, limit, offset),
-      resolveWeightUnit(req.user.id),
-    ]);
-    res.status(200).json({
-      weights: rows.map((row) => formatBodyWeight(row, unit)),
-      pagination: { limit, offset, returned: rows.length },
-    });
-  } catch (error) {
-    handleError(res, error);
-  }
+    const [rows, unit] = await Promise.all([getBodyWeightHistory(req.user.id, limit, offset), resolveWeightUnit(req.user.id)]);
+    res.status(200).json({ weights: rows.map((row) => formatBodyWeight(row, unit)), pagination: { limit, offset, returned: rows.length } });
+  } catch (error) { handleError(res, error); }
 }
 
 export async function updateWeight(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication is required." });
-      return;
-    }
+    if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
     const row = await updateBodyWeight(req.user.id, routeId(req), parseInput(req));
-    if (!row) {
-      res.status(404).json({ error: "Body weight entry not found." });
-      return;
-    }
+    if (!row) { res.status(404).json({ error: "Body weight entry not found." }); return; }
     const unit = await resolveWeightUnit(req.user.id);
     res.status(200).json({ weight: formatBodyWeight(row, unit) });
-  } catch (error) {
-    handleError(res, error);
-  }
+  } catch (error) { handleError(res, error); }
 }
 
 export async function removeWeight(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication is required." });
-      return;
-    }
+    if (!req.user) { res.status(401).json({ error: "Authentication is required." }); return; }
     const deleted = await deleteBodyWeight(req.user.id, routeId(req));
-    if (!deleted) {
-      res.status(404).json({ error: "Body weight entry not found." });
-      return;
-    }
+    if (!deleted) { res.status(404).json({ error: "Body weight entry not found." }); return; }
     res.status(204).send();
-  } catch (error) {
-    handleError(res, error);
-  }
+  } catch (error) { handleError(res, error); }
 }
