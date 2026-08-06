@@ -179,7 +179,7 @@ export default function MeasurementsPage() {
     setIsSavingWeight(true);
     try {
       await createBodyWeight({ weight, unit: displayUnits.weight, recordedAt: observedAt.toISOString(), timezoneOffsetMinutes: observedAt.getTimezoneOffset() });
-      await refreshMeasurements(); setWeightValue(""); setWeightRecordedAt(getLocalDateTimeValue()); setMessage("Weight observation saved. A same-day manual entry is replaced rather than duplicated.");
+      await refreshMeasurements(); setWeightValue(""); setWeightRecordedAt(getLocalDateTimeValue()); setMessage("Weight saved. Same-day manual entries replace earlier entries.");
     } catch (caught) { setError(getBodyWeightError(caught)); }
     finally { setIsSavingWeight(false); }
   };
@@ -199,7 +199,7 @@ export default function MeasurementsPage() {
 
   return <main className="dashboard-page measurements-page">
     <header className="dashboard-header page-brand-header measurements-header">
-      <div className="page-brand-heading"><BrandLogo variant="symbol" className="page-brand-symbol" /><div><h1>{t("Body Measurements")}</h1><p>{t("Record daily weight separately from guided body-measurement sessions.")}</p></div></div>
+      <div className="page-brand-heading"><BrandLogo variant="symbol" className="page-brand-symbol" /><div><h1>{t("Body Measurements")}</h1><p>{t("Record weight and body measurements.")}</p></div></div>
       <div className="measurements-header-actions"><button type="button" className="secondary-button" onClick={() => navigate("/dashboard")}>{t("Back to Dashboard")}</button></div>
     </header>
     {error && !isSessionActive && <div className="measurement-banner measurement-banner-error" role="alert">{t(error)}</div>}
@@ -207,8 +207,8 @@ export default function MeasurementsPage() {
 
     <section className="measurement-quick-actions">
       <article className="dashboard-card daily-weight-card">
-        <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("Daily check-in")}</span><h2>{t("Today's weight")}</h2></div></div>
-        <div className="daily-weight-summary"><strong>{formatMeasurementValue(latestWeight?.weight, displayUnits.weight)}</strong><span>{latestWeight ? `${t("Last recorded")} ${new Date(latestWeight.recordedAt).toLocaleString(locale)}` : t("No weight recorded yet")}</span></div>
+        <div className="measurement-section-heading"><div><h2>{t("Weight")}</h2></div></div>
+        <div className="daily-weight-summary"><strong>{formatMeasurementValue(latestWeight?.weight, displayUnits.weight)}</strong><span>{latestWeight ? `${t("Last recorded")} ${new Date(latestWeight.recordedAt).toLocaleString(locale)}` : t("No weight recorded")}</span></div>
         <form className="daily-weight-form" onSubmit={handleWeightSubmit}>
           <label><span>{t("Weight")} <em>{displayUnits.weight}</em></span><input type="number" min="0" step={getMeasurementStep(displayUnits.weight)} value={weightValue} onChange={(event) => setWeightValue(event.target.value)} /></label>
           <label><span>{t("Observed at")}</span><input type="datetime-local" max={getLocalDateTimeValue()} value={weightRecordedAt} onChange={(event) => setWeightRecordedAt(event.target.value)} required /></label>
@@ -217,8 +217,8 @@ export default function MeasurementsPage() {
       </article>
 
       <article className="dashboard-card measurement-session-summary-card">
-        <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("Body measurements")}</span><h2>{t("Latest measurement session")}</h2></div></div>
-        <div className="measurement-session-summary"><strong>{latestSession ? new Date(latestSession.measurementDate).toLocaleString(locale) : t("No session yet")}</strong><span>{latestSession ? t("Latest completed session") : t("Complete your first circumference session")}</span></div>
+        <div className="measurement-section-heading"><div><h2>{t("Measurement session")}</h2></div></div>
+        <div className="measurement-session-summary"><strong>{latestSession ? new Date(latestSession.measurementDate).toLocaleString(locale) : t("No session yet")}</strong></div>
         <button type="button" className="measurement-session-jump" onClick={startSession}>{t("Start measurement session")}</button>
       </article>
     </section>
@@ -240,7 +240,7 @@ export default function MeasurementsPage() {
 
     <section className="dashboard-card measurement-history-card">
       <div className="measurement-section-heading">
-        <div><span className="measurement-eyebrow">{t("History")}</span><h2>{t("Body measurement sessions")}</h2></div>
+        <div><h2>{t("Body measurement sessions")}</h2></div>
         <div className="measurement-history-actions">
           <span className="measurement-record-count">{measurements.length} {t(measurements.length === 1 ? "session" : "sessions")}</span>
           <button
@@ -254,7 +254,7 @@ export default function MeasurementsPage() {
         </div>
       </div>
       {isLoading ? <p>{t("Loading measurements...")}</p>
-        : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Record weight separately or complete your first guided body-measurement session.")}</p></div>
+        : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Start a session to record body measurements.")}</p></div>
           : <MeasurementHistoryTable measurements={measurements} fallbackUnits={displayUnits} onSelect={openSessionDetails} />}
     </section>
 

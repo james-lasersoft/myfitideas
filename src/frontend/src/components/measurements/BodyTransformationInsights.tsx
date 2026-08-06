@@ -109,7 +109,7 @@ export default function BodyTransformationInsights(props: Props) {
   };
   return <article className="dashboard-card measurement-insights-card">
     <div className="measurement-section-heading">
-      <div><span className="measurement-eyebrow">{t("Progress overview")}</span><h2>{t("Body transformation intelligence")}</h2></div>
+      <div><h2>{t("Body transformation intelligence")}</h2></div>
       <label className="measurement-analytics-period">
         <span>{t("Insight period")}</span>
         <select value={props.selectedPeriod} onChange={(event) => props.onPeriodChange(event.target.value as AnalyticsPeriod)}>
@@ -131,7 +131,7 @@ export default function BodyTransformationInsights(props: Props) {
     {props.isLoading ? <p role="status">{t("Loading body transformation insights...")}</p>
       : props.error ? <p className="measurement-banner measurement-banner-error" role="alert">{t(props.error)}</p>
         : props.analytics && !props.analytics.dataSufficiency.hasAnyData
-          ? <div className="measurement-empty-state"><h3>{t("No body transformation data in this period")}</h3><p>{t("Record weight or body measurements to build factual trends.")}</p></div>
+          ? <div className="measurement-empty-state"><h3>{t("No body transformation data in this period")}</h3><p>{t("Add weight or measurements to view trends.")}</p></div>
           : props.analytics && <>
             <p id="measurement-analytics-summary" className="measurement-analytics-summary">
               <span>{t("Selected period")}: {props.analytics.period.startDate ? new Date(props.analytics.period.startDate).toLocaleDateString(locale) : t("Beginning of history")} - {new Date(props.analytics.period.endDate).toLocaleDateString(locale)}</span>
@@ -142,7 +142,7 @@ export default function BodyTransformationInsights(props: Props) {
             <p id="measurement-analytics-reliability" className="measurement-analytics-help">{t("Reliability reflects only the number of available observations.")}</p>
             <div className="measurement-table-wrap">
               <table className="measurement-table measurement-analytics-table" aria-describedby="measurement-analytics-summary measurement-analytics-reliability">
-                <caption>{t("Backend-calculated body transformation changes for the selected period.")}</caption>
+                <caption className="sr-only">{t("Backend-calculated body transformation changes for the selected period.")}</caption>
                 <thead><tr><th scope="col">{t("Metric")}</th><th scope="col">{t("Current value")}</th><th scope="col">{t("Change")}</th><th scope="col">{t("Direction")}</th><th scope="col">{t("Data reliability")}</th></tr></thead>
                 <tbody>
                   <tr><th scope="row">{t("Weight")}</th><td><TrendText trend={props.analytics.weight} kind="value" /></td><td><TrendText trend={props.analytics.weight} kind="change" /></td><td><TrendText trend={props.analytics.weight} kind="direction" /></td><td><TrendText trend={props.analytics.weight} kind="reliability" /></td></tr>
@@ -154,7 +154,7 @@ export default function BodyTransformationInsights(props: Props) {
             </div>
             <section className="measurement-analytics-consistency" aria-labelledby="measurement-consistency-heading">
               <h3 id="measurement-consistency-heading">{t("Recording consistency")}</h3>
-              <p>{t("Coverage reports recorded intervals only and does not judge progress.")}</p>
+              <p>{t("Coverage shows recorded intervals.")}</p>
               <dl>
                 <ConsistencyItem label="Weight recording days" summary={props.analytics.consistency.bodyWeight} />
                 <ConsistencyItem label="Measurement-session weeks" summary={props.analytics.consistency.measurementSessions} />

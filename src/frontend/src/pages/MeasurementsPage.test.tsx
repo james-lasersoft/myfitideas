@@ -174,6 +174,18 @@ beforeEach(() => {
   vi.mocked(createMeasurement).mockResolvedValue({} as Awaited<ReturnType<typeof createMeasurement>>);
 });
 
+describe("Streamlined measurement presentation", () => {
+  it("uses concise page copy without the previous coaching text", async () => {
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+
+    expect(await screen.findByText("Record weight and body measurements.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Weight" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Measurement session" })).toBeInTheDocument();
+    expect(screen.queryByText("Record daily weight separately from guided body-measurement sessions.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Complete your first circumference session")).not.toBeInTheDocument();
+  });
+});
+
 describe("Novice measurement review", () => {
   it("shows one row per core measurement and left/right pair with values, units, and statuses", async () => {
     await openPopulatedReview();
@@ -249,7 +261,6 @@ describe("Novice measurement review", () => {
   });
 });
 
-
 describe("Body transformation intelligence", () => {
   it("loads the default period and renders backend-provided trends without recalculating", async () => {
     render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
@@ -294,7 +305,6 @@ describe("Body transformation intelligence", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to load body transformation insights.");
   });
 });
-
 
 describe("Historical measurement session details", () => {
   it("opens by click and shows complete read-only measurements and calculated results", async () => {

@@ -22,18 +22,21 @@ export default function NoviceMeasurementWizard({ step, currentStep, isReview, v
       <span>{t("Step")} {Math.min(step + 1, totalSteps)} {t("of")} {totalSteps}</span><progress value={step + 1} max={totalSteps} />
     </div>
     <div className="sr-only" aria-live="polite">{isReview ? t("Review measurements") : `${t(currentStep.title)}. ${t("Step")} ${step + 1} ${t("of")} ${totalSteps}`}</div>
-    <p id="novice-enter-instruction" className="sr-only">{t("Press Enter to continue. For paired measurements, Enter moves from the left field to the right field before continuing.")}</p>
     {isReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
       <h3 id="novice-step-heading" ref={headingRef} tabIndex={-1}>{t("Review your measurements")}</h3>
-      <p>{t("Review the compact summary below. Double-click a row, or focus it and press Enter or Space, to edit that measurement.")}</p>
+      <p>{t("Double-click a row, or press Enter or Space, to edit.")}</p>
       <NoviceReviewTable values={values} lengthUnit={lengthUnit} onEdit={onEdit} />
     </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
-      <h3 id="novice-step-heading" ref={headingRef} tabIndex={-1}>{t(currentStep.title)}</h3><p>{t(currentStep.description)}</p>
-      <fieldset><legend>{currentStep.fields.length === 2 ? `${t(currentStep.title)}: ${t("left and right")}` : t(currentStep.title)}</legend>
+      <h3 id="novice-step-heading" ref={headingRef} tabIndex={-1}>{t(currentStep.title)}</h3>
+      <details className="measurement-technique-help">
+        <summary>{t("Technique")}</summary>
+        <p>{t(currentStep.description)}</p>
+      </details>
+      <fieldset><legend className={currentStep.fields.length === 1 ? "sr-only" : undefined}>{currentStep.fields.length === 2 ? `${t(currentStep.title)}: ${t("left and right")}` : t(currentStep.title)}</legend>
         <div className={currentStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>
           {currentStep.fields.map((field) => <MeasurementInput key={field} field={field} lengthUnit={lengthUnit} value={values[field]}
             inputRef={(element) => { inputRefs.current[field] = element; }} onChange={(value) => onFieldChange(field, value)}
-            onKeyDown={(event) => onFieldKeyDown(event, field)} guided />)}
+            onKeyDown={(event) => onFieldKeyDown(event, field)} />)}
         </div>
       </fieldset>
     </section>}

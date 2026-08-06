@@ -13,6 +13,17 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   await expect(dialog.getByRole("button", { name: "Novice" })).toBeVisible();
   await expect(dialog.getByRole("spinbutton", { name: "Neck in" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Next" })).toBeVisible();
+  await expect(page.getByText("Record daily weight separately from guided body-measurement sessions.")).toHaveCount(0);
+
+  const keyboardHelp = dialog.locator("details").filter({ hasText: "Keyboard help" });
+  await keyboardHelp.getByText("Keyboard help").press("Enter");
+  await expect(keyboardHelp).toHaveAttribute("open", "");
+  await expect(dialog.getByText("Press Enter to continue. For paired measurements, Enter moves from left to right.")).toHaveCount(1);
+
+  const techniqueHelp = dialog.locator("details").filter({ hasText: "Technique" });
+  await techniqueHelp.getByText("Technique").press("Enter");
+  await expect(techniqueHelp).toHaveAttribute("open", "");
+  await expect(techniqueHelp.getByText("Place the tape below the larynx, level and snug without compressing the skin.")).toBeVisible();
 
   await page.getByRole("spinbutton", { name: "Neck in" }).fill("15");
   await page.getByRole("spinbutton", { name: "Neck in" }).press("Enter");

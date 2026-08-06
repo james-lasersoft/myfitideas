@@ -61,4 +61,36 @@ describe("MeasurementSessionModal", () => {
     expect(launcher).toHaveFocus();
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it("keeps concise guidance in keyboard-accessible disclosures without repeating instructions", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn(async () => undefined);
+    render(<LocaleProvider><ModalHarness onSave={onSave} /></LocaleProvider>);
+
+    await user.click(screen.getByRole("button", { name: "Start measurement session" }));
+
+    const keyboardSummary = screen.getByText("Keyboard help");
+    const keyboardDetails = keyboardSummary.closest("details") as HTMLDetailsElement;
+    expect(keyboardDetails.open).toBe(false);
+    expect(screen.getAllByText("Press Enter to continue. For paired measurements, Enter moves from left to right.")).toHaveLength(1);
+    keyboardSummary.focus();
+    expect(keyboardSummary).toHaveFocus();
+    await user.click(keyboardSummary);
+    expect(keyboardDetails.open).toBe(true);
+
+    const techniqueSummary = screen.getByText("Technique");
+    const techniqueDetails = techniqueSummary.closest("details") as HTMLDetailsElement;
+    expect(techniqueDetails.open).toBe(false);
+    techniqueSummary.focus();
+    expect(techniqueSummary).toHaveFocus();
+    await user.click(techniqueSummary);
+    expect(techniqueDetails.open).toBe(true);
+    expect(screen.getByText("Place the tape below the larynx, level and snug without compressing the skin.")).toBeInTheDocument();
+    expect(screen.queryByText("Place the tape just below the larynx. Keep it level and comfortably snug without compressing the skin.")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getAllByText("Press Enter to continue. For paired measurements, Enter moves from left to right.")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Chest" })).toBeInTheDocument();
+  });
+
 });

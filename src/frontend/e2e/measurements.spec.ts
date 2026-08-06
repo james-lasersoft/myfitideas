@@ -201,6 +201,7 @@ test("English and Brazilian Portuguese measurement views contain localized UI", 
 
   await page.getByRole("button", { name: /Brasil/ }).click();
   await expect(page.getByRole("heading", { name: "Medidas Corporais", exact: true })).toBeVisible();
+  await expect(page.getByText("Registre peso e medidas corporais.")).toBeVisible();
   await expect(page.getByRole("button", { name: /Iniciar.*medidas/ })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(RAW_TRANSLATION_KEY);
 });

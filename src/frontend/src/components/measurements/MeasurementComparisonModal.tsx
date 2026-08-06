@@ -49,7 +49,7 @@ export default function MeasurementComparisonModal({
         <div>
           <span className="measurement-eyebrow">{t("History")}</span>
           <h2 id="measurement-comparison-title" ref={headingRef} tabIndex={-1}>{t("Compare measurement sessions")}</h2>
-          <p id="measurement-comparison-description">{t("Choose two different sessions to compare.")}</p>
+          <p id="measurement-comparison-description">{t("Select two sessions.")}</p>
         </div>
         <button type="button" className="measurement-modal-close" onClick={onClose} aria-label={t("Close comparison")}>×</button>
       </header>
@@ -62,7 +62,7 @@ export default function MeasurementComparisonModal({
           <span><b>{t("Baseline")}:</b> {new Date(baseline.measurementDate).toLocaleString(locale)}</span>
           <span><b>{t("Comparison")}:</b> {new Date(selectedComparison.measurementDate).toLocaleString(locale)}</span>
         </div>}
-        <p className="measurement-comparison-note">{t("Values and changes use backend-normalized units.")}</p>
+        <p className="measurement-comparison-note">{t("Values use normalized units.")}</p>
         {isLoading && <p role="status">{t("Loading comparison...")}</p>}
         {error && <p className="measurement-banner measurement-banner-error" role="alert">{t(error)}</p>}
         {!isLoading && !error && comparison && <MeasurementComparisonTable comparison={comparison} />}
