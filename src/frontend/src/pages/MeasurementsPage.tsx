@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
@@ -20,35 +20,53 @@ import "./MeasurementsPage.css";
 const DEFAULT_DISPLAY_UNITS: MeasurementDisplayUnits = { weight: "lb", length: "in" };
 type EntryMode = "NEWBIE" | "NORMAL" | "PRO";
 type TrendMetric = "weight" | "bodyFat" | "waistToHeightRatio" | "waist";
-type SessionField = Exclude<keyof CreateMeasurementInput, "weight" | "weightUnit" | "lengthUnit" | "measurementDate" | "confirmAnomaly">;
+type SessionField = Exclude<keyof CreateMeasurementInput, "weight" | "weightUnit" | "lengthUnit" | "measurementDate" | "confirmAnomaly" | "bodyFat">;
+
+interface WizardStep {
+  title: string;
+  description: string;
+  fields: SessionField[];
+}
 
 const FIELD_LABELS: Record<SessionField, string> = {
   waist: "Waist", chest: "Chest", hips: "Hips", neck: "Neck", abdomen: "Abdomen",
-  leftBicep: "Left bicep", rightBicep: "Right bicep", leftForearm: "Left forearm",
+  leftBicep: "Left upper arm", rightBicep: "Right upper arm", leftForearm: "Left forearm",
   rightForearm: "Right forearm", leftThigh: "Left thigh", rightThigh: "Right thigh",
-  leftCalf: "Left calf", rightCalf: "Right calf", bodyFat: "Body fat",
+  leftCalf: "Left calf", rightCalf: "Right calf",
 };
 
 const GUIDANCE: Partial<Record<SessionField, string>> = {
-  neck: "Place the tape just below the larynx and keep it level without compressing the skin.",
-  chest: "Measure around the fullest part of the chest with the tape parallel to the floor.",
-  waist: "Measure at the narrowest point of the torso or at the natural waist.",
-  abdomen: "Measure level with the navel after a normal exhale.",
-  hips: "Measure around the widest point of the hips and glutes.",
-  leftBicep: "Measure the midpoint of the relaxed upper arm.", rightBicep: "Measure the midpoint of the relaxed upper arm.",
-  leftForearm: "Measure around the widest part of the relaxed forearm.", rightForearm: "Measure around the widest part of the relaxed forearm.",
-  leftThigh: "Measure around the widest part of the upper thigh.", rightThigh: "Measure around the widest part of the upper thigh.",
-  leftCalf: "Measure around the widest part of the calf.", rightCalf: "Measure around the widest part of the calf.",
+  neck: "Place the tape just below the larynx. Keep it level and comfortably snug without compressing the skin.",
+  chest: "Measure around the fullest part of the chest. Keep the tape parallel to the floor and breathe normally.",
+  waist: "Measure at the natural waist or narrowest point of the torso after a normal exhale.",
+  abdomen: "Measure level with the navel after a normal exhale. Keep the abdomen relaxed.",
+  hips: "Measure around the widest point of the hips and glutes with feet together.",
+  leftBicep: "Measure the midpoint of each relaxed upper arm using the same position on both sides.",
+  leftForearm: "Measure around the widest part of each relaxed forearm.",
+  leftThigh: "Measure around the widest part of each upper thigh while standing evenly.",
+  leftCalf: "Measure around the widest part of each calf while standing evenly.",
 };
 
 const MODE_FIELDS: Record<EntryMode, SessionField[]> = {
-  NEWBIE: ["neck", "waist", "abdomen", "hips"],
+  NEWBIE: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftCalf", "rightCalf"],
   NORMAL: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftThigh", "rightThigh"],
-  PRO: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftCalf", "rightCalf", "bodyFat"],
+  PRO: ["neck", "chest", "waist", "abdomen", "hips", "leftBicep", "rightBicep", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftCalf", "rightCalf"],
 };
 
+const NOVICE_STEPS: WizardStep[] = [
+  { title: "Neck", description: GUIDANCE.neck ?? "", fields: ["neck"] },
+  { title: "Chest", description: GUIDANCE.chest ?? "", fields: ["chest"] },
+  { title: "Waist", description: GUIDANCE.waist ?? "", fields: ["waist"] },
+  { title: "Abdomen", description: GUIDANCE.abdomen ?? "", fields: ["abdomen"] },
+  { title: "Hips", description: GUIDANCE.hips ?? "", fields: ["hips"] },
+  { title: "Upper arms", description: GUIDANCE.leftBicep ?? "", fields: ["leftBicep", "rightBicep"] },
+  { title: "Forearms", description: GUIDANCE.leftForearm ?? "", fields: ["leftForearm", "rightForearm"] },
+  { title: "Thighs", description: GUIDANCE.leftThigh ?? "", fields: ["leftThigh", "rightThigh"] },
+  { title: "Calves", description: GUIDANCE.leftCalf ?? "", fields: ["leftCalf", "rightCalf"] },
+];
+
 const MODE_DESCRIPTIONS: Record<EntryMode, string> = {
-  NEWBIE: "Step-by-step guidance with essential measurements.",
+  NEWBIE: "One guided step at a time with paired left and right measurements.",
   NORMAL: "Balanced weekly tracking with grouped measurements.",
   PRO: "Complete bilateral detail with minimal guidance.",
 };
@@ -61,7 +79,7 @@ function optionalNumber(value: string): number | undefined { return value.trim()
 function methodLabel(method: string | null): string {
   if (!method) return "Not calculated";
   if (method === "US_NAVY_CIRCUMFERENCE") return "U.S. Navy circumference estimate";
-  if (method === "WAIST_CM_DIVIDED_BY_HEIGHT_CM") return "Waist ÷ height";
+  if (method === "WAIST_CM_DIVIDED_BY_HEIGHT_CM") return "Waist divided by height";
   if (method === "USER_PROVIDED") return "User provided";
   return method.replaceAll("_", " ").toLowerCase();
 }
@@ -96,6 +114,8 @@ function MiniTrendChart({ points, label, unit }: { points: TrendPoint[]; label: 
 
 export default function MeasurementsPage() {
   const navigate = useNavigate();
+  const modalRef = useRef<HTMLElement>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const [weights, setWeights] = useState<BodyWeight[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [profileMetrics, setProfileMetrics] = useState<MeasurementProfileMetrics | null>(null);
@@ -103,6 +123,7 @@ export default function MeasurementsPage() {
   const [entryMode, setEntryMode] = useState<EntryMode>("NEWBIE");
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("weight");
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [noviceStep, setNoviceStep] = useState(0);
   const [measurementDate, setMeasurementDate] = useState(getLocalDateTimeValue());
   const [weightRecordedAt, setWeightRecordedAt] = useState(getLocalDateTimeValue());
   const [weightValue, setWeightValue] = useState("");
@@ -127,27 +148,36 @@ export default function MeasurementsPage() {
   useEffect(() => {
     if (!isSessionActive) return;
     const previousOverflow = document.body.style.overflow;
+    const modal = modalRef.current;
+    modal?.focus();
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape" && !isSaving) {
-        setFormValues(Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
-        setMeasurementDate(getLocalDateTimeValue());
-        setError("");
         setIsSessionActive(false);
+        return;
       }
+      if (event.key !== "Tab" || !modal) return;
+      const focusable = Array.from(modal.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"));
+      if (focusable.length === 0) return;
+      const first = focusable[0]; const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", handleKeyDown); };
   }, [isSaving, isSessionActive]);
+
+  useEffect(() => {
+    if (isSessionActive && entryMode === "NEWBIE") stepHeadingRef.current?.focus();
+  }, [entryMode, isSessionActive, noviceStep]);
 
   const latestWeight = weights[0] ?? null;
   const latestSession = measurements[0] ?? null;
   const latestWithBodyFat = measurements.find((item) => item.bodyFat != null) ?? null;
   const latestWithRatio = measurements.find((item) => item.waistToHeightRatio != null) ?? null;
   const latestWithComposition = measurements.find((item) => item.fatMass != null || item.leanMass != null) ?? null;
+  const isNoviceReview = noviceStep === NOVICE_STEPS.length;
+  const currentNoviceStep = NOVICE_STEPS[Math.min(noviceStep, NOVICE_STEPS.length - 1)];
 
   const trend = useMemo(() => {
     if (trendMetric === "weight") return { label: "Weight", unit: displayUnits.weight, points: weights.slice().reverse().map((item) => ({ date: item.recordedAt, value: item.weight })) };
@@ -158,20 +188,10 @@ export default function MeasurementsPage() {
   const setField = (field: SessionField, value: string): void => setFormValues((current) => ({ ...current, [field]: value }));
   const clearForm = (): void => {
     setFormValues(Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
-    setMeasurementDate(getLocalDateTimeValue());
+    setMeasurementDate(getLocalDateTimeValue()); setNoviceStep(0);
   };
-  const startSession = (): void => {
-    setMessage("");
-    setError("");
-    clearForm();
-    setIsSessionActive(true);
-  };
-  const cancelSession = (): void => {
-    if (isSaving) return;
-    clearForm();
-    setError("");
-    setIsSessionActive(false);
-  };
+  const startSession = (): void => { setMessage(""); setError(""); clearForm(); setIsSessionActive(true); };
+  const cancelSession = (): void => { if (isSaving) return; clearForm(); setError(""); setIsSessionActive(false); };
 
   const submitMeasurement = async (input: CreateMeasurementInput): Promise<void> => {
     try { await createMeasurement(input); }
@@ -185,8 +205,7 @@ export default function MeasurementsPage() {
 
   const handleWeightSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault(); setMessage(""); setError("");
-    const weight = optionalNumber(weightValue);
-    const observedAt = new Date(weightRecordedAt);
+    const weight = optionalNumber(weightValue); const observedAt = new Date(weightRecordedAt);
     if (weight === undefined || !Number.isFinite(weight) || weight <= 0) { setError("Enter a valid positive weight."); return; }
     if (Number.isNaN(observedAt.getTime())) { setError("Enter a valid observation date and time."); return; }
     setIsSavingWeight(true);
@@ -207,24 +226,36 @@ export default function MeasurementsPage() {
     if (supplied.length === 0) { setError("Enter at least one body measurement."); return; }
     if (supplied.some((field) => !Number.isFinite(input[field]) || Number(input[field]) <= 0)) { setError("Measurement values must be positive numbers."); return; }
     setIsSaving(true);
-    try {
-      await submitMeasurement(input);
-      await refreshMeasurements();
-      clearForm();
-      setIsSessionActive(false);
-      setMessage("Body measurement session saved successfully.");
-    }
+    try { await submitMeasurement(input); await refreshMeasurements(); clearForm(); setIsSessionActive(false); setMessage("Body measurement session saved successfully."); }
     catch (caught) { setError(caught instanceof Error && caught.message === "ENTRY_REVIEW_REQUESTED" ? "Measurement was not saved." : getMeasurementError(caught)); }
     finally { setIsSaving(false); }
   };
+
+  const advanceNovice = (): void => {
+    setError("");
+    if (isNoviceReview) return;
+    const invalid = currentNoviceStep.fields.some((field) => { const value = optionalNumber(formValues[field]); return value !== undefined && (!Number.isFinite(value) || value <= 0); });
+    if (invalid) { setError("Enter positive numbers or leave the measurement blank to skip it."); return; }
+    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+  };
+
+  const skipNoviceStep = (): void => {
+    currentNoviceStep.fields.forEach((field) => setField(field, ""));
+    setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+  };
+
+  const renderMeasurementInput = (field: SessionField) => <label key={field} className="measurement-input">
+    <span>{FIELD_LABELS[field]} <em>{displayUnits.length}</em></span>
+    <input type="number" min="0" step={getMeasurementStep(displayUnits.length)} value={formValues[field]} onChange={(event) => setField(field, event.target.value)} inputMode="decimal" />
+  </label>;
 
   return <main className="dashboard-page measurements-page">
     <header className="dashboard-header page-brand-header measurements-header">
       <div className="page-brand-heading"><BrandLogo variant="symbol" className="page-brand-symbol" /><div><h1>Body Measurements</h1><p>Record daily weight separately from guided body-measurement sessions.</p></div></div>
       <div className="measurements-header-actions"><button type="button" className="secondary-button" onClick={() => navigate("/dashboard")}>Back to Dashboard</button></div>
     </header>
-    {error && !isSessionActive && <div className="measurement-banner measurement-banner-error">{error}</div>}
-    {message && <div className="measurement-banner measurement-banner-success">{message}</div>}
+    {error && !isSessionActive && <div className="measurement-banner measurement-banner-error" role="alert">{error}</div>}
+    {message && <div className="measurement-banner measurement-banner-success" role="status" aria-live="polite">{message}</div>}
 
     <section className="measurement-quick-actions">
       <article className="dashboard-card daily-weight-card">
@@ -264,24 +295,46 @@ export default function MeasurementsPage() {
     </section>
 
     {isSessionActive && <div className="measurement-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) cancelSession(); }}>
-      <section className="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title">
+      <section ref={modalRef} tabIndex={-1} className="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title" aria-describedby="measurement-modal-description">
         <header className="measurement-modal-header">
-          <div><span className="measurement-eyebrow">Active session</span><h2 id="measurement-modal-title">Body measurement session</h2><p>Observed {new Date(measurementDate).toLocaleString()}</p></div>
+          <div><span className="measurement-eyebrow">Active session</span><h2 id="measurement-modal-title">Body measurement session</h2><p id="measurement-modal-description">Observed {new Date(measurementDate).toLocaleString()}</p></div>
           <button type="button" className="measurement-modal-close" onClick={cancelSession} disabled={isSaving} aria-label="Close measurement session">×</button>
         </header>
         <div className="measurement-modal-body">
-          {error && <div className="measurement-banner measurement-banner-error">{error}</div>}
+          {error && <div className="measurement-banner measurement-banner-error" role="alert">{error}</div>}
           <div className="measurement-modal-controls">
             <div><strong>Entry experience</strong><span>{MODE_DESCRIPTIONS[entryMode]}</span></div>
-            <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label="Measurement guidance level">{(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={entryMode === mode ? "active" : ""} onClick={() => setEntryMode(mode)} aria-pressed={entryMode === mode}>{modeLabel(mode)}</button>)}</div>
+            <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label="Measurement guidance level">{(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={entryMode === mode ? "active" : ""} onClick={() => { setEntryMode(mode); setNoviceStep(0); setError(""); }} aria-pressed={entryMode === mode}>{modeLabel(mode)}</button>)}</div>
           </div>
           <form id="measurement-session-form" className="measurement-wizard" onSubmit={handleSubmit}>
             <label className="measurement-date-field"><span>Observed at</span><input type="datetime-local" max={getLocalDateTimeValue()} value={measurementDate} onChange={(event) => setMeasurementDate(event.target.value)} required /></label>
-            <div className="measurement-input-grid">{MODE_FIELDS[entryMode].map((field) => { const isPercent = field === "bodyFat"; const unit = isPercent ? "%" : displayUnits.length; return <label key={field} className="measurement-input"><span>{FIELD_LABELS[field]} <em>{unit}</em></span><input type="number" min="0" step={getMeasurementStep(unit as LengthUnit | "%")} value={formValues[field]} onChange={(event) => setField(field, event.target.value)} />{entryMode === "NEWBIE" && GUIDANCE[field] && <small>{GUIDANCE[field]}</small>}</label>; })}</div>
-            <div className="measurement-calculation-note"><strong>Calculated automatically</strong><span>Body fat, fat mass, lean mass, and waist-to-height ratio are calculated when the required profile and circumference values are available. Daily weight remains in its own history.</span></div>
+            {entryMode === "NEWBIE" ? <div className="novice-wizard">
+              <div className="novice-progress" aria-label={`Step ${Math.min(noviceStep + 1, NOVICE_STEPS.length + 1)} of ${NOVICE_STEPS.length + 1}`}>
+                <span>Step {Math.min(noviceStep + 1, NOVICE_STEPS.length + 1)} of {NOVICE_STEPS.length + 1}</span>
+                <progress value={noviceStep + 1} max={NOVICE_STEPS.length + 1} />
+              </div>
+              <div className="sr-only" aria-live="polite">{isNoviceReview ? "Review measurements" : `${currentNoviceStep.title}. Step ${noviceStep + 1} of ${NOVICE_STEPS.length + 1}`}</div>
+              {isNoviceReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
+                <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>Review your measurements</h3>
+                <p>Confirm the values below. Body fat and other composition metrics will be calculated after saving when the required profile data is available.</p>
+                <dl>{MODE_FIELDS.NEWBIE.map((field) => formValues[field] ? <div key={field}><dt>{FIELD_LABELS[field]}</dt><dd>{formValues[field]} {displayUnits.length}</dd></div> : null)}</dl>
+              </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
+                <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{currentNoviceStep.title}</h3>
+                <p>{currentNoviceStep.description}</p>
+                <fieldset><legend>{currentNoviceStep.fields.length === 2 ? `${currentNoviceStep.title}: left and right` : currentNoviceStep.title}</legend><div className={currentNoviceStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>{currentNoviceStep.fields.map(renderMeasurementInput)}</div></fieldset>
+              </section>}
+            </div> : <div className="measurement-input-grid">{MODE_FIELDS[entryMode].map(renderMeasurementInput)}</div>}
+            <div className="measurement-calculation-note"><strong>Calculated automatically</strong><span>Body fat, fat mass, lean mass, and waist-to-height ratio are derived after saving when required profile and circumference values are available. Body fat is not entered manually in this workflow.</span></div>
           </form>
         </div>
-        <footer className="measurement-modal-footer"><button type="button" className="secondary-button" onClick={cancelSession} disabled={isSaving}>Cancel</button><button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button></footer>
+        <footer className="measurement-modal-footer">
+          <button type="button" className="secondary-button" onClick={cancelSession} disabled={isSaving}>Cancel</button>
+          {entryMode === "NEWBIE" ? <>
+            <button type="button" className="secondary-button" onClick={() => setNoviceStep((step) => Math.max(0, step - 1))} disabled={isSaving || noviceStep === 0}>Back</button>
+            {!isNoviceReview && <button type="button" className="secondary-button" onClick={skipNoviceStep} disabled={isSaving}>Skip</button>}
+            {isNoviceReview ? <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button> : <button type="button" onClick={advanceNovice} disabled={isSaving}>Next</button>}
+          </> : <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button>}
+        </footer>
       </section>
     </div>}
   </main>;
