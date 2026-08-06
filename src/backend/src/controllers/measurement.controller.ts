@@ -271,6 +271,7 @@ export const getMeasurements = async (
         SELECT "id", "measurementSessionId", "recordedAt", "weightKg", "source", "notes"
         FROM "body_weights"
         WHERE "userId" = ${req.user.id}
+          AND "recordedAt" <= CURRENT_TIMESTAMP + INTERVAL '5 minutes'
         ORDER BY "recordedAt" DESC, "createdAt" DESC
       `,
     ]);
