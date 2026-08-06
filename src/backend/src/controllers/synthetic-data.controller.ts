@@ -173,7 +173,7 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
           "simulatedAge", "bodyProfile", "trend", "adherence", "hydrationPattern",
           "dataTypes", "recordCounts", "status"
         ) VALUES (
-          ${batchId}::uuid, ${input.userId}::uuid, ${req.user!.id}::uuid, ${seed}, ${input.periodDays},
+          ${batchId}, ${input.userId}, ${req.user!.id}, ${seed}, ${input.periodDays},
           ${input.sexReference}, ${input.age}, ${input.bodyProfile}, ${input.trend}, ${input.adherence},
           ${input.hydrationPattern}, ${JSON.stringify({ dailyWeight: input.dailyWeight, weeklyMeasurements: input.weeklyMeasurements, dailyHydration: input.dailyHydration })}::jsonb,
           ${JSON.stringify(counts)}::jsonb, 'GENERATING'
@@ -182,13 +182,13 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
       for (let day = 0; day < input.periodDays; day += 1) {
         const date = new Date(start);
         date.setUTCDate(start.getUTCDate() + day);
-        const progress = input.periodDays === 1 ? 1 : day / (input.periodDays - 1);
+        const progress = day / (input.periodDays - 1);
         const weightKg = Math.max(40, startingWeightKg + trendDeltaKg(input.trend, progress) + (random() - 0.5) * 1.4);
 
         if (input.dailyWeight && random() <= adherenceChance) {
           await tx.$executeRaw`
             INSERT INTO "measurements" ("id", "userId", "measurementDate", "weight", "weightKg", "syntheticBatchId", "createdAt", "updatedAt")
-            VALUES (${crypto.randomUUID()}::uuid, ${input.userId}::uuid, ${date}, ${weightKg * 2.2046226218}, ${weightKg}, ${batchId}::uuid, NOW(), NOW())`;
+            VALUES (${crypto.randomUUID()}, ${input.userId}, ${date}, ${weightKg * 2.2046226218}, ${weightKg}, ${batchId}, NOW(), NOW())`;
           counts.weightEntries += 1;
         }
 
@@ -203,9 +203,9 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
               "id", "userId", "measurementDate", "weight", "weightKg", "waist", "waistCm", "chest", "chestCm",
               "hips", "hipsCm", "bodyFat", "syntheticBatchId", "createdAt", "updatedAt"
             ) VALUES (
-              ${crypto.randomUUID()}::uuid, ${input.userId}::uuid, ${date}, ${weightKg * 2.2046226218}, ${weightKg},
+              ${crypto.randomUUID()}, ${input.userId}, ${date}, ${weightKg * 2.2046226218}, ${weightKg},
               ${waistCm / 2.54}, ${waistCm}, ${chestCm / 2.54}, ${chestCm}, ${hipsCm / 2.54}, ${hipsCm},
-              ${bodyFat}, ${batchId}::uuid, NOW(), NOW()
+              ${bodyFat}, ${batchId}, NOW(), NOW()
             )`;
           counts.measurementEntries += 1;
         }
@@ -224,8 +224,8 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
                 "id", "userId", "amount", "unit", "loggedAt", "amountMl", "beverageType",
                 "hydrationCoefficient", "effectiveAmountMl", "syntheticBatchId", "createdAt", "updatedAt"
               ) VALUES (
-                ${crypto.randomUUID()}::uuid, ${input.userId}::uuid, ${amountMl / 29.5735295625}, 'oz', ${loggedAt},
-                ${amountMl}, ${beverageType}, ${coefficient}, ${amountMl * coefficient}, ${batchId}::uuid, NOW(), NOW()
+                ${crypto.randomUUID()}, ${input.userId}, ${amountMl / 29.5735295625}, 'oz', ${loggedAt},
+                ${amountMl}, ${beverageType}, ${coefficient}, ${amountMl * coefficient}, ${batchId}, NOW(), NOW()
               )`;
             counts.hydrationEntries += 1;
           }
@@ -236,7 +236,7 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
       await tx.$executeRaw`
         UPDATE "synthetic_data_batches"
         SET "recordCounts" = ${JSON.stringify(counts)}::jsonb, "status" = 'COMPLETED'
-        WHERE "id" = ${batchId}::uuid`;
+        WHERE "id" = ${batchId}`;
       await tx.auditLog.create({
         data: {
           actorUserId: req.user!.id,
@@ -276,17 +276,18 @@ export async function listSyntheticDataBatches(req: AuthenticatedRequest, res: R
 export async function deleteSyntheticDataBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     if (!(await authorize(req, res)) || !req.user) return;
-    const batchId = req.params.batchId;
+    const rawBatchId = req.params.batchId;
+    const batchId = Array.isArray(rawBatchId) ? rawBatchId[0] : rawBatchId;
     if (!batchId) {
       res.status(400).json({ error: "A batch ID is required." });
       return;
     }
     const deleted = await prisma.$transaction(async (tx) => {
-      const measurementCount = await tx.$executeRaw`DELETE FROM "measurements" WHERE "syntheticBatchId" = ${batchId}::uuid`;
-      const hydrationCount = await tx.$executeRaw`DELETE FROM "hydration" WHERE "syntheticBatchId" = ${batchId}::uuid`;
+      const measurementCount = await tx.$executeRaw`DELETE FROM "measurements" WHERE "syntheticBatchId" = ${batchId}`;
+      const hydrationCount = await tx.$executeRaw`DELETE FROM "hydration" WHERE "syntheticBatchId" = ${batchId}`;
       const batchCount = await tx.$executeRaw`
         UPDATE "synthetic_data_batches" SET "status" = 'DELETED', "deletedAt" = NOW()
-        WHERE "id" = ${batchId}::uuid AND "deletedAt" IS NULL`;
+        WHERE "id" = ${batchId} AND "deletedAt" IS NULL`;
       if (batchCount === 0) throw new Error("Batch not found");
       await tx.auditLog.create({
         data: {
