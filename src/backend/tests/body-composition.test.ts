@@ -12,8 +12,7 @@ describe("calculateBodyComposition", () => {
 
     expect(result).not.toBeNull();
     expect(result?.bodyFatMethod).toBe("US_NAVY_CIRCUMFERENCE");
-    expect(result?.bodyFat).toBeGreaterThan(10);
-    expect(result?.bodyFat).toBeLessThan(40);
+    expect(result?.bodyFat).toBeCloseTo(25.3, 1);
     expect(result?.fatMassKg).toBeCloseTo(90 * (result?.bodyFat ?? 0) / 100, 1);
     expect((result?.fatMassKg ?? 0) + (result?.leanMassKg ?? 0)).toBeCloseTo(90, 1);
   });
@@ -29,8 +28,10 @@ describe("calculateBodyComposition", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(result?.bodyFat).toBeGreaterThan(15);
-    expect(result?.bodyFat).toBeLessThan(50);
+    expect(result?.bodyFatMethod).toBe("US_NAVY_CIRCUMFERENCE");
+    expect(result?.bodyFat).toBeCloseTo(34.6, 1);
+    expect(result?.fatMassKg).toBeCloseTo(70 * (result?.bodyFat ?? 0) / 100, 1);
+    expect((result?.fatMassKg ?? 0) + (result?.leanMassKg ?? 0)).toBeCloseTo(70, 1);
   });
 
   it("returns null when the required reference measurements are missing", () => {
