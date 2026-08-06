@@ -37,6 +37,7 @@ export interface BodyWeightInput {
   source?: BodyWeightSource;
   notes?: string;
   measurementSessionId?: string;
+  timezoneOffsetMinutes?: number;
 }
 
 function validateWeightKg(weightKg: number): void {
@@ -54,6 +55,21 @@ function parseRecordedAt(value?: string): Date {
     throw new RangeError("recordedAt cannot be in the future.");
   }
   return recordedAt;
+}
+
+function parseTimezoneOffset(value?: number): number {
+  if (value === undefined) return 0;
+  if (!Number.isInteger(value) || value < -840 || value > 840) {
+    throw new TypeError("timezoneOffsetMinutes must be a valid timezone offset.");
+  }
+  return value;
+}
+
+function getLocalDayBounds(recordedAt: Date, timezoneOffsetMinutes: number): { start: Date; end: Date } {
+  const shifted = new Date(recordedAt.getTime() - timezoneOffsetMinutes * 60_000);
+  const startShifted = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+  const start = new Date(startShifted + timezoneOffsetMinutes * 60_000);
+  return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
 }
 
 function validateSource(source: string): asserts source is BodyWeightSource {
@@ -76,9 +92,39 @@ export async function createBodyWeight(userId: string, input: BodyWeightInput): 
   const weightKg = toKilograms(input.weight, input.unit);
   validateWeightKg(weightKg);
   const recordedAt = parseRecordedAt(input.recordedAt);
+  const timezoneOffsetMinutes = parseTimezoneOffset(input.timezoneOffsetMinutes);
   const id = randomUUID();
   const notes = input.notes?.trim() || null;
   const measurementSessionId = input.measurementSessionId?.trim() || null;
+
+  if (source === "MANUAL" && measurementSessionId === null) {
+    const { start, end } = getLocalDayBounds(recordedAt, timezoneOffsetMinutes);
+    const existing = await prisma.$queryRaw<BodyWeightRow[]>`
+      SELECT * FROM "body_weights"
+      WHERE "userId" = ${userId}
+        AND "source" = 'MANUAL'::"BodyWeightSource"
+        AND "measurementSessionId" IS NULL
+        AND "recordedAt" >= ${start}
+        AND "recordedAt" < ${end}
+      ORDER BY "updatedAt" DESC, "createdAt" DESC
+      LIMIT 1
+    `;
+    const existingRow = existing[0];
+    if (existingRow) {
+      const updated = await prisma.$queryRaw<BodyWeightRow[]>`
+        UPDATE "body_weights"
+        SET "recordedAt" = ${recordedAt}, "weightKg" = ${weightKg}, "notes" = ${notes},
+            "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "id" = ${existingRow.id} AND "userId" = ${userId}
+        RETURNING *
+      `;
+      const updatedRow = updated[0];
+      if (!updatedRow) {
+        throw new Error("Body weight entry was not returned after replacement.");
+      }
+      return updatedRow;
+    }
+  }
 
   const rows = await prisma.$queryRaw<BodyWeightRow[]>`
     INSERT INTO "body_weights" (
