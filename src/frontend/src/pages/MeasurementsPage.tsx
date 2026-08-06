@@ -51,6 +51,10 @@ function getLocalDateValue(date = new Date()): string {
   const offset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
+function getLocalDateTimeValue(date = new Date()): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
 function optionalNumber(value: string): number | undefined { return value.trim() === "" ? undefined : Number(value); }
 function methodLabel(method: string | null): string {
   if (!method) return "Not calculated";
@@ -70,17 +74,14 @@ function MiniTrendChart({ points, label, unit }: { points: TrendPoint[]; label: 
   if (visible.length < 2) return <div className="measurement-chart-empty">Add at least two entries to see a trend.</div>;
   const values = visible.map((point) => point.value);
   const min = Math.min(...values); const max = Math.max(...values); const span = Math.max(max - min, 0.01);
-  const coordinates = visible.map((point, index) => ({
-    x: 20 + (index / Math.max(visible.length - 1, 1)) * 560,
-    y: 180 - ((point.value - min) / span) * 140,
-  }));
+  const coordinates = visible.map((point, index) => ({ x: 20 + (index / Math.max(visible.length - 1, 1)) * 560, y: 180 - ((point.value - min) / span) * 140 }));
   return <div className="measurement-chart-wrap">
     <svg className="measurement-chart" viewBox="0 0 600 210" role="img" aria-label={`${label} trend chart`}>
       <line x1="20" x2="580" y1="180" y2="180" className="measurement-chart-axis" />
       <line x1="20" x2="580" y1="40" y2="40" className="measurement-chart-grid" />
       <line x1="20" x2="580" y1="110" y2="110" className="measurement-chart-grid" />
       <polyline points={coordinates.map((point) => `${point.x},${point.y}`).join(" ")} className="measurement-chart-line" />
-      {visible.map((point, index) => <circle key={`${point.date}-${index}`} cx={coordinates[index].x} cy={coordinates[index].y} r="4" className="measurement-chart-point"><title>{`${new Date(point.date).toLocaleDateString()}: ${formatValue(point.value, unit)}`}</title></circle>)}
+      {visible.map((point, index) => <circle key={`${point.date}-${index}`} cx={coordinates[index].x} cy={coordinates[index].y} r="4" className="measurement-chart-point"><title>{`${new Date(point.date).toLocaleString()}: ${formatValue(point.value, unit)}`}</title></circle>)}
     </svg>
     <div className="measurement-chart-range"><span>{formatValue(min, unit)}</span><span>{formatValue(max, unit)}</span></div>
   </div>;
@@ -95,16 +96,14 @@ export default function MeasurementsPage() {
   const [entryMode, setEntryMode] = useState<EntryMode>("NEWBIE");
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("weight");
   const [measurementDate, setMeasurementDate] = useState(getLocalDateValue());
-  const [weightDate, setWeightDate] = useState(getLocalDateValue());
+  const [weightRecordedAt, setWeightRecordedAt] = useState(getLocalDateTimeValue());
   const [weightValue, setWeightValue] = useState("");
   const [formValues, setFormValues] = useState<Record<SessionField, string>>(() => Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true); const [isSaving, setIsSaving] = useState(false); const [isSavingWeight, setIsSavingWeight] = useState(false);
 
   const applyData = (data: Awaited<ReturnType<typeof getMeasurementData>>): void => {
-    setWeights(data.weights);
-    setMeasurements(data.measurementSessions);
-    setProfileMetrics(data.profileMetrics);
+    setWeights(data.weights); setMeasurements(data.measurementSessions); setProfileMetrics(data.profileMetrics);
     setDisplayUnits({ weight: data.weights[0]?.displayUnit ?? data.measurementSessions[0]?.displayUnits?.weight ?? "lb", length: data.profileMetrics.displayUnit });
   };
   const refreshMeasurements = async (): Promise<void> => applyData(await getMeasurementData());
@@ -145,11 +144,13 @@ export default function MeasurementsPage() {
   const handleWeightSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault(); setMessage(""); setError("");
     const weight = optionalNumber(weightValue);
+    const observedAt = new Date(weightRecordedAt);
     if (weight === undefined || !Number.isFinite(weight) || weight <= 0) { setError("Enter a valid positive weight."); return; }
+    if (Number.isNaN(observedAt.getTime())) { setError("Enter a valid observation date and time."); return; }
     setIsSavingWeight(true);
     try {
-      await createBodyWeight({ weight, unit: displayUnits.weight, recordedAt: new Date(`${weightDate}T12:00:00`).toISOString() });
-      await refreshMeasurements(); setWeightValue(""); setWeightDate(getLocalDateValue()); setMessage("Today's weight was recorded.");
+      await createBodyWeight({ weight, unit: displayUnits.weight, recordedAt: observedAt.toISOString(), timezoneOffsetMinutes: observedAt.getTimezoneOffset() });
+      await refreshMeasurements(); setWeightValue(""); setWeightRecordedAt(getLocalDateTimeValue()); setMessage("Weight observation saved. A same-day manual entry is replaced rather than duplicated.");
     } catch (caught) { setError(getBodyWeightError(caught)); }
     finally { setIsSavingWeight(false); }
   };
@@ -157,10 +158,7 @@ export default function MeasurementsPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault(); setMessage(""); setError("");
     const visibleFields = MODE_FIELDS[entryMode];
-    const input = visibleFields.reduce<CreateMeasurementInput>((result, field) => { const value = optionalNumber(formValues[field]); if (value !== undefined) result[field] = value; return result; }, {
-      lengthUnit: displayUnits.length,
-      measurementDate: new Date(`${measurementDate}T12:00:00`).toISOString(),
-    });
+    const input = visibleFields.reduce<CreateMeasurementInput>((result, field) => { const value = optionalNumber(formValues[field]); if (value !== undefined) result[field] = value; return result; }, { lengthUnit: displayUnits.length, measurementDate: new Date(`${measurementDate}T12:00:00`).toISOString() });
     const supplied = visibleFields.filter((field) => input[field] !== undefined);
     if (supplied.length === 0) { setError("Enter at least one body measurement."); return; }
     if (supplied.some((field) => !Number.isFinite(input[field]) || Number(input[field]) <= 0)) { setError("Measurement values must be positive numbers."); return; }
@@ -175,7 +173,6 @@ export default function MeasurementsPage() {
       <div className="page-brand-heading"><BrandLogo variant="symbol" className="page-brand-symbol" /><div><h1>Body Measurements</h1><p>Record daily weight separately from guided body-measurement sessions.</p></div></div>
       <div className="measurements-header-actions"><button type="button" className="secondary-button" onClick={() => navigate("/dashboard")}>Back to Dashboard</button></div>
     </header>
-
     {error && <div className="measurement-banner measurement-banner-error">{error}</div>}
     {message && <div className="measurement-banner measurement-banner-success">{message}</div>}
 
@@ -185,7 +182,7 @@ export default function MeasurementsPage() {
         <div className="daily-weight-summary"><strong>{formatValue(latestWeight?.weight, displayUnits.weight)}</strong><span>{latestWeight ? `Last recorded ${new Date(latestWeight.recordedAt).toLocaleString()}` : "No weight recorded yet"}</span></div>
         <form className="daily-weight-form" onSubmit={handleWeightSubmit}>
           <label><span>Weight <em>{displayUnits.weight}</em></span><input type="number" min="0" step={getMeasurementStep(displayUnits.weight)} value={weightValue} onChange={(event) => setWeightValue(event.target.value)} /></label>
-          <label><span>Date</span><input type="date" max={getLocalDateValue()} value={weightDate} onChange={(event) => setWeightDate(event.target.value)} required /></label>
+          <label><span>Observed at</span><input type="datetime-local" max={getLocalDateTimeValue()} value={weightRecordedAt} onChange={(event) => setWeightRecordedAt(event.target.value)} required /></label>
           <button type="submit" disabled={isSavingWeight}>{isSavingWeight ? "Saving..." : "Record weight"}</button>
         </form>
       </article>
@@ -202,7 +199,7 @@ export default function MeasurementsPage() {
         <div className="measurement-section-heading"><div><span className="measurement-eyebrow">Progress overview</span><h2>Body transformation metrics</h2></div><select value={trendMetric} onChange={(event) => setTrendMetric(event.target.value as TrendMetric)} aria-label="Trend metric"><option value="weight">Weight</option><option value="bodyFat">Body fat</option><option value="waistToHeightRatio">Waist-to-height</option><option value="waist">Waist</option></select></div>
         <MiniTrendChart points={trend.points} label={trend.label} unit={trend.unit} />
         <div className="measurement-metric-grid">
-          <div className="measurement-metric"><span>Latest weight</span><strong>{formatValue(latestWeight?.weight, displayUnits.weight)}</strong><small>{latestWeight ? new Date(latestWeight.recordedAt).toLocaleDateString() : "No entry"}</small></div>
+          <div className="measurement-metric"><span>Latest weight</span><strong>{formatValue(latestWeight?.weight, displayUnits.weight)}</strong><small>{latestWeight ? new Date(latestWeight.recordedAt).toLocaleString() : "No entry"}</small></div>
           <div className="measurement-metric" title={methodLabel(latestWithBodyFat?.bodyFatMethod ?? null)}><span>Body fat estimate</span><strong>{formatValue(latestWithBodyFat?.bodyFat, "%")}</strong><small>{methodLabel(latestWithBodyFat?.bodyFatMethod ?? null)}</small></div>
           <div className="measurement-metric" title={methodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null)}><span>Waist-to-height</span><strong>{latestWithRatio?.waistToHeightRatio?.toFixed(3) ?? "—"}</strong><small>{methodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null)}</small></div>
           <div className="measurement-metric"><span>Lean mass</span><strong>{formatValue(latestWithComposition?.leanMass, displayUnits.weight)}</strong><small>Fat mass {formatValue(latestWithComposition?.fatMass, displayUnits.weight)}</small></div>
