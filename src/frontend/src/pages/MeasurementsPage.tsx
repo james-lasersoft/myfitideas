@@ -191,7 +191,6 @@ export default function MeasurementsPage() {
   const latestWithComposition = measurements.find((item) => item.fatMass != null || item.leanMass != null) ?? null;
   const isNoviceReview = noviceStep === NOVICE_STEPS.length;
   const currentNoviceStep = NOVICE_STEPS[Math.min(noviceStep, NOVICE_STEPS.length - 1)];
-  const skippedReviewFields = MODE_FIELDS.NEWBIE.filter((field) => !formValues[field]);
 
   useEffect(() => {
     if (!isSessionActive || entryMode !== "NEWBIE") return;
@@ -266,6 +265,12 @@ export default function MeasurementsPage() {
     reviewReadyRef.current = false;
     setError("");
     setNoviceStep(stepIndex);
+  };
+
+  const handleReviewRowKeyDown = (event: ReactKeyboardEvent<HTMLTableRowElement>, stepIndex: number): void => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    editNoviceStep(stepIndex);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -395,37 +400,34 @@ export default function MeasurementsPage() {
               <p id="novice-enter-instruction" className="sr-only">Press Enter to continue. For paired measurements, Enter moves from the left field to the right field before continuing.</p>
               {isNoviceReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>Review your measurements</h3>
-                <p>Confirm the observation time and every captured value before saving. Use an Edit button to return directly to that measurement step.</p>
-
-                <section aria-labelledby="review-session-details">
-                  <h4 id="review-session-details">Session details</h4>
-                  <dl><div><dt>Observed at</dt><dd>{new Date(measurementDate).toLocaleString()}</dd></div><div><dt>Entry experience</dt><dd>{modeLabel(entryMode)}</dd></div><div><dt>Measurement unit</dt><dd>{displayUnits.length}</dd></div></dl>
-                </section>
-
-                <section aria-labelledby="review-core-measurements">
-                  <h4 id="review-core-measurements">Core measurements</h4>
-                  <dl>{CORE_REVIEW_FIELDS.map(({ field, stepIndex }) => <div key={field}><dt>{FIELD_LABELS[field]}</dt><dd>{formValues[field] ? `${formValues[field]} ${displayUnits.length}` : "Not entered"}</dd><dd><button type="button" className="secondary-button" onClick={() => editNoviceStep(stepIndex)} aria-label={`Edit ${FIELD_LABELS[field]}`}>Edit</button></dd></div>)}</dl>
-                </section>
-
-                <section aria-labelledby="review-paired-measurements">
-                  <h4 id="review-paired-measurements">Paired measurements</h4>
-                  <dl>{PAIRED_REVIEW_FIELDS.map(({ title, left, right, stepIndex }) => {
-                    const leftValue = optionalNumber(formValues[left]);
-                    const rightValue = optionalNumber(formValues[right]);
-                    const difference = leftValue !== undefined && rightValue !== undefined ? Math.abs(leftValue - rightValue) : null;
-                    return <div key={title}><dt>{title}</dt><dd>Left: {formValues[left] ? `${formValues[left]} ${displayUnits.length}` : "Not entered"}</dd><dd>Right: {formValues[right] ? `${formValues[right]} ${displayUnits.length}` : "Not entered"}</dd>{difference !== null && <dd>Difference: {difference.toFixed(1)} {displayUnits.length}</dd>}<dd><button type="button" className="secondary-button" onClick={() => editNoviceStep(stepIndex)} aria-label={`Edit ${title}`}>Edit</button></dd></div>;
-                  })}</dl>
-                </section>
-
-                <section aria-labelledby="review-skipped-measurements">
-                  <h4 id="review-skipped-measurements">Skipped measurements</h4>
-                  {skippedReviewFields.length === 0 ? <p>None. Every measurement was entered.</p> : <ul>{skippedReviewFields.map((field) => <li key={field}>{FIELD_LABELS[field]}: Not entered</li>)}</ul>}
-                </section>
-
-                <section aria-labelledby="review-calculated-results">
-                  <h4 id="review-calculated-results">Calculated after saving</h4>
-                  <ul><li>Body fat estimate, when required profile and circumference data are available</li><li>Lean mass and fat mass, when body fat and a nearby weight observation are available</li><li>Waist-to-height ratio, when waist and height are available</li></ul>
-                </section>
+                <p>Review the compact summary below. Double-click a row, or focus it and press Enter or Space, to edit that measurement.</p>
+                <div className="measurement-table-wrap">
+                  <table className="measurement-table novice-review-table">
+                    <caption className="sr-only">Entered and skipped measurements. Each row opens its matching edit step.</caption>
+                    <thead><tr><th>Measurement</th><th>Entered value</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {CORE_REVIEW_FIELDS.map(({ field, stepIndex }) => {
+                        const entered = formValues[field].trim() !== "";
+                        return <tr key={field} tabIndex={0} onDoubleClick={() => editNoviceStep(stepIndex)} onKeyDown={(event) => handleReviewRowKeyDown(event, stepIndex)} aria-label={`Edit ${FIELD_LABELS[field]}`}>
+                          <th scope="row">{FIELD_LABELS[field]}</th>
+                          <td>{entered ? `${formValues[field]} ${displayUnits.length}` : "—"}</td>
+                          <td>{entered ? "Entered" : "Skipped"}</td>
+                        </tr>;
+                      })}
+                      {PAIRED_REVIEW_FIELDS.map(({ title, left, right, stepIndex }) => {
+                        const leftEntered = formValues[left].trim() !== "";
+                        const rightEntered = formValues[right].trim() !== "";
+                        const values = [leftEntered ? `Left ${formValues[left]} ${displayUnits.length}` : "Left skipped", rightEntered ? `Right ${formValues[right]} ${displayUnits.length}` : "Right skipped"];
+                        const status = leftEntered && rightEntered ? "Entered" : leftEntered || rightEntered ? "Partially entered" : "Skipped";
+                        return <tr key={title} tabIndex={0} onDoubleClick={() => editNoviceStep(stepIndex)} onKeyDown={(event) => handleReviewRowKeyDown(event, stepIndex)} aria-label={`Edit ${title}`}>
+                          <th scope="row">{title}</th>
+                          <td>{values.join(" · ")}</td>
+                          <td>{status}</td>
+                        </tr>;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{currentNoviceStep.title}</h3>
                 <p>{currentNoviceStep.description}</p>
