@@ -99,6 +99,7 @@ export async function getLatestBodyWeight(userId: string): Promise<BodyWeightRow
   const rows = await prisma.$queryRaw<BodyWeightRow[]>`
     SELECT * FROM "body_weights"
     WHERE "userId" = ${userId}
+      AND "recordedAt" <= CURRENT_TIMESTAMP + INTERVAL '5 minutes'
     ORDER BY "recordedAt" DESC, "createdAt" DESC
     LIMIT 1
   `;
@@ -109,6 +110,7 @@ export async function getBodyWeightHistory(userId: string, limit = 90, offset = 
   return prisma.$queryRaw<BodyWeightRow[]>`
     SELECT * FROM "body_weights"
     WHERE "userId" = ${userId}
+      AND "recordedAt" <= CURRENT_TIMESTAMP + INTERVAL '5 minutes'
     ORDER BY "recordedAt" DESC, "createdAt" DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
