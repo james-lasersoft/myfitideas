@@ -5,6 +5,7 @@ import {
   provisionSyntheticAccess,
   type SyntheticAccess,
 } from "../services/syntheticDataService";
+import "./SyntheticAccessPanel.css";
 
 function readApiError(error: unknown): string {
   if (typeof error === "object" && error && "response" in error) {
@@ -60,7 +61,7 @@ export default function SyntheticAccessPanel({ userId }: { userId: string }) {
   }
 
   return (
-    <section className="synthetic-access-panel" aria-label={t("Development access")}> 
+    <section className="synthetic-access-panel" aria-label={t("Development access")}>
       <div className="synthetic-access-heading">
         <div><span>{t("Access")}</span><strong>{t("Development subscription")}</strong></div>
         <span className={access?.activeSubscription ? "access-status is-active" : "access-status is-missing"}>
