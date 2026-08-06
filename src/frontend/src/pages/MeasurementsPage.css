@@ -4,6 +4,17 @@
 .measurement-banner { border-radius: 14px; padding: .9rem 1rem; font-weight: 700; }
 .measurement-banner-error { background: #fff1f0; border: 1px solid #e9aaa5; color: #8d2e25; }
 .measurement-banner-success { background: #edf8ef; border: 1px solid #a6d3ad; color: #266334; }
+.measurement-quick-actions { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 1.25rem; }
+.daily-weight-card, .measurement-session-summary-card { min-width: 0; }
+.daily-weight-summary, .measurement-session-summary { display: grid; gap: .3rem; margin-bottom: 1rem; }
+.daily-weight-summary strong, .measurement-session-summary strong { font-size: 2rem; color: #20352a; }
+.daily-weight-summary span, .measurement-session-summary span { color: #66736b; }
+.daily-weight-form { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(150px, .8fr) auto; gap: .75rem; align-items: end; }
+.daily-weight-form label { display: grid; gap: .35rem; font-weight: 700; }
+.daily-weight-form em { font-style: normal; color: #6d7a72; font-weight: 500; }
+.measurement-session-summary-card { display: flex; flex-direction: column; }
+.measurement-session-jump { display: inline-flex; justify-content: center; align-items: center; margin-top: auto; min-height: 42px; border-radius: 12px; padding: .7rem 1rem; background: var(--color-primary, #2f7355); color: #fff; font-weight: 800; text-decoration: none; }
+.measurement-session-jump:hover { filter: brightness(.95); }
 .measurements-top-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); gap: 1.25rem; align-items: start; }
 .measurement-insights-card, .measurement-entry-card, .measurement-history-card { min-width: 0; }
 .measurement-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
@@ -41,12 +52,12 @@
 .measurement-history-card { overflow: hidden; }
 .measurement-record-count { font-size: .8rem; font-weight: 800; padding: .4rem .7rem; border-radius: 999px; background: rgba(47,115,85,.08); color: #2f7355; }
 .measurement-table-wrap { overflow-x: auto; }
-.measurement-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.measurement-table { width: 100%; border-collapse: collapse; min-width: 720px; }
 .measurement-table th { text-align: left; font-size: .73rem; text-transform: uppercase; letter-spacing: .07em; color: #68756d; padding: .75rem; border-bottom: 1px solid rgba(33,54,42,.16); }
 .measurement-table td { padding: .8rem .75rem; border-bottom: 1px solid rgba(33,54,42,.09); white-space: nowrap; }
 .measurement-table tbody tr:hover { background: rgba(47,115,85,.035); }
 .measurement-method-chip { display: inline-flex; padding: .28rem .58rem; border-radius: 999px; background: rgba(47,115,85,.09); color: #2f7355; font-size: .75rem; font-weight: 800; cursor: help; }
 .measurement-empty-state { text-align: center; padding: 2.5rem 1rem; color: #69756e; }
 .measurement-empty-state h3 { color: #263b30; margin-bottom: .4rem; }
-@media (max-width: 1100px) { .measurements-top-grid { grid-template-columns: 1fr; } .measurement-input-grid { max-height: none; } }
-@media (max-width: 720px) { .measurements-header { align-items: flex-start; gap: 1rem; } .measurement-metric-grid, .measurement-input-grid { grid-template-columns: 1fr; } .measurement-mode-selector { grid-template-columns: 1fr; } .measurement-mode-selector button { text-align: center; } .measurement-section-heading { flex-direction: column; } .measurement-section-heading select { width: 100%; } .measurement-form-actions { flex-direction: column-reverse; } .measurement-form-actions button { width: 100%; } }
+@media (max-width: 1100px) { .measurement-quick-actions, .measurements-top-grid { grid-template-columns: 1fr; } .measurement-input-grid { max-height: none; } }
+@media (max-width: 720px) { .measurements-header { align-items: flex-start; gap: 1rem; } .daily-weight-form, .measurement-metric-grid, .measurement-input-grid { grid-template-columns: 1fr; } .daily-weight-form button { width: 100%; } .measurement-mode-selector { grid-template-columns: 1fr; } .measurement-mode-selector button { text-align: center; } .measurement-section-heading { flex-direction: column; } .measurement-section-heading select { width: 100%; } .measurement-form-actions { flex-direction: column-reverse; } .measurement-form-actions button { width: 100%; } }
