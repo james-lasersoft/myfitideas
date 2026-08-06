@@ -55,6 +55,11 @@ function displayLength(value: number | null, unit: LengthUnit): number | null {
   return value == null ? null : roundMeasurement(fromCentimeters(value, unit));
 }
 
+function round(value: number, digits = 2): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
 export const createMeasurement = async (
   req: AuthenticatedRequest,
   res: Response
@@ -123,8 +128,13 @@ export const createMeasurement = async (
     const waistHeight = calculateWaistToHeightRatio(waistCm, user.heightCm);
     const bodyFat = composition?.bodyFat ?? body.bodyFat;
     const bodyFatMethod = composition?.bodyFatMethod ?? (body.bodyFat === undefined ? undefined : "USER_PROVIDED");
-    const fatMassKg = composition?.fatMassKg;
-    const leanMassKg = composition?.leanMassKg;
+    const manualFatMassKg = weightKg !== undefined && bodyFat !== undefined
+      ? round(weightKg * bodyFat / 100)
+      : undefined;
+    const fatMassKg = composition?.fatMassKg ?? manualFatMassKg;
+    const leanMassKg = composition?.leanMassKg ?? (
+      weightKg !== undefined && fatMassKg !== undefined ? round(weightKg - fatMassKg) : undefined
+    );
 
     const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat, measurementDate };
     const rangeErrors = validateMeasurementRanges(canonicalInput);
@@ -160,8 +170,8 @@ export const createMeasurement = async (
         bodyFatMethod,
         fatMassKg,
         leanMassKg,
-        waistToHeightRatio: waistHeight?.waistToHeightRatio,
-        waistToHeightRatioMethod: waistHeight?.waistToHeightRatioMethod,
+        waistToHeightRatio: waistHeight?.value,
+        waistToHeightRatioMethod: waistHeight?.method,
         weightKg,
         waistCm,
         chestCm,
