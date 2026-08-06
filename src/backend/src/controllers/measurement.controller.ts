@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Response } from "express";
 import prisma from "../config/prisma.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
@@ -159,35 +160,74 @@ export const createMeasurement = async (
       return;
     }
 
-    const measurement = await prisma.measurement.create({
-      data: {
-        userId: req.user.id,
-        weight: body.weight,
-        waist: body.waist,
-        chest: body.chest,
-        hips: body.hips,
-        bodyFat,
-        bodyFatMethod,
-        fatMassKg,
-        leanMassKg,
-        waistToHeightRatio: waistHeight?.value,
-        waistToHeightRatioMethod: waistHeight?.method,
-        weightKg,
-        waistCm,
-        chestCm,
-        hipsCm,
-        neckCm,
-        abdomenCm,
-        leftBicepCm,
-        rightBicepCm,
-        leftForearmCm,
-        rightForearmCm,
-        leftThighCm,
-        rightThighCm,
-        leftCalfCm,
-        rightCalfCm,
-        measurementDate,
-      },
+    const measurementSessionId = randomUUID();
+    const bodyWeightId = weightKg === undefined ? null : randomUUID();
+
+    const measurement = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        INSERT INTO "measurement_sessions" (
+          "id", "userId", "recordedAt", "createdAt", "updatedAt"
+        ) VALUES (
+          ${measurementSessionId}, ${req.user!.id}, ${measurementDate}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+      `;
+
+      if (bodyWeightId && weightKg !== undefined) {
+        await tx.$executeRaw`
+          INSERT INTO "body_weights" (
+            "id", "userId", "measurementSessionId", "recordedAt", "weightKg", "source", "createdAt", "updatedAt"
+          ) VALUES (
+            ${bodyWeightId}, ${req.user!.id}, ${measurementSessionId}, ${measurementDate}, ${weightKg},
+            'MEASUREMENT_SESSION'::"BodyWeightSource", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )
+        `;
+      }
+
+      const created = await tx.measurement.create({
+        data: {
+          userId: req.user!.id,
+          weight: body.weight,
+          waist: body.waist,
+          chest: body.chest,
+          hips: body.hips,
+          bodyFat,
+          bodyFatMethod,
+          fatMassKg,
+          leanMassKg,
+          waistToHeightRatio: waistHeight?.value,
+          waistToHeightRatioMethod: waistHeight?.method,
+          weightKg,
+          waistCm,
+          chestCm,
+          hipsCm,
+          neckCm,
+          abdomenCm,
+          leftBicepCm,
+          rightBicepCm,
+          leftForearmCm,
+          rightForearmCm,
+          leftThighCm,
+          rightThighCm,
+          leftCalfCm,
+          rightCalfCm,
+          measurementDate,
+        },
+      });
+
+      await tx.$executeRaw`
+        UPDATE "measurements"
+        SET "measurementSessionId" = ${measurementSessionId},
+            "bodyWeightId" = ${bodyWeightId},
+            "calculationWeightKg" = ${weightKg ?? null}
+        WHERE "id" = ${created.id}
+      `;
+
+      return {
+        ...created,
+        measurementSessionId,
+        bodyWeightId,
+        calculationWeightKg: weightKg ?? null,
+      };
     });
 
     res.status(201).json({ message: "Measurement saved successfully.", measurement, warnings: issues });
