@@ -48,6 +48,15 @@ interface MeasurementRequestBody extends Partial<Record<CircumferenceField, numb
   confirmAnomaly?: boolean;
 }
 
+interface BodyWeightReadRow {
+  id: string;
+  measurementSessionId: string | null;
+  recordedAt: Date;
+  weightKg: number;
+  source: string;
+  notes: string | null;
+}
+
 function convertLength(value: number | undefined, unit: LengthUnit): number | undefined {
   return value === undefined ? undefined : toCentimeters(value, unit);
 }
@@ -253,14 +262,22 @@ export const getMeasurements = async (
       return;
     }
 
-    const rows = await prisma.measurement.findMany({
-      where: { userId: req.user.id },
-      orderBy: { measurementDate: "desc" },
-    });
+    const [rows, weightRows] = await Promise.all([
+      prisma.measurement.findMany({
+        where: { userId: req.user.id },
+        orderBy: { measurementDate: "desc" },
+      }),
+      prisma.$queryRaw<BodyWeightReadRow[]>`
+        SELECT "id", "measurementSessionId", "recordedAt", "weightKg", "source", "notes"
+        FROM "body_weights"
+        WHERE "userId" = ${req.user.id}
+        ORDER BY "recordedAt" DESC, "createdAt" DESC
+      `,
+    ]);
 
     const weightUnit = user.preferredWeightUnit as WeightUnit;
     const lengthUnit = user.preferredLengthUnit as LengthUnit;
-    const measurements = rows.map((row) => ({
+    const measurementSessions = rows.map((row) => ({
       ...row,
       weight: row.weightKg == null ? row.weight : roundMeasurement(fromKilograms(row.weightKg, weightUnit)),
       waist: row.waistCm == null ? row.waist : displayLength(row.waistCm, lengthUnit),
@@ -281,8 +298,21 @@ export const getMeasurements = async (
       displayUnits: { weight: weightUnit, length: lengthUnit },
     }));
 
+    const weights = weightRows.map((row) => ({
+      id: row.id,
+      measurementSessionId: row.measurementSessionId,
+      recordedAt: row.recordedAt,
+      weightKg: row.weightKg,
+      weight: roundMeasurement(fromKilograms(row.weightKg, weightUnit)),
+      source: row.source,
+      notes: row.notes,
+      displayUnit: weightUnit,
+    }));
+
     res.status(200).json({
-      measurements,
+      weights,
+      measurementSessions,
+      measurements: measurementSessions,
       profileMetrics: {
         heightCm: user.heightCm,
         height: displayLength(user.heightCm, lengthUnit),
