@@ -32,6 +32,11 @@ function parseInput(req: AuthenticatedRequest): BodyWeightInput {
   };
 }
 
+function routeId(req: AuthenticatedRequest): string {
+  const value = req.params.id;
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function handleError(res: Response, error: unknown): void {
   if (error instanceof RangeError || error instanceof TypeError) {
     res.status(400).json({ error: error.message });
@@ -100,7 +105,7 @@ export async function updateWeight(req: AuthenticatedRequest, res: Response): Pr
       res.status(401).json({ error: "Authentication is required." });
       return;
     }
-    const row = await updateBodyWeight(req.user.id, req.params.id, parseInput(req));
+    const row = await updateBodyWeight(req.user.id, routeId(req), parseInput(req));
     if (!row) {
       res.status(404).json({ error: "Body weight entry not found." });
       return;
@@ -118,7 +123,7 @@ export async function removeWeight(req: AuthenticatedRequest, res: Response): Pr
       res.status(401).json({ error: "Authentication is required." });
       return;
     }
-    const deleted = await deleteBodyWeight(req.user.id, req.params.id);
+    const deleted = await deleteBodyWeight(req.user.id, routeId(req));
     if (!deleted) {
       res.status(404).json({ error: "Body weight entry not found." });
       return;
