@@ -5,6 +5,17 @@ export type WeightUnit = "lb" | "kg";
 export type LengthUnit = "in" | "cm";
 export type BodyCompositionReference = "MALE" | "FEMALE";
 export type BodyCompositionReferenceBasis = "BIRTH_SEX" | "HORMONE_THERAPY";
+export type BodyWeightSource =
+  | "MANUAL"
+  | "MEASUREMENT_SESSION"
+  | "SMART_SCALE"
+  | "APPLE_HEALTH"
+  | "HEALTH_CONNECT"
+  | "FITBIT"
+  | "GARMIN"
+  | "WITHINGS"
+  | "IMPORT"
+  | "SYNTHETIC";
 
 export interface MeasurementDisplayUnits {
   weight: WeightUnit;
@@ -26,7 +37,7 @@ export interface BodyWeightEntry {
   recordedAt: string;
   weightKg: number;
   weight: number;
-  source: string;
+  source: BodyWeightSource;
   notes: string | null;
   displayUnit: WeightUnit;
 }
