@@ -1,9 +1,16 @@
 import {
+  calculateBmi,
   calculateBodyComposition,
   calculateWaistToHeightRatio,
 } from "../src/utils/body-composition.js";
 
 describe("calculateBodyComposition", () => {
+  it("calculates BMI from canonical weight and height", () => {
+    expect(calculateBmi(81, 180)).toBe(25);
+    expect(calculateBmi(null, 180)).toBeNull();
+    expect(calculateBmi(81, null)).toBeNull();
+  });
+
   it("calculates a male-reference Navy estimate", () => {
     const result = calculateBodyComposition({
       reference: "MALE",

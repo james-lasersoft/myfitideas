@@ -204,3 +204,26 @@ test("English and Brazilian Portuguese measurement views contain localized UI", 
   await expect(page.getByRole("button", { name: /Iniciar.*medidas/ })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(RAW_TRANSLATION_KEY);
 });
+
+
+test("body transformation intelligence uses backend analytics across periods", async ({ page }) => {
+  await openMeasurements(page);
+  const analyticsResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/v1/analytics/body-transformation") && response.status() === 200
+  );
+  const period = page.getByRole("combobox", { name: "Insight period" });
+  await expect(period).toHaveValue("LAST_30_DAYS");
+  await expect(page.getByRole("heading", { name: "Body transformation intelligence" })).toBeVisible();
+
+  const table = page.getByRole("table", { name: /Backend-calculated body transformation changes/ });
+  await expect(table.getByRole("rowheader")).toHaveText([
+    "Weight", "Neck", "Chest", "Waist", "Hips", "Upper arms", "Thighs", "Calves",
+    "BMI", "Body fat", "Waist-to-height", "Fat mass", "Lean mass",
+  ]);
+  await expect(table.getByRole("row", { name: /Upper arms Left:/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recording consistency" })).toBeVisible();
+
+  await period.selectOption("LAST_7_DAYS");
+  await analyticsResponse;
+  await expect(period).toHaveValue("LAST_7_DAYS");
+});
