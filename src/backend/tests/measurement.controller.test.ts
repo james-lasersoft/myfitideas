@@ -13,6 +13,8 @@ jest.mock("../src/config/prisma.js", () => ({
       findFirst: jest.fn(),
       findMany: jest.fn(),
     },
+    $executeRaw: jest.fn(),
+    $transaction: jest.fn(),
   },
 }));
 
@@ -58,6 +60,10 @@ describe("measurement controller", () => {
     jest.clearAllMocks();
     mockedPrisma.user.findUnique.mockResolvedValue(mockUser as never);
     mockedPrisma.measurement.findFirst.mockResolvedValue(null);
+    (mockedPrisma.$executeRaw as jest.Mock).mockResolvedValue(1);
+    (mockedPrisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: (tx: typeof prisma) => unknown) => callback(mockedPrisma)
+    );
   });
 
   test("requires authentication", async () => {
@@ -76,7 +82,7 @@ describe("measurement controller", () => {
     expect(negativeRes.status).toHaveBeenCalledWith(400);
   });
 
-  test("stores expanded imperial measurements and calculated history", async () => {
+  test("stores expanded imperial measurements and links the calculation weight", async () => {
     mockedPrisma.measurement.create.mockResolvedValue({ id: "measurement-001" } as never);
     const res = createResponse();
 
@@ -107,7 +113,34 @@ describe("measurement controller", () => {
         waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
       }),
     });
+    expect(mockedPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockedPrisma.$executeRaw).toHaveBeenCalledTimes(3);
     expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      measurement: expect.objectContaining({
+        id: "measurement-001",
+        measurementSessionId: expect.any(String),
+        bodyWeightId: expect.any(String),
+        calculationWeightKg: expect.closeTo(90, 1),
+      }),
+    }));
+  });
+
+  test("creates a session without a body weight when weight is omitted", async () => {
+    mockedPrisma.measurement.create.mockResolvedValue({ id: "measurement-002" } as never);
+    const res = createResponse();
+
+    await createMeasurement(authenticatedRequest({ waist: 39 }), res);
+
+    expect(mockedPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      measurement: expect.objectContaining({
+        measurementSessionId: expect.any(String),
+        bodyWeightId: null,
+        calculationWeightKg: null,
+      }),
+    }));
   });
 
   test("preserves a user-provided body fat method when calculation inputs are incomplete", async () => {
