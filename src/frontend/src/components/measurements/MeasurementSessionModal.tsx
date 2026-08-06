@@ -68,17 +68,21 @@ export default function MeasurementSessionModal({ isOpen, lengthUnit, onCancel, 
   return <div className="measurement-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) cancelSession(); }}>
     <section ref={modalRef} tabIndex={-1} className="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title" aria-describedby="measurement-modal-description">
       <header className="measurement-modal-header">
-        <div><span className="measurement-eyebrow">{t("Active session")}</span><h2 id="measurement-modal-title">{t("Body measurement session")}</h2><p id="measurement-modal-description">{t("Observed")} {new Date(session.measurementDate).toLocaleString(locale)}</p></div>
+        <div><h2 id="measurement-modal-title">{t("Body measurement session")}</h2><p id="measurement-modal-description">{t("Observed")} {new Date(session.measurementDate).toLocaleString(locale)}</p></div>
         <button type="button" className="measurement-modal-close" onClick={cancelSession} disabled={session.isSaving} aria-label={t("Close measurement session")}>×</button>
       </header>
       <div className="measurement-modal-body">
         {session.error && <div className="measurement-banner measurement-banner-error" role="alert">{t(session.error)}</div>}
         <div className="measurement-modal-controls">
-          <div><strong>{t("Entry experience")}</strong><span>{t(MODE_DESCRIPTIONS[session.entryMode])}</span></div>
+          <div><strong>{t("Entry mode")}</strong><span>{t(MODE_DESCRIPTIONS[session.entryMode])}</span></div>
           <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label={t("Measurement guidance level")}>
             {(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={session.entryMode === mode ? "active" : ""} onClick={() => session.changeEntryMode(mode)} aria-pressed={session.entryMode === mode}>{t(modeLabel(mode))}</button>)}
           </div>
         </div>
+        <details className="measurement-session-help">
+          <summary>{t("Keyboard help")}</summary>
+          <p>{t("Press Enter to continue. For paired measurements, Enter moves from left to right.")}</p>
+        </details>
         <form id="measurement-session-form" className="measurement-wizard" onSubmit={session.handleSubmit}>
           <label className="measurement-date-field"><span>{t("Observed at")}</span><input type="datetime-local" max={getLocalDateTimeValue()} value={session.measurementDate} onChange={(event) => session.setMeasurementDate(event.target.value)} required /></label>
           {session.entryMode === "NEWBIE" ? <NoviceMeasurementWizard
@@ -100,7 +104,7 @@ export default function MeasurementSessionModal({ isOpen, lengthUnit, onCancel, 
             inputRef={(element) => { session.inputRefs.current[field] = element; }}
             onChange={(value) => session.setField(field, value)}
           />)}</div>}
-          <div className="measurement-calculation-note"><strong>{t("Calculated automatically")}</strong><span>{t("Body fat, fat mass, lean mass, and waist-to-height ratio are derived after saving when required profile and circumference values are available. Body fat is not entered manually in this workflow.")}</span></div>
+          <div className="measurement-calculation-note"><strong>{t("Calculated after saving")}</strong><span>{t("Body fat and related metrics are calculated when the required data is available.")}</span></div>
         </form>
       </div>
       <footer className="measurement-modal-footer">

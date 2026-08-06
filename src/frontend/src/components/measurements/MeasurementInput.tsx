@@ -11,15 +11,13 @@ interface MeasurementInputProps {
   inputRef: Ref<HTMLInputElement>;
   onChange: (value: string) => void;
   onKeyDown?: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
-  guided?: boolean;
 }
 
-export default function MeasurementInput({ field, lengthUnit, value, inputRef, onChange, onKeyDown, guided = false }: MeasurementInputProps) {
+export default function MeasurementInput({ field, lengthUnit, value, inputRef, onChange, onKeyDown }: MeasurementInputProps) {
   const { t } = useLocale();
   return <label className="measurement-input">
     <span>{t(FIELD_LABELS[field])} <em>{lengthUnit}</em></span>
     <input ref={inputRef} type="number" min="0" step={getMeasurementStep(lengthUnit)} value={value}
-      onChange={(event) => onChange(event.target.value)} onKeyDown={onKeyDown} inputMode="decimal"
-      aria-describedby={guided ? "novice-enter-instruction" : undefined} />
+      onChange={(event) => onChange(event.target.value)} onKeyDown={onKeyDown} inputMode="decimal" />
   </label>;
 }

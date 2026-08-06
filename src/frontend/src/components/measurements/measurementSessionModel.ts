@@ -18,15 +18,15 @@ export const FIELD_LABELS: Record<SessionField, string> = {
 };
 
 const GUIDANCE: Partial<Record<SessionField, string>> = {
-  neck: "Place the tape just below the larynx. Keep it level and comfortably snug without compressing the skin.",
-  chest: "Measure around the fullest part of the chest. Keep the tape parallel to the floor and breathe normally.",
-  waist: "Measure at the natural waist or narrowest point of the torso after a normal exhale.",
-  abdomen: "Measure level with the navel after a normal exhale. Keep the abdomen relaxed.",
-  hips: "Measure around the widest point of the hips and glutes with feet together.",
-  leftBicep: "Measure the midpoint of each relaxed upper arm using the same position on both sides.",
-  leftForearm: "Measure around the widest part of each relaxed forearm.",
-  leftThigh: "Measure around the widest part of each upper thigh while standing evenly.",
-  leftCalf: "Measure around the widest part of each calf while standing evenly.",
+  neck: "Place the tape below the larynx, level and snug without compressing the skin.",
+  chest: "Measure around the fullest part of the chest with the tape level.",
+  waist: "Measure around the narrowest part of the torso after a normal exhale.",
+  abdomen: "Measure level with the navel after a normal exhale.",
+  hips: "Measure around the fullest part of the hips with feet together.",
+  leftBicep: "Measure the midpoint of each relaxed upper arm.",
+  leftForearm: "Measure around the fullest part of each relaxed forearm.",
+  leftThigh: "Measure around the fullest part of each upper thigh.",
+  leftCalf: "Measure around the fullest part of each calf.",
 };
 
 export const MODE_FIELDS: Record<EntryMode, SessionField[]> = {
@@ -60,9 +60,9 @@ export const PAIRED_MEASUREMENT_FIELDS: Array<{ title: string; left: SessionFiel
 ];
 
 export const MODE_DESCRIPTIONS: Record<EntryMode, string> = {
-  NEWBIE: "One guided step at a time with paired left and right measurements.",
-  NORMAL: "Balanced weekly tracking with grouped measurements.",
-  PRO: "Complete bilateral detail with minimal guidance.",
+  NEWBIE: "Step-by-step guidance.",
+  NORMAL: "Common measurements.",
+  PRO: "All measurements.",
 };
 
 export function createEmptySessionValues(): Record<SessionField, string> {
