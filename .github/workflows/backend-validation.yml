@@ -10,6 +10,9 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      # Prisma config resolves this variable during client generation; backend tests mock database access.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/myfitideas_ci
     defaults:
       run:
         working-directory: src/backend
