@@ -19,28 +19,34 @@ export default function SyntheticAccessPanel({ userId }: { userId: string }) {
   const { t } = useLocale();
   const [access, setAccess] = useState<SyntheticAccess | null>(null);
   const [planKey, setPlanKey] = useState("premium");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     let active = true;
-    setAccess(null);
-    setError("");
-    setMessage("");
     if (!userId) return () => { active = false; };
-    setLoading(true);
+
     void getSyntheticAccess(userId)
       .then((result) => {
         if (!active) return;
         setAccess(result);
+        setError("");
+        setMessage("");
         if (result.activeSubscription) setPlanKey(result.activeSubscription.plan.key);
         else if (result.plans.some((plan) => plan.key === "premium")) setPlanKey("premium");
         else if (result.plans[0]) setPlanKey(result.plans[0].key);
       })
-      .catch((requestError) => { if (active) setError(readApiError(requestError)); })
-      .finally(() => { if (active) setLoading(false); });
+      .catch((requestError) => {
+        if (!active) return;
+        setAccess(null);
+        setError(readApiError(requestError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
     return () => { active = false; };
   }, [userId]);
 
