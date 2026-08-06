@@ -253,11 +253,20 @@ export default function MeasurementsPage() {
     return false;
   };
 
+  const showNoviceReview = (): void => {
+    reviewReadyRef.current = false;
+    setNoviceStep(NOVICE_STEPS.length);
+    requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
+  };
+
   const advanceNovice = (): void => {
     setError("");
     if (isNoviceReview) return;
     if (!validateNoviceFields(currentNoviceStep.fields)) return;
-    if (noviceStep === NOVICE_STEPS.length - 1) reviewReadyRef.current = false;
+    if (noviceStep === NOVICE_STEPS.length - 1) {
+      showNoviceReview();
+      return;
+    }
     setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
   };
 
@@ -299,7 +308,11 @@ export default function MeasurementsPage() {
 
   const skipNoviceStep = (): void => {
     currentNoviceStep.fields.forEach((field) => setField(field, ""));
-    if (noviceStep === NOVICE_STEPS.length - 1) reviewReadyRef.current = false;
+    if (noviceStep === NOVICE_STEPS.length - 1) {
+      setError("");
+      showNoviceReview();
+      return;
+    }
     setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
   };
 
