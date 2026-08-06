@@ -20,6 +20,26 @@ async function continueWithValue(
   await input.press("Enter");
 }
 
+async function expectDialogWithinMemberViewport(
+  page: import("@playwright/test").Page,
+  dialog: import("@playwright/test").Locator,
+  closeButton: import("@playwright/test").Locator,
+): Promise<void> {
+  const toolbarBox = await page.locator(".member-global-controls").boundingBox();
+  const dialogBox = await dialog.boundingBox();
+  const closeBox = await closeButton.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(toolbarBox).not.toBeNull();
+  expect(dialogBox).not.toBeNull();
+  expect(closeBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(dialogBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
+  expect(closeBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(viewport!.height + 1);
+  expect(closeBox!.y + closeBox!.height).toBeLessThanOrEqual(viewport!.height + 1);
+}
+
 test("measurement history loads without raw translation keys", async ({ page }) => {
   await openMeasurements(page);
 
@@ -109,6 +129,11 @@ test("historical details are read-only, show missing and calculated values, and 
 
   const dialog = page.getByRole("dialog", { name: "Measurement session details" });
   await expect(dialog.getByRole("heading", { name: "Measurement session details" })).toBeFocused();
+  await expectDialogWithinMemberViewport(
+    page,
+    dialog,
+    dialog.getByRole("button", { name: "Close", exact: true }),
+  );
   const details = dialog.getByRole("table", { name: /All recorded and unrecorded/ });
   await expect(details.getByRole("rowheader")).toHaveText([
     "Neck", "Chest", "Waist", "Abdomen", "Hips",
@@ -148,6 +173,11 @@ test("comparison uses backend results, prevents duplicate selections, and restor
   await responsePromise;
 
   const dialog = page.getByRole("dialog", { name: "Compare measurement sessions" });
+  await expectDialogWithinMemberViewport(
+    page,
+    dialog,
+    dialog.getByRole("button", { name: "Close", exact: true }),
+  );
   const baseline = dialog.getByRole("combobox", { name: "Baseline session" });
   const comparison = dialog.getByRole("combobox", { name: "Comparison session" });
   await expect(baseline).toHaveValue(BASELINE_ID);
@@ -174,6 +204,39 @@ test("comparison uses backend results, prevents duplicate selections, and restor
   await trigger.click();
   await page.getByRole("dialog", { name: "Compare measurement sessions" }).getByRole("button", { name: "Close", exact: true }).click();
   await expect(trigger).toBeFocused();
+});
+
+test("entry dialog stays below the member toolbar across desktop and tablet viewports", async ({ page }) => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+    { width: 768, height: 700 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await openMeasurements(page);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const toolbarBox = await page.locator(".member-global-controls").boundingBox();
+    const pageHeaderBox = await page.locator(".measurements-header").boundingBox();
+    expect(toolbarBox).not.toBeNull();
+    expect(pageHeaderBox).not.toBeNull();
+    expect(pageHeaderBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
+
+    await page.getByRole("button", { name: "Start measurement session" }).click();
+    const dialog = page.getByRole("dialog", { name: "Body measurement session" });
+    const closeButton = dialog.getByRole("button", { name: "Close measurement session" });
+    await expectDialogWithinMemberViewport(page, dialog, closeButton);
+
+    await dialog.locator(".measurement-modal-body").evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await closeButton.focus();
+    await expect(closeButton).toBeFocused();
+    await expectDialogWithinMemberViewport(page, dialog, closeButton);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  }
 });
 
 test("entry dialog traps focus and Escape restores the opener", async ({ page }) => {

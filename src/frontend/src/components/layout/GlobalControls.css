@@ -20,6 +20,10 @@
   min-height: 58px;
 }
 
+.global-controls-bar.member-global-controls {
+  min-height: var(--member-toolbar-height, 72px);
+}
+
 .global-controls-bar.admin-global-controls {
   background: linear-gradient(90deg, var(--workspace-admin-primary), var(--workspace-admin-secondary));
   box-shadow: 0 4px 16px rgb(var(--workspace-admin-shadow-rgb) / 18%);
@@ -147,6 +151,10 @@ html[data-theme="dark"] .system-global-brand {
   .global-controls-bar.member-global-controls,
   .global-controls-bar.system-global-controls {
     min-height: 54px;
+  }
+
+  .global-controls-bar.member-global-controls {
+    min-height: var(--member-toolbar-height, 64px);
   }
 
   .admin-global-brand,

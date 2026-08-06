@@ -1,5 +1,5 @@
 body.member-shell-active {
-  --member-toolbar-height: 58px;
+  --member-toolbar-height: 72px;
   --member-header-collapsed-height: 58px;
   --member-content-width: 1200px;
   color: var(--workspace-member-text);
@@ -175,7 +175,7 @@ html[data-theme="dark"] body.member-shell-active .security-header {
 
 @media (max-width: 700px) {
   body.member-shell-active {
-    --member-toolbar-height: 54px;
+    --member-toolbar-height: 64px;
     --member-header-collapsed-height: 54px;
   }
 

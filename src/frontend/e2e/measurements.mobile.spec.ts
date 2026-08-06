@@ -1,5 +1,25 @@
 import { test, expect } from "./fixtures";
 
+async function expectDialogWithinMemberViewport(
+  page: import("@playwright/test").Page,
+  dialog: import("@playwright/test").Locator,
+  closeButton: import("@playwright/test").Locator,
+): Promise<void> {
+  const toolbarBox = await page.locator(".member-global-controls").boundingBox();
+  const dialogBox = await dialog.boundingBox();
+  const closeBox = await closeButton.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(toolbarBox).not.toBeNull();
+  expect(dialogBox).not.toBeNull();
+  expect(closeBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(dialogBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
+  expect(closeBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(viewport!.height + 1);
+  expect(closeBox!.y + closeBox!.height).toBeLessThanOrEqual(viewport!.height + 1);
+}
+
 test("mobile Chromium keeps the primary measurement workflow usable", async ({ page }) => {
   await page.goto("/measurements");
 
@@ -34,6 +54,38 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
     document.documentElement.scrollWidth > document.documentElement.clientWidth
   );
   expect(horizontalOverflow).toBe(false);
+});
+
+
+test("mobile measurement dialog keeps its header and close control below the member toolbar", async ({ page }) => {
+  for (const viewport of [
+    { width: 430, height: 740 },
+    { width: 430, height: 560 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/measurements");
+    await expect(page.getByRole("heading", { name: "Body Measurements", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Start measurement session" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Body measurement session" });
+    const closeButton = dialog.getByRole("button", { name: "Close measurement session" });
+    await expectDialogWithinMemberViewport(page, dialog, closeButton);
+
+    await dialog.locator(".measurement-modal-body").evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await closeButton.focus();
+    await expect(closeButton).toBeFocused();
+    await expectDialogWithinMemberViewport(page, dialog, closeButton);
+
+    const horizontalOverflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(horizontalOverflow).toBe(false);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  }
 });
 
 
