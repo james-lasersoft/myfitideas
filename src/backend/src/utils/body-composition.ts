@@ -32,7 +32,7 @@ export function calculateWaistToHeightRatio(
 ): { value: number; method: "WAIST_CM_DIVIDED_BY_HEIGHT_CM" } | null {
   if (!waistCm || !heightCm || waistCm <= 0 || heightCm <= 0) return null;
   return {
-    value: round(waistCm / heightCm, 3),
+    value: round(waistCm / heightCm, 4),
     method: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
   };
 }
