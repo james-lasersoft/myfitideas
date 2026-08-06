@@ -1,7 +1,7 @@
 CREATE TABLE "synthetic_data_batches" (
-  "id" UUID NOT NULL,
-  "targetUserId" UUID NOT NULL,
-  "createdByUserId" UUID NOT NULL,
+  "id" TEXT NOT NULL,
+  "targetUserId" TEXT NOT NULL,
+  "createdByUserId" TEXT NOT NULL,
   "seed" INTEGER NOT NULL,
   "periodDays" INTEGER NOT NULL,
   "sexReference" TEXT NOT NULL,
@@ -18,8 +18,8 @@ CREATE TABLE "synthetic_data_batches" (
   CONSTRAINT "synthetic_data_batches_pkey" PRIMARY KEY ("id")
 );
 
-ALTER TABLE "measurements" ADD COLUMN "syntheticBatchId" UUID;
-ALTER TABLE "hydration" ADD COLUMN "syntheticBatchId" UUID;
+ALTER TABLE "measurements" ADD COLUMN "syntheticBatchId" TEXT;
+ALTER TABLE "hydration" ADD COLUMN "syntheticBatchId" TEXT;
 
 CREATE INDEX "synthetic_data_batches_targetUserId_createdAt_idx"
   ON "synthetic_data_batches"("targetUserId", "createdAt");
