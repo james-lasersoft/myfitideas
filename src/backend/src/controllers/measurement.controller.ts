@@ -15,17 +15,44 @@ import {
   validateMeasurementDate,
   validateMeasurementRanges,
 } from "../utils/data-integrity.js";
+import {
+  calculateBodyComposition,
+  calculateWaistToHeightRatio,
+} from "../utils/body-composition.js";
 
-interface MeasurementRequestBody {
+const circumferenceFields = [
+  "waist",
+  "chest",
+  "hips",
+  "neck",
+  "abdomen",
+  "leftBicep",
+  "rightBicep",
+  "leftForearm",
+  "rightForearm",
+  "leftThigh",
+  "rightThigh",
+  "leftCalf",
+  "rightCalf",
+] as const;
+
+type CircumferenceField = (typeof circumferenceFields)[number];
+
+interface MeasurementRequestBody extends Partial<Record<CircumferenceField, number>> {
   weight?: number;
-  waist?: number;
-  chest?: number;
-  hips?: number;
   bodyFat?: number;
   weightUnit?: WeightUnit;
   lengthUnit?: LengthUnit;
   measurementDate?: string;
   confirmAnomaly?: boolean;
+}
+
+function convertLength(value: number | undefined, unit: LengthUnit): number | undefined {
+  return value === undefined ? undefined : toCentimeters(value, unit);
+}
+
+function displayLength(value: number | null, unit: LengthUnit): number | null {
+  return value == null ? null : roundMeasurement(fromCentimeters(value, unit));
 }
 
 export const createMeasurement = async (
@@ -45,7 +72,7 @@ export const createMeasurement = async (
     }
 
     const body = req.body as MeasurementRequestBody;
-    const values = [body.weight, body.waist, body.chest, body.hips, body.bodyFat];
+    const values = [body.weight, body.bodyFat, ...circumferenceFields.map((field) => body[field])];
     if (values.every((value) => value === undefined)) {
       res.status(400).json({ error: "At least one measurement value is required." });
       return;
@@ -70,10 +97,36 @@ export const createMeasurement = async (
     }
 
     const weightKg = body.weight === undefined ? undefined : toKilograms(body.weight, weightUnit);
-    const waistCm = body.waist === undefined ? undefined : toCentimeters(body.waist, lengthUnit);
-    const chestCm = body.chest === undefined ? undefined : toCentimeters(body.chest, lengthUnit);
-    const hipsCm = body.hips === undefined ? undefined : toCentimeters(body.hips, lengthUnit);
-    const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat: body.bodyFat, measurementDate };
+    const waistCm = convertLength(body.waist, lengthUnit);
+    const chestCm = convertLength(body.chest, lengthUnit);
+    const hipsCm = convertLength(body.hips, lengthUnit);
+    const neckCm = convertLength(body.neck, lengthUnit);
+    const abdomenCm = convertLength(body.abdomen, lengthUnit);
+    const leftBicepCm = convertLength(body.leftBicep, lengthUnit);
+    const rightBicepCm = convertLength(body.rightBicep, lengthUnit);
+    const leftForearmCm = convertLength(body.leftForearm, lengthUnit);
+    const rightForearmCm = convertLength(body.rightForearm, lengthUnit);
+    const leftThighCm = convertLength(body.leftThigh, lengthUnit);
+    const rightThighCm = convertLength(body.rightThigh, lengthUnit);
+    const leftCalfCm = convertLength(body.leftCalf, lengthUnit);
+    const rightCalfCm = convertLength(body.rightCalf, lengthUnit);
+
+    const composition = calculateBodyComposition({
+      reference: user.bodyCompositionReference,
+      heightCm: user.heightCm,
+      weightKg,
+      neckCm,
+      abdomenCm,
+      waistCm,
+      hipsCm,
+    });
+    const waistHeight = calculateWaistToHeightRatio(waistCm, user.heightCm);
+    const bodyFat = composition?.bodyFat ?? body.bodyFat;
+    const bodyFatMethod = composition?.bodyFatMethod ?? (body.bodyFat === undefined ? undefined : "USER_PROVIDED");
+    const fatMassKg = composition?.fatMassKg;
+    const leanMassKg = composition?.leanMassKg;
+
+    const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat, measurementDate };
     const rangeErrors = validateMeasurementRanges(canonicalInput);
     if (rangeErrors.length) {
       res.status(400).json({ code: "MEASUREMENT_OUT_OF_RANGE", error: rangeErrors[0], details: rangeErrors });
@@ -103,11 +156,26 @@ export const createMeasurement = async (
         waist: body.waist,
         chest: body.chest,
         hips: body.hips,
-        bodyFat: body.bodyFat,
+        bodyFat,
+        bodyFatMethod,
+        fatMassKg,
+        leanMassKg,
+        waistToHeightRatio: waistHeight?.waistToHeightRatio,
+        waistToHeightRatioMethod: waistHeight?.waistToHeightRatioMethod,
         weightKg,
         waistCm,
         chestCm,
         hipsCm,
+        neckCm,
+        abdomenCm,
+        leftBicepCm,
+        rightBicepCm,
+        leftForearmCm,
+        rightForearmCm,
+        leftThighCm,
+        rightThighCm,
+        leftCalfCm,
+        rightCalfCm,
         measurementDate,
       },
     });
@@ -145,13 +213,35 @@ export const getMeasurements = async (
     const measurements = rows.map((row) => ({
       ...row,
       weight: row.weightKg == null ? row.weight : roundMeasurement(fromKilograms(row.weightKg, weightUnit)),
-      waist: row.waistCm == null ? row.waist : roundMeasurement(fromCentimeters(row.waistCm, lengthUnit)),
-      chest: row.chestCm == null ? row.chest : roundMeasurement(fromCentimeters(row.chestCm, lengthUnit)),
-      hips: row.hipsCm == null ? row.hips : roundMeasurement(fromCentimeters(row.hipsCm, lengthUnit)),
+      waist: row.waistCm == null ? row.waist : displayLength(row.waistCm, lengthUnit),
+      chest: row.chestCm == null ? row.chest : displayLength(row.chestCm, lengthUnit),
+      hips: row.hipsCm == null ? row.hips : displayLength(row.hipsCm, lengthUnit),
+      neck: displayLength(row.neckCm, lengthUnit),
+      abdomen: displayLength(row.abdomenCm, lengthUnit),
+      leftBicep: displayLength(row.leftBicepCm, lengthUnit),
+      rightBicep: displayLength(row.rightBicepCm, lengthUnit),
+      leftForearm: displayLength(row.leftForearmCm, lengthUnit),
+      rightForearm: displayLength(row.rightForearmCm, lengthUnit),
+      leftThigh: displayLength(row.leftThighCm, lengthUnit),
+      rightThigh: displayLength(row.rightThighCm, lengthUnit),
+      leftCalf: displayLength(row.leftCalfCm, lengthUnit),
+      rightCalf: displayLength(row.rightCalfCm, lengthUnit),
+      fatMass: row.fatMassKg == null ? null : roundMeasurement(fromKilograms(row.fatMassKg, weightUnit)),
+      leanMass: row.leanMassKg == null ? null : roundMeasurement(fromKilograms(row.leanMassKg, weightUnit)),
       displayUnits: { weight: weightUnit, length: lengthUnit },
     }));
 
-    res.status(200).json({ measurements });
+    res.status(200).json({
+      measurements,
+      profileMetrics: {
+        heightCm: user.heightCm,
+        height: displayLength(user.heightCm, lengthUnit),
+        displayUnit: lengthUnit,
+        bodyCompositionReference: user.bodyCompositionReference,
+        bodyCompositionReferenceBasis: user.bodyCompositionReferenceBasis,
+        hasCompletedTwelveMonthsHormoneTherapy: user.hasCompletedTwelveMonthsHormoneTherapy,
+      },
+    });
   } catch (error) {
     console.error("Get measurements error:", error);
     res.status(500).json({ error: "Unable to retrieve measurements." });
