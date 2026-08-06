@@ -29,6 +29,16 @@
   --workspace-admin-border: #d8e0e8;
   --workspace-admin-shadow-rgb: 17 36 56;
 
+  /* System operations workspace */
+  --workspace-system-primary: #76331f;
+  --workspace-system-secondary: #a94f2b;
+  --workspace-system-accent: #d08a21;
+  --workspace-system-background: #fff7e8;
+  --workspace-system-surface: #fffdf8;
+  --workspace-system-text: #442d24;
+  --workspace-system-border: rgb(126 71 38 / 28%);
+  --workspace-system-shadow-rgb: 88 46 26;
+
   /* Shared workspace chrome */
   --workspace-control-surface: rgb(255 255 255 / 96%);
   --workspace-control-border: rgb(255 255 255 / 22%);
