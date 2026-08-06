@@ -3,10 +3,21 @@ import api from "./api";
 
 export type WeightUnit = "lb" | "kg";
 export type LengthUnit = "in" | "cm";
+export type BodyCompositionReference = "MALE" | "FEMALE";
+export type BodyCompositionReferenceBasis = "BIRTH_SEX" | "HORMONE_THERAPY";
 
 export interface MeasurementDisplayUnits {
   weight: WeightUnit;
   length: LengthUnit;
+}
+
+export interface MeasurementProfileMetrics {
+  heightCm: number | null;
+  height: number | null;
+  displayUnit: LengthUnit;
+  bodyCompositionReference: BodyCompositionReference | null;
+  bodyCompositionReferenceBasis: BodyCompositionReferenceBasis | null;
+  hasCompletedTwelveMonthsHormoneTherapy: boolean;
 }
 
 export interface Measurement {
@@ -15,7 +26,22 @@ export interface Measurement {
   waist: number | null;
   chest: number | null;
   hips: number | null;
+  neck: number | null;
+  abdomen: number | null;
+  leftBicep: number | null;
+  rightBicep: number | null;
+  leftForearm: number | null;
+  rightForearm: number | null;
+  leftThigh: number | null;
+  rightThigh: number | null;
+  leftCalf: number | null;
+  rightCalf: number | null;
   bodyFat: number | null;
+  bodyFatMethod: string | null;
+  fatMass: number | null;
+  leanMass: number | null;
+  waistToHeightRatio: number | null;
+  waistToHeightRatioMethod: string | null;
   measurementDate: string;
   displayUnits?: MeasurementDisplayUnits;
 }
@@ -25,6 +51,16 @@ export interface CreateMeasurementInput {
   waist?: number;
   chest?: number;
   hips?: number;
+  neck?: number;
+  abdomen?: number;
+  leftBicep?: number;
+  rightBicep?: number;
+  leftForearm?: number;
+  rightForearm?: number;
+  leftThigh?: number;
+  rightThigh?: number;
+  leftCalf?: number;
+  rightCalf?: number;
   bodyFat?: number;
   weightUnit?: WeightUnit;
   lengthUnit?: LengthUnit;
@@ -44,13 +80,19 @@ export interface GuardrailIssue {
   percentageChange?: number;
 }
 
-interface MeasurementListResponse {
+export interface MeasurementListResponse {
   measurements: Measurement[];
+  profileMetrics: MeasurementProfileMetrics;
+}
+
+export async function getMeasurementData(): Promise<MeasurementListResponse> {
+  const response = await api.get<MeasurementListResponse>("/api/measurements");
+  return response.data;
 }
 
 export async function getMeasurements(): Promise<Measurement[]> {
-  const response = await api.get<MeasurementListResponse>("/api/measurements");
-  return response.data.measurements;
+  const data = await getMeasurementData();
+  return data.measurements;
 }
 
 export async function createMeasurement(input: CreateMeasurementInput): Promise<Measurement> {
