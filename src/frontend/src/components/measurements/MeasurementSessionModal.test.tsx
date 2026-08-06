@@ -1,16 +1,17 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "../../i18n/LocaleContext";
 import MeasurementSessionModal from "./MeasurementSessionModal";
 
-function ModalHarness({ onSave }: { onSave: () => Promise<void> }) {
+function ModalHarness({ onSave, entryMode = "NEWBIE" }: { onSave: () => Promise<void>; entryMode?: "NEWBIE" | "PRO" }) {
   const [isOpen, setIsOpen] = useState(false);
   return <>
     <button type="button" onClick={() => setIsOpen(true)}>Start measurement session</button>
     <MeasurementSessionModal
       isOpen={isOpen}
+      entryMode={entryMode}
       lengthUnit="in"
       onCancel={() => setIsOpen(false)}
       onSave={onSave}
@@ -23,6 +24,37 @@ beforeEach(() => {
 });
 
 describe("MeasurementSessionModal", () => {
+  it("omits entry mode chrome and opens Guided directly in the wizard", async () => {
+    const user = userEvent.setup();
+    render(<LocaleProvider><ModalHarness onSave={vi.fn(async () => undefined)} /></LocaleProvider>);
+
+    await user.click(screen.getByRole("button", { name: "Start measurement session" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Body measurement session" });
+    expect(within(dialog).queryByText("Entry mode")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Novice")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Standard")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Advanced")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Neck" })).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByRole("spinbutton", { name: "Neck in" })).toHaveFocus());
+    expect(within(dialog).getByRole("button", { name: "Next" })).toBeInTheDocument();
+  });
+
+  it("opens Manual directly in the full editable measurement interface", async () => {
+    const user = userEvent.setup();
+    render(<LocaleProvider><ModalHarness entryMode="PRO" onSave={vi.fn(async () => undefined)} /></LocaleProvider>);
+
+    await user.click(screen.getByRole("button", { name: "Start measurement session" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Body measurement session" });
+    expect(within(dialog).queryByText("Entry mode")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("spinbutton")).toHaveLength(13);
+    expect(within(dialog).getByRole("spinbutton", { name: "Neck in" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("spinbutton", { name: "Right calf in" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Save session" })).toBeInTheDocument();
+  });
+
   it("moves Enter through paired fields and then advances without saving", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn(async () => undefined);

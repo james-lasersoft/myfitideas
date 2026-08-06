@@ -59,12 +59,6 @@ export const PAIRED_MEASUREMENT_FIELDS: Array<{ title: string; left: SessionFiel
   { title: "Calves", left: "leftCalf", right: "rightCalf", stepIndex: 8 },
 ];
 
-export const MODE_DESCRIPTIONS: Record<EntryMode, string> = {
-  NEWBIE: "Step-by-step guidance.",
-  NORMAL: "Common measurements.",
-  PRO: "All measurements.",
-};
-
 export function createEmptySessionValues(): Record<SessionField, string> {
   return Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>;
 }
@@ -89,10 +83,4 @@ export function calculationMethodLabel(method: string | null): string {
   if (method === "WAIST_CM_DIVIDED_BY_HEIGHT_CM") return "Waist divided by height";
   if (method === "USER_PROVIDED") return "User provided";
   return method.replaceAll("_", " ").toLowerCase();
-}
-
-export function modeLabel(mode: EntryMode): string {
-  if (mode === "NEWBIE") return "Novice";
-  if (mode === "NORMAL") return "Standard";
-  return "Advanced";
 }

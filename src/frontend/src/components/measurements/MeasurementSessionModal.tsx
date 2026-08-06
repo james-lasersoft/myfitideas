@@ -3,21 +3,22 @@ import { useLocale } from "../../i18n/LocaleContext";
 import type { CreateMeasurementInput, LengthUnit } from "../../services/measurementService";
 import MeasurementInput from "./MeasurementInput";
 import NoviceMeasurementWizard from "./NoviceMeasurementWizard";
-import { getLocalDateTimeValue, MODE_DESCRIPTIONS, MODE_FIELDS, modeLabel, type EntryMode } from "./measurementSessionModel";
+import { getLocalDateTimeValue, MODE_FIELDS, type EntryMode } from "./measurementSessionModel";
 import { useMeasurementSession } from "./useMeasurementSession";
 
 interface MeasurementSessionModalProps {
   isOpen: boolean;
+  entryMode: EntryMode;
   lengthUnit: LengthUnit;
   onCancel: () => void;
   onSave: (input: CreateMeasurementInput) => Promise<void>;
 }
 
-export default function MeasurementSessionModal({ isOpen, lengthUnit, onCancel, onSave }: MeasurementSessionModalProps) {
+export default function MeasurementSessionModal({ isOpen, entryMode, lengthUnit, onCancel, onSave }: MeasurementSessionModalProps) {
   const { locale, t } = useLocale();
   const modalRef = useRef<HTMLElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const session = useMeasurementSession({ isOpen, lengthUnit, onSave });
+  const session = useMeasurementSession({ isOpen, entryMode, lengthUnit, onSave });
 
   const cancelSession = useCallback((): void => {
     if (session.isSaving) return;
@@ -73,12 +74,6 @@ export default function MeasurementSessionModal({ isOpen, lengthUnit, onCancel, 
       </header>
       <div className="measurement-modal-body">
         {session.error && <div className="measurement-banner measurement-banner-error" role="alert">{t(session.error)}</div>}
-        <div className="measurement-modal-controls">
-          <div><strong>{t("Entry mode")}</strong><span>{t(MODE_DESCRIPTIONS[session.entryMode])}</span></div>
-          <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label={t("Measurement guidance level")}>
-            {(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={session.entryMode === mode ? "active" : ""} onClick={() => session.changeEntryMode(mode)} aria-pressed={session.entryMode === mode}>{t(modeLabel(mode))}</button>)}
-          </div>
-        </div>
         <details className="measurement-session-help">
           <summary>{t("Keyboard help")}</summary>
           <p>{t("Press Enter to continue. For paired measurements, Enter moves from left to right.")}</p>
