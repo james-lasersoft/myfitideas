@@ -117,6 +117,7 @@ export default function MeasurementsPage() {
   const modalRef = useRef<HTMLElement>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const measurementInputRefs = useRef<Partial<Record<SessionField, HTMLInputElement | null>>>({});
+  const reviewReadyRef = useRef(false);
   const [weights, setWeights] = useState<BodyWeight[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [profileMetrics, setProfileMetrics] = useState<MeasurementProfileMetrics | null>(null);
@@ -196,6 +197,7 @@ export default function MeasurementsPage() {
 
   const setField = (field: SessionField, value: string): void => setFormValues((current) => ({ ...current, [field]: value }));
   const clearForm = (): void => {
+    reviewReadyRef.current = false;
     setFormValues(Object.fromEntries(Object.keys(FIELD_LABELS).map((key) => [key, ""])) as Record<SessionField, string>);
     setMeasurementDate(getLocalDateTimeValue()); setNoviceStep(0);
   };
@@ -240,14 +242,24 @@ export default function MeasurementsPage() {
     setError("");
     if (isNoviceReview) return;
     if (!validateNoviceFields(currentNoviceStep.fields)) return;
-    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+    const nextStep = Math.min(noviceStep + 1, NOVICE_STEPS.length);
+    if (nextStep === NOVICE_STEPS.length) {
+      reviewReadyRef.current = false;
+      setNoviceStep(nextStep);
+      requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
+      return;
+    }
+    setNoviceStep(nextStep);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    if (entryMode === "NEWBIE" && !isNoviceReview) {
-      advanceNovice();
-      return;
+    if (entryMode === "NEWBIE") {
+      if (!isNoviceReview) {
+        advanceNovice();
+        return;
+      }
+      if (!reviewReadyRef.current) return;
     }
     setMessage(""); setError("");
     const observedAt = new Date(measurementDate);
@@ -265,7 +277,20 @@ export default function MeasurementsPage() {
 
   const skipNoviceStep = (): void => {
     currentNoviceStep.fields.forEach((field) => setField(field, ""));
-    setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+    setError("");
+    const nextStep = Math.min(noviceStep + 1, NOVICE_STEPS.length);
+    if (nextStep === NOVICE_STEPS.length) {
+      reviewReadyRef.current = false;
+      setNoviceStep(nextStep);
+      requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
+      return;
+    }
+    setNoviceStep(nextStep);
+  };
+
+  const goBackNovice = (): void => {
+    reviewReadyRef.current = false;
+    setNoviceStep((step) => Math.max(0, step - 1));
   };
 
   const handleNoviceInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>, field: SessionField): void => {
@@ -352,7 +377,7 @@ export default function MeasurementsPage() {
           {error && <div className="measurement-banner measurement-banner-error" role="alert">{error}</div>}
           <div className="measurement-modal-controls">
             <div><strong>Entry experience</strong><span>{MODE_DESCRIPTIONS[entryMode]}</span></div>
-            <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label="Measurement guidance level">{(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={entryMode === mode ? "active" : ""} onClick={() => { setEntryMode(mode); setNoviceStep(0); setError(""); }} aria-pressed={entryMode === mode}>{modeLabel(mode)}</button>)}</div>
+            <div className="measurement-mode-selector measurement-mode-segmented" role="group" aria-label="Measurement guidance level">{(["NEWBIE", "NORMAL", "PRO"] as EntryMode[]).map((mode) => <button key={mode} type="button" className={entryMode === mode ? "active" : ""} onClick={() => { reviewReadyRef.current = false; setEntryMode(mode); setNoviceStep(0); setError(""); }} aria-pressed={entryMode === mode}>{modeLabel(mode)}</button>)}</div>
           </div>
           <form id="measurement-session-form" className="measurement-wizard" onSubmit={handleSubmit}>
             <label className="measurement-date-field"><span>Observed at</span><input type="datetime-local" max={getLocalDateTimeValue()} value={measurementDate} onChange={(event) => setMeasurementDate(event.target.value)} required /></label>
@@ -379,7 +404,7 @@ export default function MeasurementsPage() {
         <footer className="measurement-modal-footer">
           <button type="button" className="secondary-button" onClick={cancelSession} disabled={isSaving}>Cancel</button>
           {entryMode === "NEWBIE" ? <>
-            <button type="button" className="secondary-button" onClick={() => setNoviceStep((step) => Math.max(0, step - 1))} disabled={isSaving || noviceStep === 0}>Back</button>
+            <button type="button" className="secondary-button" onClick={goBackNovice} disabled={isSaving || noviceStep === 0}>Back</button>
             {!isNoviceReview && <button type="button" className="secondary-button" onClick={skipNoviceStep} disabled={isSaving}>Skip</button>}
             {isNoviceReview ? <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button> : <button type="button" onClick={advanceNovice} disabled={isSaving}>Next</button>}
           </> : <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button>}
