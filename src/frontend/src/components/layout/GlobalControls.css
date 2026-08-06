@@ -13,7 +13,8 @@
 }
 
 .global-controls-bar.admin-global-controls,
-.global-controls-bar.member-global-controls {
+.global-controls-bar.member-global-controls,
+.global-controls-bar.system-global-controls {
   justify-content: space-between;
   align-items: center;
   min-height: 58px;
@@ -29,8 +30,14 @@
   box-shadow: 0 4px 16px rgb(var(--workspace-member-shadow-rgb) / 18%);
 }
 
+.global-controls-bar.system-global-controls {
+  background: linear-gradient(90deg, var(--workspace-system-primary), var(--workspace-system-secondary));
+  box-shadow: 0 4px 16px rgb(var(--workspace-system-shadow-rgb) / 22%);
+}
+
 .admin-global-brand,
-.member-global-brand {
+.member-global-brand,
+.system-global-brand {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -43,7 +50,8 @@
 }
 
 .admin-global-logo,
-.member-global-logo {
+.member-global-logo,
+.system-global-logo {
   width: 132px;
   max-width: 28vw;
   display: block;
@@ -53,6 +61,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  min-width: 0;
   padding: 0.2rem;
   border: 1px solid rgb(var(--workspace-member-shadow-rgb) / 20%);
   border-radius: 999px;
@@ -63,10 +72,15 @@
 }
 
 .admin-global-controls .global-controls-group,
-.member-global-controls .global-controls-group {
+.member-global-controls .global-controls-group,
+.system-global-controls .global-controls-group {
   border-color: var(--workspace-control-border);
   background: var(--workspace-control-surface);
   box-shadow: 0 4px 12px rgb(5 18 31 / 18%);
+}
+
+.system-global-controls .global-controls-group {
+  box-shadow: 0 4px 12px rgb(var(--workspace-system-shadow-rgb) / 24%);
 }
 
 .global-controls-group .theme-toggle-button,
@@ -110,13 +124,15 @@ html[data-theme="dark"] .global-controls-group {
 }
 
 html[data-theme="dark"] .admin-global-controls .global-controls-group,
-html[data-theme="dark"] .member-global-controls .global-controls-group {
+html[data-theme="dark"] .member-global-controls .global-controls-group,
+html[data-theme="dark"] .system-global-controls .global-controls-group {
   background: var(--workspace-control-surface);
   border-color: var(--workspace-control-border);
 }
 
 html[data-theme="dark"] .admin-global-brand,
-html[data-theme="dark"] .member-global-brand {
+html[data-theme="dark"] .member-global-brand,
+html[data-theme="dark"] .system-global-brand {
   background: var(--workspace-logo-surface);
   border-color: rgb(255 255 255 / 30%);
 }
@@ -128,17 +144,20 @@ html[data-theme="dark"] .member-global-brand {
   }
 
   .global-controls-bar.admin-global-controls,
-  .global-controls-bar.member-global-controls {
+  .global-controls-bar.member-global-controls,
+  .global-controls-bar.system-global-controls {
     min-height: 54px;
   }
 
   .admin-global-brand,
-  .member-global-brand {
+  .member-global-brand,
+  .system-global-brand {
     padding: 0.16rem 0.34rem;
   }
 
   .admin-global-logo,
-  .member-global-logo {
+  .member-global-logo,
+  .system-global-logo {
     width: 108px;
   }
 
@@ -149,7 +168,8 @@ html[data-theme="dark"] .member-global-brand {
 
 @media (max-width: 520px) {
   .admin-global-logo,
-  .member-global-logo {
+  .member-global-logo,
+  .system-global-logo {
     width: 92px;
   }
 
@@ -157,5 +177,25 @@ html[data-theme="dark"] .member-global-brand {
   .global-controls-group .language-flag-button {
     min-width: 30px;
     min-height: 30px;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-global-brand,
+  .member-global-brand,
+  .system-global-brand {
+    max-width: 84px;
+    overflow: hidden;
+  }
+
+  .admin-global-logo,
+  .member-global-logo,
+  .system-global-logo {
+    width: 82px;
+    max-width: none;
+  }
+
+  .global-controls-group {
+    flex: 0 1 auto;
   }
 }
