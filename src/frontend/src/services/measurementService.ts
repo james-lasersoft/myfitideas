@@ -20,8 +20,22 @@ export interface MeasurementProfileMetrics {
   hasCompletedTwelveMonthsHormoneTherapy: boolean;
 }
 
+export interface BodyWeightEntry {
+  id: string;
+  measurementSessionId: string | null;
+  recordedAt: string;
+  weightKg: number;
+  weight: number;
+  source: string;
+  notes: string | null;
+  displayUnit: WeightUnit;
+}
+
 export interface Measurement {
   id: string;
+  measurementSessionId?: string | null;
+  bodyWeightId?: string | null;
+  calculationWeightKg?: number | null;
   weight: number | null;
   waist: number | null;
   chest: number | null;
@@ -81,6 +95,8 @@ export interface GuardrailIssue {
 }
 
 export interface MeasurementListResponse {
+  weights: BodyWeightEntry[];
+  measurementSessions: Measurement[];
   measurements: Measurement[];
   profileMetrics: MeasurementProfileMetrics;
 }
@@ -92,7 +108,7 @@ export async function getMeasurementData(): Promise<MeasurementListResponse> {
 
 export async function getMeasurements(): Promise<Measurement[]> {
   const data = await getMeasurementData();
-  return data.measurements;
+  return data.measurementSessions ?? data.measurements;
 }
 
 export async function createMeasurement(input: CreateMeasurementInput): Promise<Measurement> {
