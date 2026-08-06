@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Response } from "express";
 import prisma from "../config/prisma.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
@@ -15,17 +16,58 @@ import {
   validateMeasurementDate,
   validateMeasurementRanges,
 } from "../utils/data-integrity.js";
+import {
+  calculateBodyComposition,
+  calculateWaistToHeightRatio,
+} from "../utils/body-composition.js";
 
-interface MeasurementRequestBody {
+const circumferenceFields = [
+  "waist",
+  "chest",
+  "hips",
+  "neck",
+  "abdomen",
+  "leftBicep",
+  "rightBicep",
+  "leftForearm",
+  "rightForearm",
+  "leftThigh",
+  "rightThigh",
+  "leftCalf",
+  "rightCalf",
+] as const;
+
+type CircumferenceField = (typeof circumferenceFields)[number];
+
+interface MeasurementRequestBody extends Partial<Record<CircumferenceField, number>> {
   weight?: number;
-  waist?: number;
-  chest?: number;
-  hips?: number;
   bodyFat?: number;
   weightUnit?: WeightUnit;
   lengthUnit?: LengthUnit;
   measurementDate?: string;
   confirmAnomaly?: boolean;
+}
+
+interface BodyWeightReadRow {
+  id: string;
+  measurementSessionId: string | null;
+  recordedAt: Date;
+  weightKg: number;
+  source: string;
+  notes: string | null;
+}
+
+function convertLength(value: number | undefined, unit: LengthUnit): number | undefined {
+  return value === undefined ? undefined : toCentimeters(value, unit);
+}
+
+function displayLength(value: number | null, unit: LengthUnit): number | null {
+  return value == null ? null : roundMeasurement(fromCentimeters(value, unit));
+}
+
+function round(value: number, digits = 2): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
 }
 
 export const createMeasurement = async (
@@ -45,7 +87,7 @@ export const createMeasurement = async (
     }
 
     const body = req.body as MeasurementRequestBody;
-    const values = [body.weight, body.waist, body.chest, body.hips, body.bodyFat];
+    const values = [body.weight, body.bodyFat, ...circumferenceFields.map((field) => body[field])];
     if (values.every((value) => value === undefined)) {
       res.status(400).json({ error: "At least one measurement value is required." });
       return;
@@ -70,10 +112,41 @@ export const createMeasurement = async (
     }
 
     const weightKg = body.weight === undefined ? undefined : toKilograms(body.weight, weightUnit);
-    const waistCm = body.waist === undefined ? undefined : toCentimeters(body.waist, lengthUnit);
-    const chestCm = body.chest === undefined ? undefined : toCentimeters(body.chest, lengthUnit);
-    const hipsCm = body.hips === undefined ? undefined : toCentimeters(body.hips, lengthUnit);
-    const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat: body.bodyFat, measurementDate };
+    const waistCm = convertLength(body.waist, lengthUnit);
+    const chestCm = convertLength(body.chest, lengthUnit);
+    const hipsCm = convertLength(body.hips, lengthUnit);
+    const neckCm = convertLength(body.neck, lengthUnit);
+    const abdomenCm = convertLength(body.abdomen, lengthUnit);
+    const leftBicepCm = convertLength(body.leftBicep, lengthUnit);
+    const rightBicepCm = convertLength(body.rightBicep, lengthUnit);
+    const leftForearmCm = convertLength(body.leftForearm, lengthUnit);
+    const rightForearmCm = convertLength(body.rightForearm, lengthUnit);
+    const leftThighCm = convertLength(body.leftThigh, lengthUnit);
+    const rightThighCm = convertLength(body.rightThigh, lengthUnit);
+    const leftCalfCm = convertLength(body.leftCalf, lengthUnit);
+    const rightCalfCm = convertLength(body.rightCalf, lengthUnit);
+
+    const composition = calculateBodyComposition({
+      reference: user.bodyCompositionReference,
+      heightCm: user.heightCm,
+      weightKg,
+      neckCm,
+      abdomenCm,
+      waistCm,
+      hipsCm,
+    });
+    const waistHeight = calculateWaistToHeightRatio(waistCm, user.heightCm);
+    const bodyFat = composition?.bodyFat ?? body.bodyFat;
+    const bodyFatMethod = composition?.bodyFatMethod ?? (body.bodyFat === undefined ? undefined : "USER_PROVIDED");
+    const manualFatMassKg = weightKg !== undefined && bodyFat !== undefined
+      ? round(weightKg * bodyFat / 100)
+      : undefined;
+    const fatMassKg = composition?.fatMassKg ?? manualFatMassKg;
+    const leanMassKg = composition?.leanMassKg ?? (
+      weightKg !== undefined && fatMassKg !== undefined ? round(weightKg - fatMassKg) : undefined
+    );
+
+    const canonicalInput = { weightKg, waistCm, chestCm, hipsCm, bodyFat, measurementDate };
     const rangeErrors = validateMeasurementRanges(canonicalInput);
     if (rangeErrors.length) {
       res.status(400).json({ code: "MEASUREMENT_OUT_OF_RANGE", error: rangeErrors[0], details: rangeErrors });
@@ -96,20 +169,74 @@ export const createMeasurement = async (
       return;
     }
 
-    const measurement = await prisma.measurement.create({
-      data: {
-        userId: req.user.id,
-        weight: body.weight,
-        waist: body.waist,
-        chest: body.chest,
-        hips: body.hips,
-        bodyFat: body.bodyFat,
-        weightKg,
-        waistCm,
-        chestCm,
-        hipsCm,
-        measurementDate,
-      },
+    const measurementSessionId = randomUUID();
+    const bodyWeightId = weightKg === undefined ? null : randomUUID();
+
+    const measurement = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        INSERT INTO "measurement_sessions" (
+          "id", "userId", "recordedAt", "createdAt", "updatedAt"
+        ) VALUES (
+          ${measurementSessionId}, ${req.user!.id}, ${measurementDate}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+      `;
+
+      if (bodyWeightId && weightKg !== undefined) {
+        await tx.$executeRaw`
+          INSERT INTO "body_weights" (
+            "id", "userId", "measurementSessionId", "recordedAt", "weightKg", "source", "createdAt", "updatedAt"
+          ) VALUES (
+            ${bodyWeightId}, ${req.user!.id}, ${measurementSessionId}, ${measurementDate}, ${weightKg},
+            'MEASUREMENT_SESSION'::"BodyWeightSource", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )
+        `;
+      }
+
+      const created = await tx.measurement.create({
+        data: {
+          userId: req.user!.id,
+          weight: body.weight,
+          waist: body.waist,
+          chest: body.chest,
+          hips: body.hips,
+          bodyFat,
+          bodyFatMethod,
+          fatMassKg,
+          leanMassKg,
+          waistToHeightRatio: waistHeight?.value,
+          waistToHeightRatioMethod: waistHeight?.method,
+          weightKg,
+          waistCm,
+          chestCm,
+          hipsCm,
+          neckCm,
+          abdomenCm,
+          leftBicepCm,
+          rightBicepCm,
+          leftForearmCm,
+          rightForearmCm,
+          leftThighCm,
+          rightThighCm,
+          leftCalfCm,
+          rightCalfCm,
+          measurementDate,
+        },
+      });
+
+      await tx.$executeRaw`
+        UPDATE "measurements"
+        SET "measurementSessionId" = ${measurementSessionId},
+            "bodyWeightId" = ${bodyWeightId},
+            "calculationWeightKg" = ${weightKg ?? null}
+        WHERE "id" = ${created.id}
+      `;
+
+      return {
+        ...created,
+        measurementSessionId,
+        bodyWeightId,
+        calculationWeightKg: weightKg ?? null,
+      };
     });
 
     res.status(201).json({ message: "Measurement saved successfully.", measurement, warnings: issues });
@@ -135,23 +262,67 @@ export const getMeasurements = async (
       return;
     }
 
-    const rows = await prisma.measurement.findMany({
-      where: { userId: req.user.id },
-      orderBy: { measurementDate: "desc" },
-    });
+    const [rows, weightRows] = await Promise.all([
+      prisma.measurement.findMany({
+        where: { userId: req.user.id },
+        orderBy: { measurementDate: "desc" },
+      }),
+      prisma.$queryRaw<BodyWeightReadRow[]>`
+        SELECT "id", "measurementSessionId", "recordedAt", "weightKg", "source", "notes"
+        FROM "body_weights"
+        WHERE "userId" = ${req.user.id}
+          AND "recordedAt" <= CURRENT_TIMESTAMP + INTERVAL '5 minutes'
+        ORDER BY "recordedAt" DESC, "createdAt" DESC
+      `,
+    ]);
 
     const weightUnit = user.preferredWeightUnit as WeightUnit;
     const lengthUnit = user.preferredLengthUnit as LengthUnit;
-    const measurements = rows.map((row) => ({
+    const measurementSessions = rows.map((row) => ({
       ...row,
       weight: row.weightKg == null ? row.weight : roundMeasurement(fromKilograms(row.weightKg, weightUnit)),
-      waist: row.waistCm == null ? row.waist : roundMeasurement(fromCentimeters(row.waistCm, lengthUnit)),
-      chest: row.chestCm == null ? row.chest : roundMeasurement(fromCentimeters(row.chestCm, lengthUnit)),
-      hips: row.hipsCm == null ? row.hips : roundMeasurement(fromCentimeters(row.hipsCm, lengthUnit)),
+      waist: row.waistCm == null ? row.waist : displayLength(row.waistCm, lengthUnit),
+      chest: row.chestCm == null ? row.chest : displayLength(row.chestCm, lengthUnit),
+      hips: row.hipsCm == null ? row.hips : displayLength(row.hipsCm, lengthUnit),
+      neck: displayLength(row.neckCm, lengthUnit),
+      abdomen: displayLength(row.abdomenCm, lengthUnit),
+      leftBicep: displayLength(row.leftBicepCm, lengthUnit),
+      rightBicep: displayLength(row.rightBicepCm, lengthUnit),
+      leftForearm: displayLength(row.leftForearmCm, lengthUnit),
+      rightForearm: displayLength(row.rightForearmCm, lengthUnit),
+      leftThigh: displayLength(row.leftThighCm, lengthUnit),
+      rightThigh: displayLength(row.rightThighCm, lengthUnit),
+      leftCalf: displayLength(row.leftCalfCm, lengthUnit),
+      rightCalf: displayLength(row.rightCalfCm, lengthUnit),
+      fatMass: row.fatMassKg == null ? null : roundMeasurement(fromKilograms(row.fatMassKg, weightUnit)),
+      leanMass: row.leanMassKg == null ? null : roundMeasurement(fromKilograms(row.leanMassKg, weightUnit)),
       displayUnits: { weight: weightUnit, length: lengthUnit },
     }));
 
-    res.status(200).json({ measurements });
+    const weights = weightRows.map((row) => ({
+      id: row.id,
+      measurementSessionId: row.measurementSessionId,
+      recordedAt: row.recordedAt,
+      weightKg: row.weightKg,
+      weight: roundMeasurement(fromKilograms(row.weightKg, weightUnit)),
+      source: row.source,
+      notes: row.notes,
+      displayUnit: weightUnit,
+    }));
+
+    res.status(200).json({
+      weights,
+      measurementSessions,
+      measurements: measurementSessions,
+      profileMetrics: {
+        heightCm: user.heightCm,
+        height: displayLength(user.heightCm, lengthUnit),
+        displayUnit: lengthUnit,
+        bodyCompositionReference: user.bodyCompositionReference,
+        bodyCompositionReferenceBasis: user.bodyCompositionReferenceBasis,
+        hasCompletedTwelveMonthsHormoneTherapy: user.hasCompletedTwelveMonthsHormoneTherapy,
+      },
+    });
   } catch (error) {
     console.error("Get measurements error:", error);
     res.status(500).json({ error: "Unable to retrieve measurements." });

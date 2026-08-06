@@ -35,6 +35,7 @@ const CreateAccountPage = lazy(() => import("./pages/CreateAccountPage"));
 const VerificationPendingPage = lazy(() => import("./pages/VerificationPendingPage"));
 const WorkspaceChooserPage = lazy(() => import("./pages/WorkspaceChooserPage"));
 const SystemOperationsPage = lazy(() => import("./pages/SystemOperationsPage"));
+const SyntheticDataPage = lazy(() => import("./pages/SyntheticDataPage"));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("authToken");
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/admin/roles" element={<AuthorizedPage permission="roles.read"><RoleAdminPage /></AuthorizedPage>} />
           <Route path="/admin/audit" element={<AuthorizedPage permission="audit.read"><AuditLogPage /></AuthorizedPage>} />
           <Route path="/system-operations" element={<ProtectedPage><SuperAdminRoute><SystemOperationsPage /></SuperAdminRoute></ProtectedPage>} />
+          <Route path="/system-operations/synthetic-data" element={<ProtectedPage><SuperAdminRoute><SyntheticDataPage /></SuperAdminRoute></ProtectedPage>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthorizationProvider>

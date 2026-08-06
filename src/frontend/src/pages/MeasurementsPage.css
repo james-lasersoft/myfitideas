@@ -1,0 +1,130 @@
+.measurements-page { display: grid; gap: 1.25rem; }
+.measurements-header { align-items: center; }
+.measurements-header-actions { display: flex; gap: .75rem; }
+.measurement-banner { border-radius: 14px; padding: .9rem 1rem; font-weight: 700; }
+.measurement-banner-error { background: #fff1f0; border: 1px solid #e9aaa5; color: #8d2e25; }
+.measurement-banner-success { background: #edf8ef; border: 1px solid #a6d3ad; color: #266334; }
+.measurement-quick-actions { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 1.25rem; }
+.daily-weight-card, .measurement-session-summary-card { min-width: 0; }
+.daily-weight-summary, .measurement-session-summary { display: grid; gap: .3rem; margin-bottom: 1rem; }
+.daily-weight-summary strong, .measurement-session-summary strong { font-size: 2rem; color: #20352a; }
+.daily-weight-summary span, .measurement-session-summary span { color: #66736b; }
+.daily-weight-form { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(150px, .8fr) auto; gap: .75rem; align-items: end; }
+.daily-weight-form label { display: grid; gap: .35rem; font-weight: 700; }
+.daily-weight-form em { font-style: normal; color: #6d7a72; font-weight: 500; }
+.measurement-session-summary-card { display: flex; flex-direction: column; }
+.measurement-session-jump { display: inline-flex; justify-content: center; align-items: center; margin-top: auto; min-height: 44px; border: 0; border-radius: 12px; padding: .7rem 1rem; background: var(--color-primary, #2f7355); color: #fff; font-weight: 800; text-decoration: none; cursor: pointer; }
+.measurement-session-jump:hover { filter: brightness(.95); }
+.measurements-top-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.measurement-insights-card, .measurement-entry-card, .measurement-history-card { min-width: 0; }
+.measurement-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.measurement-section-heading h2 { margin: .15rem 0 0; }
+.measurement-section-heading select { min-width: 150px; }
+.measurement-eyebrow { text-transform: uppercase; letter-spacing: .11em; font-size: .72rem; font-weight: 800; color: var(--color-primary, #2f7355); }
+.measurement-chart-wrap { border-radius: 16px; background: linear-gradient(180deg, rgba(47,115,85,.08), rgba(47,115,85,.015)); border: 1px solid rgba(47,115,85,.15); padding: .75rem; }
+.measurement-chart { width: 100%; min-height: 210px; display: block; overflow: visible; }
+.measurement-chart-axis { stroke: rgba(29,45,36,.42); stroke-width: 1.5; }
+.measurement-chart-grid { stroke: rgba(29,45,36,.12); stroke-width: 1; stroke-dasharray: 5 6; }
+.measurement-chart-line { fill: none; stroke: #2f7355; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.measurement-chart-point { fill: #fff; stroke: #2f7355; stroke-width: 3; }
+.measurement-chart-range { display: flex; justify-content: space-between; color: #607067; font-size: .8rem; }
+.measurement-chart-empty { min-height: 230px; display: grid; place-items: center; color: #66736b; border: 1px dashed rgba(47,115,85,.25); border-radius: 16px; }
+.measurement-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; margin-top: 1rem; }
+.measurement-metric { display: grid; gap: .25rem; border: 1px solid rgba(33,54,42,.12); border-radius: 14px; padding: .9rem; background: #fff; }
+.measurement-metric span { font-size: .78rem; color: #66736b; font-weight: 700; }
+.measurement-metric strong { font-size: 1.45rem; color: #20352a; }
+.measurement-metric small { color: #738078; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.measurement-profile-context { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(33,54,42,.12); display: flex; flex-wrap: wrap; gap: .65rem 1.1rem; color: #536159; font-size: .85rem; }
+.measurement-mode-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+.measurement-mode-selector button { min-height: 44px; display: grid; text-align: center; gap: .2rem; padding: .65rem .9rem; border-radius: 11px; border: 1px solid rgba(33,54,42,.18); background: #fff; color: #263b30; font-weight: 800; cursor: pointer; }
+.measurement-mode-selector button.active { border-color: #2f7355; box-shadow: 0 0 0 2px rgba(47,115,85,.12); background: rgba(47,115,85,.08); }
+.measurement-wizard { display: grid; gap: 1rem; }
+.measurement-date-field { display: grid; gap: .35rem; max-width: 260px; font-weight: 700; }
+.measurement-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .8rem; }
+.measurement-input { display: grid; align-content: start; gap: .35rem; }
+.measurement-input > span { font-weight: 700; font-size: .86rem; }
+.measurement-input em { font-style: normal; color: #6d7a72; font-weight: 500; }
+.measurement-input small { color: #6d7a72; line-height: 1.35; }
+.measurement-calculation-note { display: grid; gap: .25rem; border-left: 4px solid #2f7355; background: rgba(47,115,85,.06); border-radius: 0 12px 12px 0; padding: .8rem .9rem; }
+.measurement-calculation-note span { color: #5c6a62; font-size: .82rem; line-height: 1.45; }
+.measurement-history-card { overflow: hidden; }
+.measurement-record-count { font-size: .8rem; font-weight: 800; padding: .4rem .7rem; border-radius: 999px; background: rgba(47,115,85,.08); color: #2f7355; }
+.measurement-table-wrap { overflow-x: auto; }
+.measurement-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+.measurement-table th { text-align: left; font-size: .73rem; text-transform: uppercase; letter-spacing: .07em; color: #68756d; padding: .75rem; border-bottom: 1px solid rgba(33,54,42,.16); }
+.measurement-table td { padding: .8rem .75rem; border-bottom: 1px solid rgba(33,54,42,.09); white-space: nowrap; }
+.measurement-table tbody tr:hover { background: rgba(47,115,85,.035); }
+.measurement-history-row { cursor: pointer; }
+.measurement-history-row:focus-visible { background: rgba(47,115,85,.07); }
+.measurement-method-chip { display: inline-flex; padding: .28rem .58rem; border-radius: 999px; background: rgba(47,115,85,.09); color: #2f7355; font-size: .75rem; font-weight: 800; cursor: help; }
+.measurement-empty-state { text-align: center; padding: 2.5rem 1rem; color: #69756e; }
+.measurement-empty-state h3 { color: #263b30; margin-bottom: .4rem; }
+.measurement-modal-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 1.5rem; background: rgba(12, 23, 17, .62); backdrop-filter: blur(5px); }
+.measurement-modal { width: min(1020px, 100%); max-height: min(90vh, 900px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border-radius: 22px; background: #f8fbf9; box-shadow: 0 26px 80px rgba(10, 24, 16, .34); border: 1px solid rgba(255,255,255,.58); outline: none; }
+.measurement-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.15rem 1.25rem; background: #fff; border-bottom: 1px solid rgba(33,54,42,.12); }
+.measurement-modal-header h2 { margin: .12rem 0 .2rem; color: #20352a; }
+.measurement-modal-header p { margin: 0; color: #66736b; }
+.measurement-modal-close { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px; border: 1px solid rgba(33,54,42,.15); background: #fff; color: #31443a; font-size: 1.65rem; line-height: 1; cursor: pointer; }
+.measurement-modal-close:hover { background: rgba(47,115,85,.07); }
+.measurement-modal-body { min-height: 0; overflow-y: auto; padding: 1.2rem 1.25rem; display: grid; gap: 1rem; }
+.measurement-modal-controls { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(360px, 1.2fr); gap: 1rem; align-items: center; padding: .9rem; border: 1px solid rgba(33,54,42,.12); border-radius: 15px; background: #fff; }
+.measurement-modal-controls > div:first-child { display: grid; gap: .2rem; }
+.measurement-modal-controls span { color: #66736b; font-size: .82rem; }
+.measurement-modal-footer { display: flex; justify-content: flex-end; gap: .75rem; padding: 1rem 1.25rem; background: #fff; border-top: 1px solid rgba(33,54,42,.12); }
+.measurement-modal-footer button { min-width: 110px; min-height: 44px; }
+.measurement-history-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+.measurement-compare-button { min-height: 40px; }
+.measurement-comparison-modal { width: min(1180px, 100%); }
+.measurement-comparison-selectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.measurement-comparison-selectors label { display: grid; gap: .35rem; font-weight: 700; }
+.measurement-comparison-dates { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: #536159; }
+.measurement-comparison-note { margin: 0; color: #66736b; font-size: .85rem; }
+.measurement-comparison-table { min-width: 980px; }
+.measurement-comparison-pair { display: grid; gap: .3rem; }
+.measurement-comparison-unavailable { color: #6d7a72; font-style: italic; white-space: normal; }
+.measurement-comparison-section-row th { background: rgba(47,115,85,.08); color: #284b3a; }
+.measurement-comparison-method { display: block; max-width: 180px; margin-top: .2rem; color: #66736b; white-space: normal; }
+.measurement-detail-modal { width: min(860px, 100%); }
+.measurement-detail-section { display: grid; gap: .75rem; }
+.measurement-detail-section h3 { margin: 0; color: #20352a; }
+.measurement-detail-table { min-width: 560px; }
+.measurement-detail-pair { display: flex; flex-wrap: wrap; gap: .35rem 1.25rem; }
+.measurement-not-recorded { color: #6d7a72; font-style: italic; }
+.measurement-detail-calculations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0; }
+.measurement-detail-calculations > div { display: grid; gap: .25rem; padding: .9rem; border: 1px solid rgba(33,54,42,.12); border-radius: 14px; background: #fff; }
+.measurement-detail-calculations dt { color: #66736b; font-size: .78rem; font-weight: 700; }
+.measurement-detail-calculations dd { margin: 0; color: #20352a; font-size: 1.25rem; font-weight: 800; }
+.measurement-detail-calculations small { color: #66736b; line-height: 1.4; }
+.novice-wizard { display: grid; gap: 1rem; }
+.novice-progress { display: grid; gap: .35rem; }
+.novice-progress span { font-weight: 800; color: #34483d; }
+.novice-progress progress { width: 100%; height: .75rem; accent-color: #2f7355; }
+.novice-step, .novice-review { display: grid; gap: 1rem; padding: 1.2rem; border: 1px solid rgba(33,54,42,.14); border-radius: 16px; background: #fff; }
+.novice-step h3, .novice-review h3 { margin: 0; color: #20352a; }
+.novice-step p, .novice-review p { margin: 0; color: #5d6b63; line-height: 1.55; }
+.novice-step fieldset { margin: 0; padding: 0; border: 0; }
+.novice-step legend { font-weight: 800; margin-bottom: .75rem; }
+.measurement-pair-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.measurement-single-grid { max-width: 360px; }
+.novice-review dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin: 0; }
+.novice-review dl div { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem .8rem; border-radius: 10px; background: rgba(47,115,85,.06); }
+.novice-review dt { font-weight: 700; }
+.novice-review dd { margin: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+:where(button, input, select, [tabindex]):focus-visible { outline: 3px solid #155f43; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media (max-width: 1100px) { .measurement-quick-actions, .measurements-top-grid { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  .measurements-header { align-items: flex-start; gap: 1rem; }
+  .daily-weight-form, .measurement-metric-grid, .measurement-input-grid, .measurement-pair-grid, .measurement-detail-calculations, .measurement-comparison-selectors, .novice-review dl { grid-template-columns: 1fr; }
+  .daily-weight-form button { width: 100%; }
+  .measurement-section-heading { flex-direction: column; }
+  .measurement-section-heading select { width: 100%; }
+  .measurement-modal-backdrop { padding: 0; }
+  .measurement-modal { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+  .measurement-modal-controls { grid-template-columns: 1fr; }
+  .measurement-mode-selector { grid-template-columns: repeat(3, 1fr); }
+  .measurement-mode-selector button { padding: .65rem .4rem; font-size: .82rem; }
+  .measurement-modal-footer { flex-wrap: wrap; }
+  .measurement-modal-footer button { flex: 1 1 44%; }
+}

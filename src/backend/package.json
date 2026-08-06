@@ -15,7 +15,8 @@
     "seed:language": "tsx prisma/seed-language.ts",
     "seed:rbac": "tsx prisma/seed-rbac-v2.ts && tsx prisma/seed-security-entitlements.ts",
     "seed:security": "tsx prisma/seed-security-entitlements.ts",
-    "seed:geolocation:test": "tsx prisma/seed-geolocation-test-data.ts"
+    "seed:geolocation:test": "tsx prisma/seed-geolocation-test-data.ts",
+    "seed:e2e:measurements": "tsx prisma/seed-measurements-e2e.ts"
   },
   "keywords": [],
   "author": "",

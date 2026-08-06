@@ -38,8 +38,31 @@ export default function GlobalControls() {
   const location = useLocation();
   const { t } = useLocale();
   const isAdminWorkspace = location.pathname.startsWith("/admin");
+  const isSystemWorkspace = location.pathname.startsWith("/system-operations");
   const isMemberWorkspace = isMemberRoute(location.pathname);
-  const hasPersistentWorkspaceBar = isAdminWorkspace || isMemberWorkspace;
+  const isAuthenticatedWorkspace = isAdminWorkspace || isSystemWorkspace || isMemberWorkspace;
+  const workspaceClass = isSystemWorkspace
+    ? "system-global-controls"
+    : isAdminWorkspace
+      ? "admin-global-controls"
+      : isMemberWorkspace
+        ? "member-global-controls"
+        : "";
+  const brandClass = isSystemWorkspace
+    ? "system-global-brand"
+    : isAdminWorkspace
+      ? "admin-global-brand"
+      : "member-global-brand";
+  const logoClass = isSystemWorkspace
+    ? "system-global-logo"
+    : isAdminWorkspace
+      ? "admin-global-logo"
+      : "member-global-logo";
+  const brandLabel = isSystemWorkspace
+    ? t("MyFitIdeas System Operations")
+    : isAdminWorkspace
+      ? t("MyFitIdeas Admin Center")
+      : "MyFitIdeas";
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -58,9 +81,15 @@ export default function GlobalControls() {
   useEffect(() => {
     const body = document.body;
     body.classList.toggle("member-shell-active", isMemberWorkspace);
+    body.classList.toggle("admin-shell-active", isAdminWorkspace);
+    body.classList.toggle("system-shell-active", isSystemWorkspace);
     body.classList.remove("member-header-collapsed");
 
-    if (!isMemberWorkspace) return undefined;
+    if (!isMemberWorkspace) {
+      return () => {
+        body.classList.remove("member-shell-active", "admin-shell-active", "system-shell-active", "member-header-collapsed");
+      };
+    }
 
     let collapsed = false;
     let frame = 0;
@@ -80,25 +109,22 @@ export default function GlobalControls() {
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (frame) window.cancelAnimationFrame(frame);
-      body.classList.remove("member-shell-active", "member-header-collapsed");
+      body.classList.remove("member-shell-active", "admin-shell-active", "system-shell-active", "member-header-collapsed");
     };
-  }, [isMemberWorkspace, location.pathname]);
+  }, [isAdminWorkspace, isMemberWorkspace, isSystemWorkspace, location.pathname]);
 
   return (
-    <div className={`global-controls-bar${isAdminWorkspace ? " admin-global-controls" : ""}${isMemberWorkspace ? " member-global-controls" : ""}`}>
-      {hasPersistentWorkspaceBar && (
-        <div
-          className={isAdminWorkspace ? "admin-global-brand" : "member-global-brand"}
-          aria-label={isAdminWorkspace ? t("MyFitIdeas Admin Center") : "MyFitIdeas"}
-        >
-          <BrandLogo className={isAdminWorkspace ? "admin-global-logo" : "member-global-logo"} />
+    <div className={`global-controls-bar${workspaceClass ? ` ${workspaceClass}` : ""}`}>
+      {isAuthenticatedWorkspace && (
+        <div className={brandClass} aria-label={brandLabel}>
+          <BrandLogo className={logoClass} />
         </div>
       )}
       <div className="global-controls-group">
         <WorkspaceSwitcher />
         <ThemeToggle />
         <LanguageSelector />
-        {isMemberWorkspace && <AccountMenu />}
+        {isAuthenticatedWorkspace && <AccountMenu />}
       </div>
     </div>
   );

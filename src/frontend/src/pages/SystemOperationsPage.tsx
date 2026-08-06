@@ -90,6 +90,7 @@ export default function SystemOperationsPage() {
         <article className="ops-panel">
           <div className="ops-panel-heading"><div><p>{t("Developer Tools")}</p><h2>{t("Local browser controls")}</h2></div><span className="ops-badge">{t("Super Admin Only")}</span></div>
           <div className="ops-tool-grid">
+            <button type="button" className="ops-tool" onClick={() => navigate("/system-operations/synthetic-data")}><strong>{t("Synthetic Test Data")}</strong><span>{t("Generate development-only weight, measurement, and hydration history for an existing test user.")}</span></button>
             <button type="button" className="ops-tool" onClick={resetWorkspace}><strong>{t("Reset Workspace Selection")}</strong><span>{t("Show the daily workspace chooser again.")}</span></button>
             <button type="button" className="ops-tool" onClick={resetLanguage}><strong>{t("Reset Language Cache")}</strong><span>{t("Return language selection to the browser default.")}</span></button>
             <button type="button" className="ops-tool" onClick={resetTheme}><strong>{t("Reset Theme")}</strong><span>{t("Return appearance to the system default.")}</span></button>

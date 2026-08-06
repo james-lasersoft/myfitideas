@@ -10,6 +10,7 @@ import rbacRoutes from "../../routes/rbac.routes.js";
 import invitationRoutes from "../../routes/invitation.routes.js";
 import securityAdminRoutes from "../../routes/security-admin.routes.js";
 import companySettingsRoutes from "../../routes/company-settings.routes.js";
+import syntheticDataRoutes from "../../routes/synthetic-data.routes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/admin/translations", translationRoutes);
 router.use("/admin/rbac", rbacRoutes);
 router.use("/admin/security", securityAdminRoutes);
 router.use("/admin/settings", companySettingsRoutes);
+router.use("/admin/synthetic-data", syntheticDataRoutes);
 
 export default router;

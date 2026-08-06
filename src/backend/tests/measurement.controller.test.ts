@@ -1,23 +1,21 @@
 import type { Response } from "express";
 
 import prisma from "../src/config/prisma.js";
-import {
-  createMeasurement,
-  getMeasurements,
-} from "../src/controllers/measurement.controller.js";
+import { createMeasurement, getMeasurements } from "../src/controllers/measurement.controller.js";
 import type { AuthenticatedRequest } from "../src/middleware/auth.middleware.js";
 
 jest.mock("../src/config/prisma.js", () => ({
   __esModule: true,
   default: {
-    user: {
-      findUnique: jest.fn(),
-    },
+    user: { findUnique: jest.fn() },
     measurement: {
       create: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
     },
+    $executeRaw: jest.fn(),
+    $queryRaw: jest.fn(),
+    $transaction: jest.fn(),
   },
 }));
 
@@ -29,12 +27,14 @@ const mockUser = {
   passwordHash: "hash",
   firstName: "James",
   lastName: "Arnold",
-  heightCm: 187,
+  heightCm: 180,
+  bodyCompositionReference: "MALE",
+  bodyCompositionReferenceBasis: "BIRTH_SEX",
+  hasCompletedTwelveMonthsHormoneTherapy: false,
   preferredWeightUnit: "lb",
   preferredLengthUnit: "in",
   preferredHydrationUnit: "oz",
   preferredLanguage: "en-US",
-  timeZone: "America/Chicago",
   dailyHydrationGoal: 64,
   dailyHydrationGoalMl: 1892.705892,
   targetWeight: 200,
@@ -43,266 +43,193 @@ const mockUser = {
   updatedAt: new Date("2026-07-01"),
 };
 
+function createResponse(): Response {
+  const res = { status: jest.fn(), json: jest.fn() } as unknown as Response;
+  (res.status as jest.Mock).mockReturnValue(res);
+  return res;
+}
+
+function authenticatedRequest(body: Record<string, unknown>): AuthenticatedRequest {
+  return {
+    user: { id: "user-123", email: "james@example.com" },
+    body,
+  } as AuthenticatedRequest;
+}
+
 describe("measurement controller", () => {
-  const createResponse = (): Response => {
-    const res = {
-      status: jest.fn(),
-      json: jest.fn(),
-    } as unknown as Response;
-
-    (res.status as jest.Mock).mockReturnValue(res);
-
-    return res;
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockedPrisma.user.findUnique.mockResolvedValue(mockUser as never);
     mockedPrisma.measurement.findFirst.mockResolvedValue(null);
+    (mockedPrisma.$executeRaw as jest.Mock).mockResolvedValue(1);
+    (mockedPrisma.$queryRaw as jest.Mock).mockResolvedValue([]);
+    (mockedPrisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: (tx: typeof prisma) => unknown) => callback(mockedPrisma)
+    );
   });
 
-  describe("createMeasurement", () => {
-    test("returns 401 when the user is not authenticated", async () => {
-      const req = {
-        body: {
-          weight: 220,
-        },
-      } as AuthenticatedRequest;
+  test("requires authentication", async () => {
+    const res = createResponse();
+    await createMeasurement({ body: { weight: 220 } } as AuthenticatedRequest, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
 
-      const res = createResponse();
+  test("requires at least one positive measurement", async () => {
+    const emptyRes = createResponse();
+    await createMeasurement(authenticatedRequest({}), emptyRes);
+    expect(emptyRes.status).toHaveBeenCalledWith(400);
 
-      await createMeasurement(req, res);
+    const negativeRes = createResponse();
+    await createMeasurement(authenticatedRequest({ neck: -1 }), negativeRes);
+    expect(negativeRes.status).toHaveBeenCalledWith(400);
+  });
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Authentication is required.",
-      });
+  test("stores expanded imperial measurements and links the calculation weight", async () => {
+    mockedPrisma.measurement.create.mockResolvedValue({ id: "measurement-001" } as never);
+    const res = createResponse();
 
-      expect(mockedPrisma.user.findUnique).not.toHaveBeenCalled();
-      expect(mockedPrisma.measurement.create).not.toHaveBeenCalled();
-    });
+    await createMeasurement(authenticatedRequest({
+      weight: 198.4,
+      waist: 39.37,
+      neck: 15.75,
+      abdomen: 39.37,
+      leftBicep: 14,
+      rightBicep: 14.2,
+      measurementDate: "2026-07-19",
+    }), res);
 
-    test("returns 400 when no measurement value is provided", async () => {
-      const req = {
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-        },
-        body: {},
-      } as AuthenticatedRequest;
-
-      const res = createResponse();
-
-      await createMeasurement(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "At least one measurement value is required.",
-      });
-
-      expect(mockedPrisma.measurement.create).not.toHaveBeenCalled();
-    });
-
-    test("returns 400 when a measurement is negative", async () => {
-      const req = {
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-        },
-        body: {
-          weight: -10,
-        },
-      } as AuthenticatedRequest;
-
-      const res = createResponse();
-
-      await createMeasurement(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Measurement values must be valid positive numbers.",
-      });
-
-      expect(mockedPrisma.measurement.create).not.toHaveBeenCalled();
-    });
-
-    test("stores imperial input in canonical metric fields", async () => {
-      const savedMeasurement = {
-        id: "measurement-001",
+    expect(mockedPrisma.measurement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
         userId: "user-123",
-        weight: 220,
-        waist: 40,
-        chest: null,
-        hips: null,
-        bodyFat: 24,
-        weightKg: 99.7903214,
-        waistCm: 101.6,
-        chestCm: null,
-        hipsCm: null,
-        measurementDate: new Date("2026-07-19"),
-        createdAt: new Date("2026-07-19"),
-        updatedAt: new Date("2026-07-19"),
-      };
-
-      mockedPrisma.measurement.create.mockResolvedValue(
-        savedMeasurement as never
-      );
-
-      const req = {
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-        },
-        body: {
-          weight: 220,
-          waist: 40,
-          bodyFat: 24,
-          measurementDate: "2026-07-19",
-        },
-      } as AuthenticatedRequest;
-
-      const res = createResponse();
-
-      await createMeasurement(req, res);
-
-      expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: "user-123" },
-      });
-      expect(mockedPrisma.measurement.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId: "user-123",
-          measurementDate: { lte: new Date("2026-07-19") },
-        },
-        orderBy: { measurementDate: "desc" },
-        select: {
-          weightKg: true,
-          waistCm: true,
-          chestCm: true,
-          hipsCm: true,
-          bodyFat: true,
-          measurementDate: true,
-        },
-      });
-      expect(mockedPrisma.measurement.create).toHaveBeenCalledWith({
-        data: {
-          userId: "user-123",
-          weight: 220,
-          waist: 40,
-          chest: undefined,
-          hips: undefined,
-          bodyFat: 24,
-          weightKg: expect.closeTo(99.7903214, 8),
-          waistCm: 101.6,
-          chestCm: undefined,
-          hipsCm: undefined,
-          measurementDate: new Date("2026-07-19"),
-        },
-      });
-
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Measurement saved successfully.",
-        measurement: savedMeasurement,
-        warnings: [],
-      });
+        weightKg: expect.closeTo(90, 1),
+        waistCm: expect.closeTo(100, 1),
+        neckCm: expect.closeTo(40, 1),
+        abdomenCm: expect.closeTo(100, 1),
+        leftBicepCm: expect.closeTo(35.56, 2),
+        rightBicepCm: expect.closeTo(36.068, 2),
+        bodyFat: expect.closeTo(25.3, 1),
+        bodyFatMethod: "US_NAVY_CIRCUMFERENCE",
+        fatMassKg: expect.any(Number),
+        leanMassKg: expect.any(Number),
+        waistToHeightRatio: 0.5556,
+        waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
+      }),
     });
+    expect(mockedPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockedPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      measurement: expect.objectContaining({
+        id: "measurement-001",
+        measurementSessionId: expect.any(String),
+        bodyWeightId: expect.any(String),
+        calculationWeightKg: expect.closeTo(90, 1),
+      }),
+    }));
+  });
 
-    test("accepts explicit metric units", async () => {
-      mockedPrisma.measurement.create.mockResolvedValue({ id: "metric-001" } as never);
+  test("creates a session without a body weight when weight is omitted", async () => {
+    mockedPrisma.measurement.create.mockResolvedValue({ id: "measurement-002" } as never);
+    const res = createResponse();
 
-      const req = {
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-        },
-        body: {
-          weight: 90,
-          waist: 100,
-          weightUnit: "kg",
-          lengthUnit: "cm",
-        },
-      } as AuthenticatedRequest;
+    await createMeasurement(authenticatedRequest({ waist: 39 }), res);
 
-      const res = createResponse();
+    expect(mockedPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      measurement: expect.objectContaining({
+        measurementSessionId: expect.any(String),
+        bodyWeightId: null,
+        calculationWeightKg: null,
+      }),
+    }));
+  });
 
-      await createMeasurement(req, res);
+  test("preserves a user-provided body fat method when calculation inputs are incomplete", async () => {
+    mockedPrisma.measurement.create.mockResolvedValue({ id: "manual-001" } as never);
+    const res = createResponse();
 
-      expect(mockedPrisma.measurement.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          weightKg: 90,
-          waistCm: 100,
-        }),
-      });
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Measurement saved successfully.",
-        measurement: { id: "metric-001" },
-        warnings: [],
-      });
+    await createMeasurement(authenticatedRequest({ weight: 200, bodyFat: 24 }), res);
+
+    expect(mockedPrisma.measurement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ bodyFat: 24, bodyFatMethod: "USER_PROVIDED" }),
     });
   });
 
-  describe("getMeasurements", () => {
-    test("returns canonical values converted to the user's preferred units", async () => {
-      const rows = [
-        {
-          id: "measurement-002",
-          userId: "user-123",
-          weight: 218,
-          waist: 39,
-          chest: null,
-          hips: null,
-          bodyFat: 23,
-          weightKg: 98.88313666,
-          waistCm: 99.06,
-          chestCm: null,
-          hipsCm: null,
-          measurementDate: new Date("2026-07-19"),
-          createdAt: new Date("2026-07-19"),
-          updatedAt: new Date("2026-07-19"),
-        },
-      ];
+  test("returns separate weight and measurement-session collections with compatibility data", async () => {
+    mockedPrisma.measurement.findMany.mockResolvedValue([{
+      id: "measurement-002",
+      userId: "user-123",
+      weight: null,
+      waist: null,
+      chest: null,
+      hips: null,
+      weightKg: 90,
+      waistCm: 100,
+      chestCm: 105,
+      hipsCm: 102,
+      neckCm: 40,
+      abdomenCm: 100,
+      leftBicepCm: 35,
+      rightBicepCm: 36,
+      leftForearmCm: 29,
+      rightForearmCm: 29.5,
+      leftThighCm: 60,
+      rightThighCm: 61,
+      leftCalfCm: 39,
+      rightCalfCm: 39.5,
+      bodyFat: 25.3,
+      bodyFatMethod: "US_NAVY_CIRCUMFERENCE",
+      fatMassKg: 22.77,
+      leanMassKg: 67.23,
+      waistToHeightRatio: 0.5556,
+      waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
+      measurementDate: new Date("2026-07-19"),
+      createdAt: new Date("2026-07-19"),
+      updatedAt: new Date("2026-07-19"),
+    }] as never);
+    (mockedPrisma.$queryRaw as jest.Mock).mockResolvedValue([{
+      id: "weight-001",
+      measurementSessionId: "session-001",
+      recordedAt: new Date("2026-07-19"),
+      weightKg: 90,
+      source: "MEASUREMENT_SESSION",
+      notes: null,
+    }]);
 
-      mockedPrisma.measurement.findMany.mockResolvedValue(rows as never);
+    const res = createResponse();
+    await getMeasurements(authenticatedRequest({}), res);
 
-      const req = {
-        user: {
-          id: "user-123",
-          email: "james@example.com",
-        },
-        body: {},
-      } as AuthenticatedRequest;
-
-      const res = createResponse();
-
-      await getMeasurements(req, res);
-
-      expect(mockedPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: "user-123" },
-      });
-      expect(mockedPrisma.measurement.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: "user-123",
-        },
-        orderBy: {
-          measurementDate: "desc",
-        },
-      });
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        measurements: [
-          expect.objectContaining({
-            id: "measurement-002",
-            weight: 218,
-            waist: 39,
-            displayUnits: {
-              weight: "lb",
-              length: "in",
-            },
-          }),
-        ],
-      });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      weights: [expect.objectContaining({
+        id: "weight-001",
+        measurementSessionId: "session-001",
+        weight: expect.closeTo(198.42, 2),
+        weightKg: 90,
+        source: "MEASUREMENT_SESSION",
+        displayUnit: "lb",
+      })],
+      measurementSessions: [expect.objectContaining({
+        id: "measurement-002",
+        weight: expect.closeTo(198.42, 2),
+        waist: expect.closeTo(39.37, 2),
+        neck: expect.closeTo(15.75, 2),
+        fatMass: expect.any(Number),
+        leanMass: expect.any(Number),
+        bodyFatMethod: "US_NAVY_CIRCUMFERENCE",
+        waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
+        displayUnits: { weight: "lb", length: "in" },
+      })],
+      measurements: [expect.objectContaining({ id: "measurement-002" })],
+      profileMetrics: {
+        heightCm: 180,
+        height: expect.closeTo(70.87, 2),
+        displayUnit: "in",
+        bodyCompositionReference: "MALE",
+        bodyCompositionReferenceBasis: "BIRTH_SEX",
+        hasCompletedTwelveMonthsHormoneTherapy: false,
+      },
     });
   });
 });

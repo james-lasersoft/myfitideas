@@ -19,11 +19,15 @@ const LANGUAGES = ["en", "pt-BR"] as const;
 const DATE_FORMATS = ["LOCALE", "MM_DD_YYYY", "DD_MM_YYYY", "YYYY_MM_DD"] as const;
 const TIME_FORMATS = ["12", "24"] as const;
 const WEEK_STARTS = ["SUNDAY", "MONDAY"] as const;
+const BODY_COMPOSITION_REFERENCES = ["MALE", "FEMALE"] as const;
+const BODY_COMPOSITION_BASES = ["BIRTH_SEX", "HORMONE_THERAPY"] as const;
 
 type Language = (typeof LANGUAGES)[number];
 type DateFormat = (typeof DATE_FORMATS)[number];
 type TimeFormat = (typeof TIME_FORMATS)[number];
 type WeekStart = (typeof WEEK_STARTS)[number];
+type BodyCompositionReference = (typeof BODY_COMPOSITION_REFERENCES)[number];
+type BodyCompositionReferenceBasis = (typeof BODY_COMPOSITION_BASES)[number];
 
 interface UpdateProfileRequestBody {
   firstName?: string;
@@ -39,6 +43,15 @@ interface UpdateProfileRequestBody {
   timezone?: string;
   dailyHydrationGoal?: number;
   targetWeight?: number | null;
+  bodyCompositionReference?: BodyCompositionReference | null;
+  bodyCompositionReferenceBasis?: BodyCompositionReferenceBasis | null;
+  hasCompletedTwelveMonthsHormoneTherapy?: boolean;
+}
+
+interface BodyCompositionProfileRow {
+  bodyCompositionReference: BodyCompositionReference | null;
+  bodyCompositionReferenceBasis: BodyCompositionReferenceBasis | null;
+  hasCompletedTwelveMonthsHormoneTherapy: boolean;
 }
 
 function isTimeZone(value: string): boolean {
@@ -48,6 +61,22 @@ function isTimeZone(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+async function getBodyCompositionProfile(userId: string): Promise<BodyCompositionProfileRow> {
+  const rows = await prisma.$queryRaw<BodyCompositionProfileRow[]>`
+    SELECT
+      "bodyCompositionReference",
+      "bodyCompositionReferenceBasis",
+      "hasCompletedTwelveMonthsHormoneTherapy"
+    FROM "users"
+    WHERE "id" = ${userId}
+    LIMIT 1`;
+  return rows[0] ?? {
+    bodyCompositionReference: null,
+    bodyCompositionReferenceBasis: null,
+    hasCompletedTwelveMonthsHormoneTherapy: false,
+  };
 }
 
 function presentProfile(user: {
@@ -70,11 +99,12 @@ function presentProfile(user: {
   targetWeightKg: number | null;
   createdAt: Date;
   updatedAt: Date;
-}) {
+}, bodyComposition: BodyCompositionProfileRow) {
   const weightUnit = user.preferredWeightUnit as WeightUnit;
   const hydrationUnit = user.preferredHydrationUnit as HydrationUnit;
   return {
     ...user,
+    ...bodyComposition,
     targetWeight: user.targetWeightKg == null ? null : roundMeasurement(fromKilograms(user.targetWeightKg, weightUnit)),
     dailyHydrationGoal: roundMeasurement(fromMilliliters(user.dailyHydrationGoalMl, hydrationUnit)),
   };
@@ -110,13 +140,16 @@ export async function getProfile(req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: profileSelect });
+    const [user, bodyComposition] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: profileSelect }),
+      getBodyCompositionProfile(userId),
+    ]);
     if (!user) {
       res.status(404).json({ error: "User profile not found." });
       return;
     }
 
-    res.status(200).json({ profile: presentProfile(user) });
+    res.status(200).json({ profile: presentProfile(user, bodyComposition) });
   } catch (error) {
     console.error("Get profile error:", error);
     res.status(500).json({ error: "Unable to retrieve the user profile." });
@@ -186,37 +219,66 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response): P
       res.status(400).json({ error: "Target weight must be greater than zero." });
       return;
     }
+    if (body.bodyCompositionReference !== undefined && body.bodyCompositionReference !== null && !BODY_COMPOSITION_REFERENCES.includes(body.bodyCompositionReference)) {
+      res.status(400).json({ error: "Body composition calculation reference must be MALE or FEMALE." });
+      return;
+    }
+    if (body.bodyCompositionReferenceBasis !== undefined && body.bodyCompositionReferenceBasis !== null && !BODY_COMPOSITION_BASES.includes(body.bodyCompositionReferenceBasis)) {
+      res.status(400).json({ error: "Body composition reference basis is not supported." });
+      return;
+    }
+    if (body.bodyCompositionReferenceBasis === "HORMONE_THERAPY" && body.hasCompletedTwelveMonthsHormoneTherapy !== true) {
+      res.status(400).json({ error: "The hormone-therapy reference requires at least 12 months of continuous therapy." });
+      return;
+    }
 
     const inputWeightUnit = body.preferredWeightUnit ?? (current.preferredWeightUnit as WeightUnit);
     const inputHydrationUnit = body.preferredHydrationUnit ?? (current.preferredHydrationUnit as HydrationUnit);
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(body.firstName !== undefined ? { firstName: body.firstName.trim() } : {}),
-        ...(body.lastName !== undefined ? { lastName: body.lastName === null || body.lastName.trim() === "" ? null : body.lastName.trim() } : {}),
-        ...(body.heightCm !== undefined ? { heightCm: body.heightCm } : {}),
-        ...(body.preferredWeightUnit !== undefined ? { preferredWeightUnit: body.preferredWeightUnit } : {}),
-        ...(body.preferredLengthUnit !== undefined ? { preferredLengthUnit: body.preferredLengthUnit } : {}),
-        ...(body.preferredHydrationUnit !== undefined ? { preferredHydrationUnit: body.preferredHydrationUnit } : {}),
-        ...(body.preferredLanguage !== undefined ? { preferredLanguage: body.preferredLanguage } : {}),
-        ...(body.preferredDateFormat !== undefined ? { preferredDateFormat: body.preferredDateFormat } : {}),
-        ...(body.preferredTimeFormat !== undefined ? { preferredTimeFormat: body.preferredTimeFormat } : {}),
-        ...(body.preferredWeekStart !== undefined ? { preferredWeekStart: body.preferredWeekStart } : {}),
-        ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
-        ...(body.dailyHydrationGoal !== undefined ? {
-          dailyHydrationGoal: body.dailyHydrationGoal,
-          dailyHydrationGoalMl: toMilliliters(body.dailyHydrationGoal, inputHydrationUnit),
-        } : {}),
-        ...(body.targetWeight !== undefined ? {
-          targetWeight: body.targetWeight,
-          targetWeightKg: body.targetWeight === null ? null : toKilograms(body.targetWeight, inputWeightUnit),
-        } : {}),
-      },
-      select: profileSelect,
+    const updated = await prisma.$transaction(async (tx) => {
+      if (
+        body.bodyCompositionReference !== undefined
+        || body.bodyCompositionReferenceBasis !== undefined
+        || body.hasCompletedTwelveMonthsHormoneTherapy !== undefined
+      ) {
+        await tx.$executeRaw`
+          UPDATE "users"
+          SET
+            "bodyCompositionReference" = COALESCE(${body.bodyCompositionReference ?? null}::"BodyCompositionReference", "bodyCompositionReference"),
+            "bodyCompositionReferenceBasis" = COALESCE(${body.bodyCompositionReferenceBasis ?? null}::"BodyCompositionReferenceBasis", "bodyCompositionReferenceBasis"),
+            "hasCompletedTwelveMonthsHormoneTherapy" = COALESCE(${body.hasCompletedTwelveMonthsHormoneTherapy ?? null}::boolean, "hasCompletedTwelveMonthsHormoneTherapy")
+          WHERE "id" = ${userId}`;
+      }
+
+      return tx.user.update({
+        where: { id: userId },
+        data: {
+          ...(body.firstName !== undefined ? { firstName: body.firstName.trim() } : {}),
+          ...(body.lastName !== undefined ? { lastName: body.lastName === null || body.lastName.trim() === "" ? null : body.lastName.trim() } : {}),
+          ...(body.heightCm !== undefined ? { heightCm: body.heightCm } : {}),
+          ...(body.preferredWeightUnit !== undefined ? { preferredWeightUnit: body.preferredWeightUnit } : {}),
+          ...(body.preferredLengthUnit !== undefined ? { preferredLengthUnit: body.preferredLengthUnit } : {}),
+          ...(body.preferredHydrationUnit !== undefined ? { preferredHydrationUnit: body.preferredHydrationUnit } : {}),
+          ...(body.preferredLanguage !== undefined ? { preferredLanguage: body.preferredLanguage } : {}),
+          ...(body.preferredDateFormat !== undefined ? { preferredDateFormat: body.preferredDateFormat } : {}),
+          ...(body.preferredTimeFormat !== undefined ? { preferredTimeFormat: body.preferredTimeFormat } : {}),
+          ...(body.preferredWeekStart !== undefined ? { preferredWeekStart: body.preferredWeekStart } : {}),
+          ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
+          ...(body.dailyHydrationGoal !== undefined ? {
+            dailyHydrationGoal: body.dailyHydrationGoal,
+            dailyHydrationGoalMl: toMilliliters(body.dailyHydrationGoal, inputHydrationUnit),
+          } : {}),
+          ...(body.targetWeight !== undefined ? {
+            targetWeight: body.targetWeight,
+            targetWeightKg: body.targetWeight === null ? null : toKilograms(body.targetWeight, inputWeightUnit),
+          } : {}),
+        },
+        select: profileSelect,
+      });
     });
 
-    res.status(200).json({ message: "Profile updated successfully.", profile: presentProfile(updated) });
+    const bodyComposition = await getBodyCompositionProfile(userId);
+    res.status(200).json({ message: "Profile updated successfully.", profile: presentProfile(updated, bodyComposition) });
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({ error: "Unable to update the user profile." });
