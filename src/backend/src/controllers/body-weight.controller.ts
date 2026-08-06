@@ -34,7 +34,11 @@ function parseInput(req: AuthenticatedRequest): BodyWeightInput {
 
 function routeId(req: AuthenticatedRequest): string {
   const value = req.params.id;
-  return Array.isArray(value) ? value[0] : value;
+  const id = Array.isArray(value) ? value[0] : value;
+  if (!id) {
+    throw new TypeError("A body weight entry ID is required.");
+  }
+  return id;
 }
 
 function handleError(res: Response, error: unknown): void {
