@@ -12,6 +12,11 @@ import {
   type MeasurementComparisonValue,
   type MeasurementSessionComparison,
 } from "../services/measurementService";
+import {
+  getBodyTransformationAnalytics,
+  type BodyTransformationAnalytics,
+  type BodyTransformationTrend,
+} from "../services/bodyTransformationService";
 
 vi.mock("../services/measurementService", () => ({
   createMeasurement: vi.fn(),
@@ -27,6 +32,11 @@ vi.mock("../services/bodyWeightService", () => ({
   getBodyWeightError: vi.fn(() => "Unable to save body weight."),
 }));
 
+vi.mock("../services/bodyTransformationService", () => ({
+  getBodyTransformationAnalytics: vi.fn(),
+  getBodyTransformationAnalyticsError: vi.fn(() => "Unable to load body transformation insights."),
+}));
+
 const measurementData = {
   weights: [],
   measurementSessions: [],
@@ -38,6 +48,39 @@ const measurementData = {
     bodyCompositionReference: null,
     bodyCompositionReferenceBasis: null,
     hasCompletedTwelveMonthsHormoneTherapy: false,
+  },
+};
+
+const analyticsTrend = (overrides: Partial<BodyTransformationTrend> = {}): BodyTransformationTrend => ({
+  startValue: 80, endValue: 78, absoluteChange: -2, percentageChange: -2.5, unitCode: "kg", observationCount: 3,
+  startDate: "2026-07-10T12:00:00.000Z", endDate: "2026-08-01T12:00:00.000Z",
+  direction: "DECREASING", reliability: "TREND_ELIGIBLE", ...overrides,
+});
+const analyticsResponse: BodyTransformationAnalytics = {
+  period: { type: "LAST_30_DAYS", startDate: "2026-07-07T12:00:00.000Z", endDate: "2026-08-06T12:00:00.000Z" },
+  dataSufficiency: { bodyWeightObservationCount: 3, measurementSessionCount: 2, hasAnyData: true },
+  weight: analyticsTrend(),
+  coreMeasurements: [
+    { field: "neck", trend: analyticsTrend({ startValue: 40, endValue: 39, absoluteChange: -1, percentageChange: -2.5, unitCode: "cm" }) },
+    { field: "chest", trend: analyticsTrend({ startValue: 100, endValue: 98, absoluteChange: -2, percentageChange: -2, unitCode: "cm" }) },
+    { field: "waist", trend: analyticsTrend({ startValue: 90, endValue: 86, absoluteChange: -4, percentageChange: -4.4444, unitCode: "cm" }) },
+    { field: "hips", trend: analyticsTrend({ startValue: null, endValue: null, absoluteChange: null, percentageChange: null, unitCode: "cm", observationCount: 0, startDate: null, endDate: null, direction: "INSUFFICIENT_DATA", reliability: "UNAVAILABLE" }) },
+  ],
+  pairedMeasurements: [
+    { field: "upperArms", left: analyticsTrend({ endValue: 35, unitCode: "cm" }), right: analyticsTrend({ endValue: 36, unitCode: "cm" }) },
+    { field: "thighs", left: analyticsTrend({ endValue: 58, unitCode: "cm" }), right: analyticsTrend({ endValue: 59, unitCode: "cm" }) },
+    { field: "calves", left: analyticsTrend({ endValue: 38, unitCode: "cm" }), right: analyticsTrend({ endValue: 39, unitCode: "cm" }) },
+  ],
+  calculatedMetrics: [
+    { field: "bmi", trend: analyticsTrend({ startValue: 26.1, endValue: 25.5, absoluteChange: -.6, percentageChange: -2.2989, unitCode: "kg_per_m2" }) },
+    { field: "bodyFat", trend: analyticsTrend({ startValue: 20, endValue: 18, absoluteChange: -2, percentageChange: -10, unitCode: "percent" }) },
+    { field: "waistToHeightRatio", trend: analyticsTrend({ startValue: .5, endValue: .48, absoluteChange: -.02, percentageChange: -4, unitCode: "ratio" }) },
+    { field: "fatMass", trend: analyticsTrend({ startValue: 16, endValue: 14, unitCode: "kg" }) },
+    { field: "leanMass", trend: analyticsTrend({ startValue: 64, endValue: 64, absoluteChange: 0, percentageChange: 0, unitCode: "kg", direction: "STABLE" }) },
+  ],
+  consistency: {
+    bodyWeight: { observationCount: 3, coveredIntervalCount: 3, totalIntervalCount: 31, coveragePercentage: 9.68, intervalUnit: "DAY" },
+    measurementSessions: { observationCount: 2, coveredIntervalCount: 2, totalIntervalCount: 5, coveragePercentage: 40, intervalUnit: "WEEK" },
   },
 };
 
@@ -127,6 +170,7 @@ beforeEach(() => {
   localStorage.setItem("myfitideas.locale", "en-US");
   vi.clearAllMocks();
   vi.mocked(getMeasurementData).mockResolvedValue(measurementData);
+  vi.mocked(getBodyTransformationAnalytics).mockResolvedValue(analyticsResponse);
   vi.mocked(createMeasurement).mockResolvedValue({} as Awaited<ReturnType<typeof createMeasurement>>);
 });
 
@@ -202,6 +246,52 @@ describe("Novice measurement review", () => {
       rightThigh: 22.5,
       lengthUnit: "in",
     }));
+  });
+});
+
+
+describe("Body transformation intelligence", () => {
+  it("loads the default period and renders backend-provided trends without recalculating", async () => {
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+    await waitFor(() => expect(getBodyTransformationAnalytics).toHaveBeenCalledWith({ period: "LAST_30_DAYS" }));
+    const table = await screen.findByRole("table", { name: /Backend-calculated body transformation changes/ });
+    expect(within(table).getByRole("row", { name: /Weight 78 kg -2 kg \(-2.5%\) Decreasing Trend eligible/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Upper arms Left: 35 cmRight: 36 cm/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Hips.*Direction unavailable No observations/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Body fat 18% -2% \(-10%\)/ })).toBeInTheDocument();
+    expect(screen.getByText(/9.68%/)).toBeInTheDocument();
+  });
+
+  it("requests preset and custom periods through the API boundary", async () => {
+    const user = userEvent.setup();
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+    const period = await screen.findByRole("combobox", { name: "Insight period" });
+    await user.selectOptions(period, "LAST_7_DAYS");
+    await waitFor(() => expect(getBodyTransformationAnalytics).toHaveBeenLastCalledWith({ period: "LAST_7_DAYS" }));
+    await user.selectOptions(period, "CUSTOM");
+    await user.type(screen.getByLabelText("Start date"), "2026-07-01");
+    await user.type(screen.getByLabelText("End date"), "2026-07-31");
+    await user.click(screen.getByRole("button", { name: "Apply range" }));
+    await waitFor(() => expect(getBodyTransformationAnalytics).toHaveBeenLastCalledWith({
+      period: "CUSTOM", startDate: "2026-07-01", endDate: "2026-07-31",
+    }));
+  });
+
+  it("shows loading, empty, and API error states", async () => {
+    let resolveAnalytics!: (value: BodyTransformationAnalytics) => void;
+    vi.mocked(getBodyTransformationAnalytics).mockImplementation(() => new Promise((resolve) => { resolveAnalytics = resolve; }));
+    const { unmount } = render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+    expect(screen.getByText("Loading body transformation insights...")).toBeInTheDocument();
+    resolveAnalytics({ ...analyticsResponse, dataSufficiency: { bodyWeightObservationCount: 0, measurementSessionCount: 0, hasAnyData: false } });
+    expect(await screen.findByText("No body transformation data in this period")).toBeInTheDocument();
+    unmount();
+
+    vi.mocked(getBodyTransformationAnalytics).mockRejectedValue(new Error("failed"));
+    const user = userEvent.setup();
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+    const period = await screen.findByRole("combobox", { name: "Insight period" });
+    await user.selectOptions(period, "LAST_90_DAYS");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to load body transformation insights.");
   });
 });
 

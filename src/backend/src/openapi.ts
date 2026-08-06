@@ -37,6 +37,24 @@ export const openApiDocument = {
         },
       },
     },
+    "/analytics/body-transformation": {
+      get: {
+        summary: "Get body-transformation trends",
+        description: "Returns authenticated-user weight, circumference, derived-metric, sufficiency, and consistency analytics. The fixed-size response is not paginated; source history remains internal. Values use the user display units and dates use ISO 8601.",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "period", in: "query", schema: { type: "string", enum: ["LAST_7_DAYS", "LAST_30_DAYS", "LAST_90_DAYS", "ALL_HISTORY", "CUSTOM"], default: "LAST_30_DAYS" } },
+          { name: "startDate", in: "query", description: "Required for CUSTOM; YYYY-MM-DD.", schema: { type: "string", format: "date" } },
+          { name: "endDate", in: "query", description: "Required for CUSTOM; YYYY-MM-DD.", schema: { type: "string", format: "date" } },
+        ],
+        responses: {
+          "200": { description: "Body-transformation analytics returned", content: { "application/json": { schema: { $ref: "#/components/schemas/BodyTransformationAnalytics" } } } },
+          "400": { description: "Invalid period or custom date range" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Entitlement or permission required" },
+        },
+      },
+    },
     "/hydration": {
       get: { summary: "List hydration entries", responses: { "200": { description: "Entries returned" } } },
       post: { summary: "Create a hydration entry", responses: { "201": { description: "Entry created" } } },
@@ -100,7 +118,7 @@ export const openApiDocument = {
               type: "object",
               required: ["field", "value", "baselineMethod", "comparisonMethod"],
               properties: {
-                field: { type: "string", enum: ["bodyFat", "waistToHeightRatio", "fatMass", "leanMass"] },
+                field: { type: "string", enum: ["bmi", "bodyFat", "waistToHeightRatio", "fatMass", "leanMass"] },
                 value: { $ref: "#/components/schemas/MeasurementComparisonValue" },
                 baselineMethod: { type: ["string", "null"] },
                 comparisonMethod: { type: ["string", "null"] },
@@ -115,6 +133,96 @@ export const openApiDocument = {
         properties: {
           id: { type: "string" },
           recordedAt: { type: "string", format: "date-time" },
+        },
+      },
+      BodyTransformationTrend: {
+        type: "object",
+        required: ["startValue", "endValue", "absoluteChange", "percentageChange", "unitCode", "observationCount", "startDate", "endDate", "direction", "reliability"],
+        properties: {
+          startValue: { type: ["number", "null"] },
+          endValue: { type: ["number", "null"] },
+          absoluteChange: { type: ["number", "null"] },
+          percentageChange: { type: ["number", "null"] },
+          unitCode: { type: "string", enum: ["cm", "in", "kg", "lb", "percent", "ratio", "kg_per_m2"] },
+          observationCount: { type: "integer", minimum: 0 },
+          startDate: { type: ["string", "null"], format: "date-time" },
+          endDate: { type: ["string", "null"], format: "date-time" },
+          direction: { type: "string", enum: ["INCREASING", "DECREASING", "STABLE", "INSUFFICIENT_DATA"] },
+          reliability: { type: "string", enum: ["UNAVAILABLE", "CURRENT_ONLY", "BASIC_CHANGE", "TREND_ELIGIBLE"] },
+        },
+      },
+      BodyTransformationConsistency: {
+        type: "object",
+        required: ["observationCount", "coveredIntervalCount", "totalIntervalCount", "coveragePercentage", "intervalUnit"],
+        properties: {
+          observationCount: { type: "integer", minimum: 0 },
+          coveredIntervalCount: { type: "integer", minimum: 0 },
+          totalIntervalCount: { type: "integer", minimum: 0 },
+          coveragePercentage: { type: ["number", "null"], minimum: 0, maximum: 100 },
+          intervalUnit: { type: "string", enum: ["DAY", "WEEK"] },
+        },
+      },
+      BodyTransformationAnalytics: {
+        type: "object",
+        required: ["period", "dataSufficiency", "weight", "coreMeasurements", "pairedMeasurements", "calculatedMetrics", "consistency"],
+        properties: {
+          period: {
+            type: "object",
+            required: ["type", "startDate", "endDate"],
+            properties: {
+              type: { type: "string", enum: ["LAST_7_DAYS", "LAST_30_DAYS", "LAST_90_DAYS", "ALL_HISTORY", "CUSTOM"] },
+              startDate: { type: ["string", "null"], format: "date-time" },
+              endDate: { type: "string", format: "date-time" },
+            },
+          },
+          dataSufficiency: {
+            type: "object",
+            required: ["bodyWeightObservationCount", "measurementSessionCount", "hasAnyData"],
+            properties: {
+              bodyWeightObservationCount: { type: "integer", minimum: 0 },
+              measurementSessionCount: { type: "integer", minimum: 0 },
+              hasAnyData: { type: "boolean" },
+            },
+          },
+          weight: { $ref: "#/components/schemas/BodyTransformationTrend" },
+          coreMeasurements: {
+            type: "array",
+            items: {
+              type: "object", required: ["field", "trend"],
+              properties: {
+                field: { type: "string", enum: ["neck", "chest", "waist", "hips"] },
+                trend: { $ref: "#/components/schemas/BodyTransformationTrend" },
+              },
+            },
+          },
+          pairedMeasurements: {
+            type: "array",
+            items: {
+              type: "object", required: ["field", "left", "right"],
+              properties: {
+                field: { type: "string", enum: ["upperArms", "thighs", "calves"] },
+                left: { $ref: "#/components/schemas/BodyTransformationTrend" },
+                right: { $ref: "#/components/schemas/BodyTransformationTrend" },
+              },
+            },
+          },
+          calculatedMetrics: {
+            type: "array",
+            items: {
+              type: "object", required: ["field", "trend"],
+              properties: {
+                field: { type: "string", enum: ["bmi", "bodyFat", "waistToHeightRatio", "fatMass", "leanMass"] },
+                trend: { $ref: "#/components/schemas/BodyTransformationTrend" },
+              },
+            },
+          },
+          consistency: {
+            type: "object", required: ["bodyWeight", "measurementSessions"],
+            properties: {
+              bodyWeight: { $ref: "#/components/schemas/BodyTransformationConsistency" },
+              measurementSessions: { $ref: "#/components/schemas/BodyTransformationConsistency" },
+            },
+          },
         },
       },
       ErrorResponse: {

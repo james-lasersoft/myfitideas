@@ -128,3 +128,27 @@
   .measurement-modal-footer { flex-wrap: wrap; }
   .measurement-modal-footer button { flex: 1 1 44%; }
 }
+
+.measurement-analytics-period { display: grid; gap: .3rem; color: #536159; font-size: .8rem; font-weight: 700; }
+.measurement-analytics-custom-period { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-bottom: 1rem; padding: .85rem; border: 1px solid rgba(33,54,42,.12); border-radius: 14px; background: rgba(47,115,85,.04); }
+.measurement-analytics-custom-period label { display: grid; gap: .3rem; font-size: .8rem; font-weight: 700; }
+.measurement-analytics-custom-period button { min-height: 42px; }
+.measurement-analytics-summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1rem; color: #536159; }
+.measurement-analytics-help { margin: -.4rem 0 1rem; color: #66736b; font-size: .82rem; }
+.measurement-analytics-table { min-width: 900px; }
+.measurement-analytics-table caption { text-align: left; padding: 0 0 .65rem; color: #66736b; }
+.measurement-analytics-table th[scope="row"] { text-transform: none; letter-spacing: normal; color: #263b30; }
+.measurement-analytics-pair { display: grid; gap: .25rem; white-space: normal; }
+.measurement-analytics-pair b { font-size: .75rem; color: #66736b; }
+.measurement-analytics-consistency { display: grid; gap: .35rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(33,54,42,.12); }
+.measurement-analytics-consistency h3, .measurement-analytics-consistency p { margin: 0; }
+.measurement-analytics-consistency p { color: #66736b; font-size: .85rem; }
+.measurement-analytics-consistency dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: .5rem 0 0; }
+.measurement-analytics-consistency-item { display: grid; gap: .25rem; padding: .8rem; border-radius: 12px; background: rgba(47,115,85,.06); }
+.measurement-analytics-consistency-item dt { color: #536159; font-size: .78rem; font-weight: 700; }
+.measurement-analytics-consistency-item dd { margin: 0; color: #20352a; font-weight: 800; }
+@media (max-width: 720px) {
+  .measurement-analytics-custom-period { display: grid; grid-template-columns: 1fr; }
+  .measurement-analytics-custom-period input, .measurement-analytics-custom-period button { width: 100%; }
+  .measurement-analytics-consistency dl { grid-template-columns: 1fr; }
+}

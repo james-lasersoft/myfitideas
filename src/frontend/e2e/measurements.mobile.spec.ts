@@ -24,3 +24,18 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   );
   expect(horizontalOverflow).toBe(false);
 });
+
+
+test("mobile Chromium keeps body transformation intelligence readable", async ({ page }) => {
+  await page.goto("/measurements");
+  await expect(page.getByRole("heading", { name: "Body transformation intelligence" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Insight period" })).toBeVisible();
+  const table = page.getByRole("table", { name: /Backend-calculated body transformation changes/ });
+  await expect(table.getByRole("row", { name: /Weight/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /Upper arms Left:/ })).toBeVisible();
+
+  const horizontalOverflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth > document.documentElement.clientWidth
+  );
+  expect(horizontalOverflow).toBe(false);
+});

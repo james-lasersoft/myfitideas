@@ -1,9 +1,10 @@
 import type { Response } from "express";
 import prisma from "../config/prisma.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import { calculateBmi } from "../utils/body-composition.js";
+import { toKilograms } from "../utils/measurements.js";
 
 const ML_PER_OUNCE = 29.5735;
-const POUNDS_TO_KILOGRAMS = 0.45359237;
 
 export async function getDashboardSummary(
   req: AuthenticatedRequest,
@@ -82,25 +83,12 @@ export async function getDashboardSummary(
         ? Number((currentWeight - previousWeight).toFixed(2))
         : null;
 
-    let bmi: number | null = null;
+    const bmi = currentWeight === null
+      ? null
+      : calculateBmi(toKilograms(currentWeight, user.preferredWeightUnit === "kg" ? "kg" : "lb"), user.heightCm);
     let bmiCategory: string | null = null;
 
-    if (
-      currentWeight !== null &&
-      user.heightCm !== null &&
-      user.heightCm > 0
-    ) {
-      const heightMeters = user.heightCm / 100;
-
-      const weightKg =
-        user.preferredWeightUnit === "kg"
-          ? currentWeight
-          : currentWeight * POUNDS_TO_KILOGRAMS;
-
-      bmi = Number(
-        (weightKg / heightMeters ** 2).toFixed(1)
-      );
-
+    if (bmi !== null) {
       if (bmi < 18.5) {
         bmiCategory = "Underweight";
       } else if (bmi < 25) {

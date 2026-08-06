@@ -11,6 +11,7 @@ The project-wide architectural constitution is [`ARCHITECTURE.md`](../../ARCHITE
 | [ADR-003](ADR-003-internationalization-first.md) | Internationalization First | Accepted |
 | [ADR-004](ADR-004-testing-strategy.md) | Testing Strategy | Accepted |
 | [ADR-005](ADR-005-privacy-and-compliance-by-design.md) | Privacy and Compliance by Design | Accepted |
+| [ADR-006](ADR-006-backend-owned-transformation-intelligence.md) | Backend-Owned Transformation Intelligence | Accepted |
 
 The older [`Design-Decisions.md`](Design-Decisions.md) predates this indexed ADR series and remains a product terminology record. New architecture decisions use the numbered files in this index.
 

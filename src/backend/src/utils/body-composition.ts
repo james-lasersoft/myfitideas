@@ -26,6 +26,11 @@ function round(value: number, digits = 2): number {
   return Math.round(value * factor) / factor;
 }
 
+export function calculateBmi(weightKg: number | null | undefined, heightCm: number | null | undefined): number | null {
+  if (!weightKg || !heightCm || weightKg <= 0 || heightCm <= 0) return null;
+  return round(weightKg / (heightCm / 100) ** 2, 1);
+}
+
 export function calculateWaistToHeightRatio(
   waistCm: number | null | undefined,
   heightCm: number | null | undefined,

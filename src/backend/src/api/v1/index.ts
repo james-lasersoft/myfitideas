@@ -11,12 +11,14 @@ import invitationRoutes from "../../routes/invitation.routes.js";
 import securityAdminRoutes from "../../routes/security-admin.routes.js";
 import companySettingsRoutes from "../../routes/company-settings.routes.js";
 import syntheticDataRoutes from "../../routes/synthetic-data.routes.js";
+import analyticsRoutes from "../../routes/analytics.routes.js";
 
 const router = Router();
 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/measurements", measurementRoutes);
+router.use("/analytics", analyticsRoutes);
 router.use("/hydration", hydrationRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/profile", profileRoutes);
