@@ -88,7 +88,11 @@ export async function createBodyWeight(userId: string, input: BodyWeightInput): 
     )
     RETURNING *
   `;
-  return rows[0];
+  const row = rows[0];
+  if (!row) {
+    throw new Error("Body weight entry was not returned after creation.");
+  }
+  return row;
 }
 
 export async function getLatestBodyWeight(userId: string): Promise<BodyWeightRow | null> {
