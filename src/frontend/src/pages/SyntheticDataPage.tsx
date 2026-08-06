@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
+import SyntheticAccessPanel from "../components/SyntheticAccessPanel";
 import { useLocale } from "../i18n/LocaleContext";
 import {
   deleteSyntheticDataBatch,
@@ -215,6 +216,7 @@ export default function SyntheticDataPage() {
           <div className="ops-panel-heading"><div><p>{t("Target")}</p><h2>{t("Test user")}</h2></div><span className="ops-badge">{t("Existing account")}</span></div>
           <label className="lab-field"><span>{t("User")}</span><select disabled={loading || users.length === 0} value={userId} onChange={(event) => { setUserId(event.target.value); invalidatePreview(); }}>{loading ? <option value="">{t("Loading users")}</option> : null}{!loading && users.length === 0 ? <option value="">{t("No active users available")}</option> : null}{users.map((user) => <option key={user.id} value={user.id}>{user.firstName} {user.lastName ?? ""} ({user.email})</option>)}</select></label>
           <dl className="lab-user-summary"><div><dt>{t("Name")}</dt><dd>{selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName ?? ""}` : t("Not selected")}</dd></div><div><dt>{t("Email")}</dt><dd>{selectedUser?.email ?? t("Not selected")}</dd></div><div><dt>{t("Age")}</dt><dd>{age}</dd></div><div><dt>{t("Sex reference")}</dt><dd>{t(sexReference.toLowerCase())}</dd></div></dl>
+          <SyntheticAccessPanel userId={userId} />
         </article>
 
         <article className="ops-panel lab-simulation-panel">
