@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
@@ -116,6 +116,7 @@ export default function MeasurementsPage() {
   const navigate = useNavigate();
   const modalRef = useRef<HTMLElement>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const measurementInputRefs = useRef<Partial<Record<SessionField, HTMLInputElement | null>>>({});
   const [weights, setWeights] = useState<BodyWeight[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [profileMetrics, setProfileMetrics] = useState<MeasurementProfileMetrics | null>(null);
@@ -167,10 +168,6 @@ export default function MeasurementsPage() {
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", handleKeyDown); };
   }, [isSaving, isSessionActive]);
 
-  useEffect(() => {
-    if (isSessionActive && entryMode === "NEWBIE") stepHeadingRef.current?.focus();
-  }, [entryMode, isSessionActive, noviceStep]);
-
   const latestWeight = weights[0] ?? null;
   const latestSession = measurements[0] ?? null;
   const latestWithBodyFat = measurements.find((item) => item.bodyFat != null) ?? null;
@@ -178,6 +175,18 @@ export default function MeasurementsPage() {
   const latestWithComposition = measurements.find((item) => item.fatMass != null || item.leanMass != null) ?? null;
   const isNoviceReview = noviceStep === NOVICE_STEPS.length;
   const currentNoviceStep = NOVICE_STEPS[Math.min(noviceStep, NOVICE_STEPS.length - 1)];
+
+  useEffect(() => {
+    if (!isSessionActive || entryMode !== "NEWBIE") return;
+    if (isNoviceReview) {
+      stepHeadingRef.current?.focus();
+      return;
+    }
+    const firstField = currentNoviceStep.fields[0];
+    requestAnimationFrame(() => {
+      if (firstField) measurementInputRefs.current[firstField]?.focus();
+    });
+  }, [currentNoviceStep, entryMode, isNoviceReview, isSessionActive, noviceStep]);
 
   const trend = useMemo(() => {
     if (trendMetric === "weight") return { label: "Weight", unit: displayUnits.weight, points: weights.slice().reverse().map((item) => ({ date: item.recordedAt, value: item.weight })) };
@@ -216,8 +225,31 @@ export default function MeasurementsPage() {
     finally { setIsSavingWeight(false); }
   };
 
+  const validateNoviceFields = (fields: SessionField[]): boolean => {
+    const invalidField = fields.find((field) => {
+      const value = optionalNumber(formValues[field]);
+      return value !== undefined && (!Number.isFinite(value) || value <= 0);
+    });
+    if (!invalidField) return true;
+    setError(`${FIELD_LABELS[invalidField]} must be a positive number or left blank.`);
+    requestAnimationFrame(() => measurementInputRefs.current[invalidField]?.focus());
+    return false;
+  };
+
+  const advanceNovice = (): void => {
+    setError("");
+    if (isNoviceReview) return;
+    if (!validateNoviceFields(currentNoviceStep.fields)) return;
+    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault(); setMessage(""); setError("");
+    event.preventDefault();
+    if (entryMode === "NEWBIE" && !isNoviceReview) {
+      advanceNovice();
+      return;
+    }
+    setMessage(""); setError("");
     const observedAt = new Date(measurementDate);
     if (Number.isNaN(observedAt.getTime())) { setError("Enter a valid session observation date and time."); return; }
     const visibleFields = MODE_FIELDS[entryMode];
@@ -231,22 +263,38 @@ export default function MeasurementsPage() {
     finally { setIsSaving(false); }
   };
 
-  const advanceNovice = (): void => {
-    setError("");
-    if (isNoviceReview) return;
-    const invalid = currentNoviceStep.fields.some((field) => { const value = optionalNumber(formValues[field]); return value !== undefined && (!Number.isFinite(value) || value <= 0); });
-    if (invalid) { setError("Enter positive numbers or leave the measurement blank to skip it."); return; }
-    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
-  };
-
   const skipNoviceStep = (): void => {
     currentNoviceStep.fields.forEach((field) => setField(field, ""));
     setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
   };
 
-  const renderMeasurementInput = (field: SessionField) => <label key={field} className="measurement-input">
+  const handleNoviceInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>, field: SessionField): void => {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    const fieldIndex = currentNoviceStep.fields.indexOf(field);
+    if (fieldIndex < 0) return;
+    const nextField = currentNoviceStep.fields[fieldIndex + 1];
+    if (nextField) {
+      if (!validateNoviceFields([field])) return;
+      measurementInputRefs.current[nextField]?.focus();
+      return;
+    }
+    advanceNovice();
+  };
+
+  const renderMeasurementInput = (field: SessionField, useGuidedKeyboard = false) => <label key={field} className="measurement-input">
     <span>{FIELD_LABELS[field]} <em>{displayUnits.length}</em></span>
-    <input type="number" min="0" step={getMeasurementStep(displayUnits.length)} value={formValues[field]} onChange={(event) => setField(field, event.target.value)} inputMode="decimal" />
+    <input
+      ref={(element) => { measurementInputRefs.current[field] = element; }}
+      type="number"
+      min="0"
+      step={getMeasurementStep(displayUnits.length)}
+      value={formValues[field]}
+      onChange={(event) => setField(field, event.target.value)}
+      onKeyDown={useGuidedKeyboard ? (event) => handleNoviceInputKeyDown(event, field) : undefined}
+      inputMode="decimal"
+      aria-describedby={useGuidedKeyboard ? "novice-enter-instruction" : undefined}
+    />
   </label>;
 
   return <main className="dashboard-page measurements-page">
@@ -314,6 +362,7 @@ export default function MeasurementsPage() {
                 <progress value={noviceStep + 1} max={NOVICE_STEPS.length + 1} />
               </div>
               <div className="sr-only" aria-live="polite">{isNoviceReview ? "Review measurements" : `${currentNoviceStep.title}. Step ${noviceStep + 1} of ${NOVICE_STEPS.length + 1}`}</div>
+              <p id="novice-enter-instruction" className="sr-only">Press Enter to continue. For paired measurements, Enter moves from the left field to the right field before continuing.</p>
               {isNoviceReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>Review your measurements</h3>
                 <p>Confirm the values below. Body fat and other composition metrics will be calculated after saving when the required profile data is available.</p>
@@ -321,9 +370,9 @@ export default function MeasurementsPage() {
               </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{currentNoviceStep.title}</h3>
                 <p>{currentNoviceStep.description}</p>
-                <fieldset><legend>{currentNoviceStep.fields.length === 2 ? `${currentNoviceStep.title}: left and right` : currentNoviceStep.title}</legend><div className={currentNoviceStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>{currentNoviceStep.fields.map(renderMeasurementInput)}</div></fieldset>
+                <fieldset><legend>{currentNoviceStep.fields.length === 2 ? `${currentNoviceStep.title}: left and right` : currentNoviceStep.title}</legend><div className={currentNoviceStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>{currentNoviceStep.fields.map((field) => renderMeasurementInput(field, true))}</div></fieldset>
               </section>}
-            </div> : <div className="measurement-input-grid">{MODE_FIELDS[entryMode].map(renderMeasurementInput)}</div>}
+            </div> : <div className="measurement-input-grid">{MODE_FIELDS[entryMode].map((field) => renderMeasurementInput(field))}</div>}
             <div className="measurement-calculation-note"><strong>Calculated automatically</strong><span>Body fat, fat mass, lean mass, and waist-to-height ratio are derived after saving when required profile and circumference values are available. Body fat is not entered manually in this workflow.</span></div>
           </form>
         </div>
