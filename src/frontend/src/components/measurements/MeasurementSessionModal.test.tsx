@@ -36,6 +36,9 @@ describe("MeasurementSessionModal", () => {
     expect(within(dialog).queryByText("Standard")).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Advanced")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("heading", { name: "Neck" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", {
+      name: "Illustration showing tape placement around the neck.",
+    })).toHaveAttribute("src", expect.stringMatching(/data-measurement-concept=.*neck/));
     await waitFor(() => expect(within(dialog).getByRole("spinbutton", { name: "Neck in" })).toHaveFocus());
     expect(within(dialog).getByRole("button", { name: "Next" })).toBeInTheDocument();
   });
@@ -49,6 +52,7 @@ describe("MeasurementSessionModal", () => {
     const dialog = screen.getByRole("dialog", { name: "Body measurement session" });
     expect(within(dialog).queryByText("Entry mode")).not.toBeInTheDocument();
     expect(within(dialog).getAllByRole("spinbutton")).toHaveLength(13);
+    expect(within(dialog).queryByRole("img")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("spinbutton", { name: "Neck in" })).toBeInTheDocument();
     expect(within(dialog).getByRole("spinbutton", { name: "Right calf in" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
@@ -65,6 +69,11 @@ describe("MeasurementSessionModal", () => {
       await user.click(screen.getByRole("button", { name: "Skip" }));
     }
 
+    const pairImage = screen.getByRole("img", {
+      name: "Illustration showing tape placement around the upper arm.",
+    });
+    expect(pairImage).toHaveAttribute("src", expect.stringMatching(/data-measurement-concept=.*upper-arm/));
+    expect(screen.getAllByRole("img")).toHaveLength(1);
     const leftInput = screen.getByRole("spinbutton", { name: "Left upper arm in" });
     const rightInput = screen.getByRole("spinbutton", { name: "Right upper arm in" });
     await user.type(leftInput, "12");
@@ -75,6 +84,23 @@ describe("MeasurementSessionModal", () => {
     await user.keyboard("{Enter}");
 
     expect(screen.getByRole("heading", { name: "Forearms" })).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("keeps the compact review free of guidance illustrations and does not save", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn(async () => undefined);
+    render(<LocaleProvider><ModalHarness onSave={onSave} /></LocaleProvider>);
+
+    await user.click(screen.getByRole("button", { name: "Start measurement session" }));
+    for (let step = 0; step < 9; step += 1) {
+      await user.click(screen.getByRole("button", { name: "Skip" }));
+    }
+
+    const dialog = screen.getByRole("dialog", { name: "Body measurement session" });
+    expect(within(dialog).getByRole("heading", { name: "Review your measurements" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Save session" })).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });
 

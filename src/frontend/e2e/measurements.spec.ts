@@ -63,26 +63,42 @@ test("novice keyboard workflow reviews, edits, and saves only deliberately", asy
   await expect(dialog.getByText("Entry mode")).toHaveCount(0);
   await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
   await expect(dialog.getByRole("heading", { name: "Neck" })).toBeVisible();
+  const guidanceImage = dialog.getByRole("img", {
+    name: "Illustration showing tape placement around the neck.",
+  });
+  await expect(guidanceImage).toHaveAttribute("src", /data-measurement-concept=.*neck/);
 
   await continueWithValue(page, "Neck in", "15");
   await expect(dialog.getByRole("heading", { name: "Chest" })).toBeVisible();
+  await expect(dialog.getByRole("img", {
+    name: "Illustration showing tape placement around the chest.",
+  })).toHaveAttribute("src", /data-measurement-concept=.*chest/);
   await dialog.getByRole("button", { name: "Skip" }).click();
   await continueWithValue(page, "Waist in", "32");
   await continueWithValue(page, "Abdomen in", "34");
   await continueWithValue(page, "Hips in", "38");
 
+  await expect(dialog.getByRole("img", {
+    name: "Illustration showing tape placement around the upper arm.",
+  })).toHaveAttribute("src", /data-measurement-concept=.*upper-arm/);
+  await expect(dialog.getByRole("spinbutton", { name: "Left upper arm in" })).toBeVisible();
+  await expect(dialog.getByRole("spinbutton", { name: "Right upper arm in" })).toBeVisible();
   await page.getByRole("spinbutton", { name: "Left upper arm in" }).fill("12");
   await page.getByRole("spinbutton", { name: "Left upper arm in" }).press("Enter");
   await expect(page.getByRole("spinbutton", { name: "Right upper arm in" })).toBeFocused();
   await continueWithValue(page, "Right upper arm in", "12.5");
 
   await dialog.getByRole("button", { name: "Skip" }).click();
-  await page.getByRole("spinbutton", { name: "Left thigh in" }).fill("22");
-  await page.getByRole("spinbutton", { name: "Left thigh in" }).press("Enter");
+  const leftThigh = page.getByRole("spinbutton", { name: "Left thigh in" });
+  const rightThigh = page.getByRole("spinbutton", { name: "Right thigh in" });
+  await leftThigh.fill("22");
+  await leftThigh.press("Enter");
+  await expect(rightThigh).toBeFocused();
   await continueWithValue(page, "Right thigh in", "22.5");
   await dialog.getByRole("button", { name: "Skip" }).click();
 
   await expect(dialog.getByRole("heading", { name: "Review your measurements" })).toBeVisible();
+  await expect(dialog.getByRole("img")).toHaveCount(0);
   const review = dialog.getByRole("table", { name: /Entered and skipped measurements/ });
   await expect(review.getByRole("rowheader")).toHaveText([
     "Neck", "Chest", "Waist", "Abdomen", "Hips",
@@ -134,6 +150,7 @@ test("manual session opens the full editor without entry mode chrome", async ({ 
   await expect(dialog.getByText("Entry mode")).toHaveCount(0);
   await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
   await expect(dialog.getByRole("spinbutton")).toHaveCount(13);
+  await expect(dialog.getByRole("img")).toHaveCount(0);
   await expect(dialog.getByRole("spinbutton", { name: "Right calf in" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Next" })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "Save session" })).toBeVisible();
@@ -248,6 +265,13 @@ test("entry dialog stays below the member toolbar across desktop and tablet view
     const dialog = page.getByRole("dialog", { name: "Body measurement session" });
     const closeButton = dialog.getByRole("button", { name: "Close measurement session" });
     await expectDialogWithinMemberViewport(page, dialog, closeButton);
+    const illustration = dialog.locator(".measurement-guidance-illustration");
+    const illustrationBox = await illustration.boundingBox();
+    expect(illustrationBox).not.toBeNull();
+    expect(illustrationBox!.width).toBeLessThanOrEqual(viewport.width <= 900 ? 281 : 321);
+    expect(Math.abs((illustrationBox!.width / illustrationBox!.height) - (4 / 3))).toBeLessThan(.03);
+    await expect(dialog.getByRole("spinbutton", { name: "Neck in" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Next" })).toBeVisible();
 
     await dialog.locator(".measurement-modal-body").evaluate((element) => {
       element.scrollTop = element.scrollHeight;
@@ -289,7 +313,17 @@ test("English and Brazilian Portuguese measurement views contain localized UI", 
   await expect(page.getByText("Registre peso e medidas corporais.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Guiado" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Manual" })).toBeVisible();
+  await page.getByRole("button", { name: "Guiado" }).click();
+  const dialog = page.getByRole("dialog", { name: "Sessão de medidas corporais" });
+  await expect(dialog.getByRole("img", {
+    name: "Ilustração mostrando a posição da fita ao redor do pescoço.",
+  })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(RAW_TRANSLATION_KEY);
+  const horizontalOverflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth > document.documentElement.clientWidth
+  );
+  expect(horizontalOverflow).toBe(false);
+  await page.keyboard.press("Escape");
 });
 
 
