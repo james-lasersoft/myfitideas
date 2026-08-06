@@ -214,6 +214,17 @@ const catalog = [
   ["measurements.phase7.back", "Back", "measurements", "Voltar"],
   ["measurements.phase7.skip", "Skip", "measurements", "Ignorar"],
   ["measurements.phase7.save.session", "Save session", "measurements", "Salvar sessão"],
+  ["measurements.phase7.history.detail.caption", "Body measurement sessions. Activate a row to view full session details.", "measurements", "Sessões de medidas corporais. Ative uma linha para ver todos os detalhes da sessão."],
+  ["measurements.phase7.history.detail.open", "Open session details", "measurements", "Abrir detalhes da sessão"],
+  ["measurements.phase7.history.detail.measurements.caption", "All recorded and unrecorded body measurements for this session.", "measurements", "Todas as medidas corporais registradas e não registradas desta sessão."],
+  ["measurements.phase7.history.detail.recorded.value", "Recorded value", "measurements", "Valor registrado"],
+  ["measurements.phase7.history.detail.not.recorded", "Not recorded", "measurements", "Não registrado"],
+  ["measurements.phase7.history.detail.title", "Measurement session details", "measurements", "Detalhes da sessão de medidas"],
+  ["measurements.phase7.history.detail.close.label", "Close session details", "measurements", "Fechar detalhes da sessão"],
+  ["measurements.phase7.history.detail.recorded.measurements", "Recorded measurements", "measurements", "Medidas registradas"],
+  ["measurements.phase7.history.detail.calculated.results", "Calculated results", "measurements", "Resultados calculados"],
+  ["measurements.phase7.history.detail.calculation.method", "Calculation method", "measurements", "Método de cálculo"],
+  ["measurements.phase7.history.detail.close", "Close", "measurements", "Fechar"],
   ["measurements.phase7.no.sessions.yet", "No sessions yet", "measurements", "Nenhuma sessão ainda"],
 ] as const;
 

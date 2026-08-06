@@ -232,5 +232,16 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "Back": "Voltar",
     "Skip": "Ignorar",
     "Save session": "Salvar sessão",
+    "Body measurement sessions. Activate a row to view full session details.": "Sessões de medidas corporais. Ative uma linha para ver todos os detalhes da sessão.",
+    "Open session details": "Abrir detalhes da sessão",
+    "All recorded and unrecorded body measurements for this session.": "Todas as medidas corporais registradas e não registradas desta sessão.",
+    "Recorded value": "Valor registrado",
+    "Not recorded": "Não registrado",
+    "Measurement session details": "Detalhes da sessão de medidas",
+    "Close session details": "Fechar detalhes da sessão",
+    "Recorded measurements": "Medidas registradas",
+    "Calculated results": "Resultados calculados",
+    "Calculation method": "Método de cálculo",
+    "Close": "Fechar",
   }
 };

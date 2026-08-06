@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import MeasurementHistoryTable from "../components/measurements/MeasurementHistoryTable";
+import MeasurementSessionDetailModal from "../components/measurements/MeasurementSessionDetailModal";
 import MeasurementSessionModal from "../components/measurements/MeasurementSessionModal";
-import { FIELD_LABELS, getLocalDateTimeValue, optionalNumber, type SessionField } from "../components/measurements/measurementSessionModel";
+import { calculationMethodLabel, FIELD_LABELS, formatMeasurementValue, getLocalDateTimeValue, optionalNumber, type SessionField } from "../components/measurements/measurementSessionModel";
 import { useLocale } from "../i18n/LocaleContext";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
 import {
@@ -11,13 +13,11 @@ import {
   getMeasurementError,
   getMeasurementGuardrail,
   type CreateMeasurementInput,
-  type LengthUnit,
   type Measurement,
   type MeasurementDisplayUnits,
   type MeasurementProfileMetrics,
-  type WeightUnit,
 } from "../services/measurementService";
-import { formatMeasurement, getMeasurementStep } from "../utils/measurementFormat";
+import { getMeasurementStep } from "../utils/measurementFormat";
 import "./MeasurementsPage.css";
 
 const DEFAULT_DISPLAY_UNITS: MeasurementDisplayUnits = { weight: "lb", length: "in" };
@@ -29,17 +29,6 @@ const TREND_LABELS: Record<TrendMetric, string> = {
   waist: "Waist",
 };
 
-function methodLabel(method: string | null): string {
-  if (!method) return "Not calculated";
-  if (method === "US_NAVY_CIRCUMFERENCE") return "U.S. Navy circumference estimate";
-  if (method === "WAIST_CM_DIVIDED_BY_HEIGHT_CM") return "Waist divided by height";
-  if (method === "USER_PROVIDED") return "User provided";
-  return method.replaceAll("_", " ").toLowerCase();
-}
-function formatValue(value: number | null | undefined, unit = ""): string {
-  if (value == null) return "—";
-  return `${formatMeasurement(value, unit as WeightUnit | LengthUnit | "%")} ${unit}`.trim();
-}
 function referenceLabel(reference: MeasurementProfileMetrics["bodyCompositionReference"]): string {
   if (reference === "MALE") return "male reference";
   if (reference === "FEMALE") return "female reference";
@@ -65,9 +54,9 @@ function MiniTrendChart({ points, label, unit }: { points: TrendPoint[]; label: 
       <line x1="20" x2="580" y1="40" y2="40" className="measurement-chart-grid" />
       <line x1="20" x2="580" y1="110" y2="110" className="measurement-chart-grid" />
       <polyline points={coordinates.map((point) => `${point.x},${point.y}`).join(" ")} className="measurement-chart-line" />
-      {visible.map((point, index) => <circle key={`${point.date}-${index}`} cx={coordinates[index].x} cy={coordinates[index].y} r="4" className="measurement-chart-point"><title>{`${new Date(point.date).toLocaleString(locale)}: ${formatValue(point.value, unit)}`}</title></circle>)}
+      {visible.map((point, index) => <circle key={`${point.date}-${index}`} cx={coordinates[index].x} cy={coordinates[index].y} r="4" className="measurement-chart-point"><title>{`${new Date(point.date).toLocaleString(locale)}: ${formatMeasurementValue(point.value, unit)}`}</title></circle>)}
     </svg>
-    <div className="measurement-chart-range"><span>{formatValue(min, unit)}</span><span>{formatValue(max, unit)}</span></div>
+    <div className="measurement-chart-range"><span>{formatMeasurementValue(min, unit)}</span><span>{formatMeasurementValue(max, unit)}</span></div>
   </div>;
 }
 
@@ -80,6 +69,8 @@ export default function MeasurementsPage() {
   const [displayUnits, setDisplayUnits] = useState<MeasurementDisplayUnits>(DEFAULT_DISPLAY_UNITS);
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("weight");
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Measurement | null>(null);
+  const detailTriggerRef = useRef<HTMLTableRowElement | null>(null);
   const [weightRecordedAt, setWeightRecordedAt] = useState(getLocalDateTimeValue());
   const [weightValue, setWeightValue] = useState("");
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
@@ -112,6 +103,14 @@ export default function MeasurementsPage() {
   }, [displayUnits, measurements, t, trendMetric, weights]);
 
   const startSession = (): void => { setMessage(""); setError(""); setIsSessionActive(true); };
+  const openSessionDetails = (measurement: Measurement, trigger: HTMLTableRowElement): void => {
+    detailTriggerRef.current = trigger;
+    setSelectedSession(measurement);
+  };
+  const closeSessionDetails = useCallback((): void => {
+    setSelectedSession(null);
+    requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }, []);
 
   const submitMeasurement = async (input: CreateMeasurementInput): Promise<void> => {
     try { await createMeasurement(input); }
@@ -163,7 +162,7 @@ export default function MeasurementsPage() {
     <section className="measurement-quick-actions">
       <article className="dashboard-card daily-weight-card">
         <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("Daily check-in")}</span><h2>{t("Today's weight")}</h2></div></div>
-        <div className="daily-weight-summary"><strong>{formatValue(latestWeight?.weight, displayUnits.weight)}</strong><span>{latestWeight ? `${t("Last recorded")} ${new Date(latestWeight.recordedAt).toLocaleString(locale)}` : t("No weight recorded yet")}</span></div>
+        <div className="daily-weight-summary"><strong>{formatMeasurementValue(latestWeight?.weight, displayUnits.weight)}</strong><span>{latestWeight ? `${t("Last recorded")} ${new Date(latestWeight.recordedAt).toLocaleString(locale)}` : t("No weight recorded yet")}</span></div>
         <form className="daily-weight-form" onSubmit={handleWeightSubmit}>
           <label><span>{t("Weight")} <em>{displayUnits.weight}</em></span><input type="number" min="0" step={getMeasurementStep(displayUnits.weight)} value={weightValue} onChange={(event) => setWeightValue(event.target.value)} /></label>
           <label><span>{t("Observed at")}</span><input type="datetime-local" max={getLocalDateTimeValue()} value={weightRecordedAt} onChange={(event) => setWeightRecordedAt(event.target.value)} required /></label>
@@ -183,19 +182,27 @@ export default function MeasurementsPage() {
         <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("Progress overview")}</span><h2>{t("Body transformation metrics")}</h2></div><select value={trendMetric} onChange={(event) => setTrendMetric(event.target.value as TrendMetric)} aria-label={t("Trend metric")}><option value="weight">{t("Weight")}</option><option value="bodyFat">{t("Body fat")}</option><option value="waistToHeightRatio">{t("Waist-to-height")}</option><option value="waist">{t("Waist")}</option></select></div>
         <MiniTrendChart points={trend.points} label={trend.label} unit={trend.unit} />
         <div className="measurement-metric-grid">
-          <div className="measurement-metric"><span>{t("Latest weight")}</span><strong>{formatValue(latestWeight?.weight, displayUnits.weight)}</strong><small>{latestWeight ? new Date(latestWeight.recordedAt).toLocaleString(locale) : t("No entry")}</small></div>
-          <div className="measurement-metric" title={t(methodLabel(latestWithBodyFat?.bodyFatMethod ?? null))}><span>{t("Body fat estimate")}</span><strong>{formatValue(latestWithBodyFat?.bodyFat, "%")}</strong><small>{t(methodLabel(latestWithBodyFat?.bodyFatMethod ?? null))}</small></div>
-          <div className="measurement-metric" title={t(methodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null))}><span>{t("Waist-to-height")}</span><strong>{latestWithRatio?.waistToHeightRatio?.toFixed(3) ?? "—"}</strong><small>{t(methodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null))}</small></div>
-          <div className="measurement-metric"><span>{t("Lean mass")}</span><strong>{formatValue(latestWithComposition?.leanMass, displayUnits.weight)}</strong><small>{t("Fat mass")} {formatValue(latestWithComposition?.fatMass, displayUnits.weight)}</small></div>
+          <div className="measurement-metric"><span>{t("Latest weight")}</span><strong>{formatMeasurementValue(latestWeight?.weight, displayUnits.weight)}</strong><small>{latestWeight ? new Date(latestWeight.recordedAt).toLocaleString(locale) : t("No entry")}</small></div>
+          <div className="measurement-metric" title={t(calculationMethodLabel(latestWithBodyFat?.bodyFatMethod ?? null))}><span>{t("Body fat estimate")}</span><strong>{formatMeasurementValue(latestWithBodyFat?.bodyFat, "%")}</strong><small>{t(calculationMethodLabel(latestWithBodyFat?.bodyFatMethod ?? null))}</small></div>
+          <div className="measurement-metric" title={t(calculationMethodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null))}><span>{t("Waist-to-height")}</span><strong>{latestWithRatio?.waistToHeightRatio?.toFixed(3) ?? "—"}</strong><small>{t(calculationMethodLabel(latestWithRatio?.waistToHeightRatioMethod ?? null))}</small></div>
+          <div className="measurement-metric"><span>{t("Lean mass")}</span><strong>{formatMeasurementValue(latestWithComposition?.leanMass, displayUnits.weight)}</strong><small>{t("Fat mass")} {formatMeasurementValue(latestWithComposition?.fatMass, displayUnits.weight)}</small></div>
         </div>
-        <div className="measurement-profile-context"><span><b>{t("Height:")}</b> {formatValue(profileMetrics?.height, profileMetrics?.displayUnit ?? displayUnits.length)}</span><span><b>{t("Calculation reference:")}</b> {t(referenceLabel(profileMetrics?.bodyCompositionReference ?? null))}</span><span><b>{t("Reference basis:")}</b> {t(referenceBasisLabel(profileMetrics?.bodyCompositionReferenceBasis ?? null))}</span></div>
+        <div className="measurement-profile-context"><span><b>{t("Height:")}</b> {formatMeasurementValue(profileMetrics?.height, profileMetrics?.displayUnit ?? displayUnits.length)}</span><span><b>{t("Calculation reference:")}</b> {t(referenceLabel(profileMetrics?.bodyCompositionReference ?? null))}</span><span><b>{t("Reference basis:")}</b> {t(referenceBasisLabel(profileMetrics?.bodyCompositionReferenceBasis ?? null))}</span></div>
       </article>
     </section>
 
     <section className="dashboard-card measurement-history-card">
       <div className="measurement-section-heading"><div><span className="measurement-eyebrow">{t("History")}</span><h2>{t("Body measurement sessions")}</h2></div><span className="measurement-record-count">{measurements.length} {t(measurements.length === 1 ? "session" : "sessions")}</span></div>
-      {isLoading ? <p>{t("Loading measurements...")}</p> : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Record weight separately or complete your first guided body-measurement session.")}</p></div> : <div className="measurement-table-wrap"><table className="measurement-table"><thead><tr><th>{t("Observed at")}</th><th>{t("Waist")}</th><th>{t("Body fat")}</th><th>{t("Waist / height")}</th><th>{t("Lean mass")}</th><th>{t("Method")}</th></tr></thead><tbody>{measurements.map((measurement) => { const units = measurement.displayUnits ?? displayUnits; return <tr key={measurement.id}><td><strong>{new Date(measurement.measurementDate).toLocaleString(locale)}</strong></td><td>{formatValue(measurement.waist, units.length)}</td><td>{formatValue(measurement.bodyFat, "%")}</td><td>{measurement.waistToHeightRatio?.toFixed(3) ?? "—"}</td><td>{formatValue(measurement.leanMass, units.weight)}</td><td><span className="measurement-method-chip" title={`${t("Body fat")}: ${t(methodLabel(measurement.bodyFatMethod))}. ${t("Waist-to-height")}: ${t(methodLabel(measurement.waistToHeightRatioMethod))}.`}>{t(measurement.bodyFatMethod ? "Calculated" : measurement.waistToHeightRatioMethod ? "Ratio only" : "Recorded")}</span></td></tr>; })}</tbody></table></div>}
+      {isLoading ? <p>{t("Loading measurements...")}</p>
+        : measurements.length === 0 ? <div className="measurement-empty-state"><h3>{t("No sessions yet")}</h3><p>{t("Record weight separately or complete your first guided body-measurement session.")}</p></div>
+          : <MeasurementHistoryTable measurements={measurements} fallbackUnits={displayUnits} onSelect={openSessionDetails} />}
     </section>
+
+    {selectedSession && <MeasurementSessionDetailModal
+      measurement={selectedSession}
+      fallbackUnits={displayUnits}
+      onClose={closeSessionDetails}
+    />}
 
     <MeasurementSessionModal
       isOpen={isSessionActive}

@@ -8,7 +8,7 @@ import MeasurementSessionModal from "./MeasurementSessionModal";
 function ModalHarness({ onSave }: { onSave: () => Promise<void> }) {
   const [isOpen, setIsOpen] = useState(false);
   return <>
-    <button type="button" onClick={() => setIsOpen(true)}>Open measurement session</button>
+    <button type="button" onClick={() => setIsOpen(true)}>Start measurement session</button>
     <MeasurementSessionModal
       isOpen={isOpen}
       lengthUnit="in"
@@ -28,7 +28,7 @@ describe("MeasurementSessionModal", () => {
     const onSave = vi.fn(async () => undefined);
     render(<LocaleProvider><ModalHarness onSave={onSave} /></LocaleProvider>);
 
-    await user.click(screen.getByRole("button", { name: "Open measurement session" }));
+    await user.click(screen.getByRole("button", { name: "Start measurement session" }));
     for (let step = 0; step < 5; step += 1) {
       await user.click(screen.getByRole("button", { name: "Skip" }));
     }
@@ -51,7 +51,7 @@ describe("MeasurementSessionModal", () => {
     const onSave = vi.fn(async () => undefined);
     render(<LocaleProvider><ModalHarness onSave={onSave} /></LocaleProvider>);
 
-    const launcher = screen.getByRole("button", { name: "Open measurement session" });
+    const launcher = screen.getByRole("button", { name: "Start measurement session" });
     await user.click(launcher);
     await screen.findByRole("dialog");
 

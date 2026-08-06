@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { LocaleProvider } from "../i18n/LocaleContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import MeasurementsPage from "./MeasurementsPage";
-import { createMeasurement, getMeasurementData } from "../services/measurementService";
+import { createMeasurement, getMeasurementData, type Measurement } from "../services/measurementService";
 
 vi.mock("../services/measurementService", () => ({
   createMeasurement: vi.fn(),
@@ -31,6 +31,49 @@ const measurementData = {
     hasCompletedTwelveMonthsHormoneTherapy: false,
   },
 };
+
+const historicalSession: Measurement = {
+  id: "session-1",
+  measurementSessionId: "session-1",
+  bodyWeightId: null,
+  calculationWeightKg: 74.84,
+  weight: null,
+  neck: 15,
+  chest: null,
+  waist: 32,
+  abdomen: 34,
+  hips: 38,
+  leftBicep: 12,
+  rightBicep: 12.5,
+  leftForearm: 10,
+  rightForearm: null,
+  leftThigh: 22,
+  rightThigh: 22.5,
+  leftCalf: null,
+  rightCalf: null,
+  bodyFat: 18.5,
+  bodyFatMethod: "US_NAVY_CIRCUMFERENCE",
+  fatMass: 30,
+  leanMass: 135,
+  waistToHeightRatio: 0.465,
+  waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
+  measurementDate: "2026-07-15T14:30:00.000Z",
+  displayUnits: { weight: "lb", length: "in" },
+};
+
+const historicalMeasurementData = {
+  ...measurementData,
+  measurementSessions: [historicalSession],
+  measurements: [historicalSession],
+};
+
+async function renderHistory(): Promise<{ user: UserEvent; row: HTMLElement }> {
+  vi.mocked(getMeasurementData).mockResolvedValue(historicalMeasurementData);
+  const user = userEvent.setup();
+  render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+  const row = await screen.findByRole("row", { name: /Open session details/ });
+  return { user, row };
+}
 
 async function enterValue(user: UserEvent, name: string, value: string): Promise<void> {
   await user.type(screen.getByRole("spinbutton", { name }), value);
@@ -150,5 +193,76 @@ describe("Novice measurement review", () => {
       rightThigh: 22.5,
       lengthUnit: "in",
     }));
+  });
+});
+
+
+describe("Historical measurement session details", () => {
+  it("opens by click and shows complete read-only measurements and calculated results", async () => {
+    const { user, row } = await renderHistory();
+
+    await user.click(row);
+
+    const dialog = screen.getByRole("dialog", { name: "Measurement session details" });
+    expect(within(dialog).getByRole("heading", { name: "Measurement session details" })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(within(dialog).getByRole("button", { name: "Close" })).toHaveFocus();
+
+    const table = within(dialog).getByRole("table", { name: "All recorded and unrecorded body measurements for this session." });
+    expect(within(table).getAllByRole("rowheader").map((cell) => cell.textContent)).toEqual([
+      "Neck",
+      "Chest",
+      "Waist",
+      "Abdomen",
+      "Hips",
+      "Upper arms",
+      "Forearms",
+      "Thighs",
+      "Calves",
+    ]);
+    expect(within(table).getByRole("row", { name: /Neck 15\.0 in/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Upper arms Left: 12\.0 inRight: 12\.5 in/ })).toBeInTheDocument();
+    expect(within(table).getByRole("row", { name: /Forearms Left: 10\.0 inRight: Not recorded/ })).toBeInTheDocument();
+    expect(within(table).getAllByText("Not recorded")).toHaveLength(4);
+
+    expect(within(dialog).getByText("18.5 %")).toBeInTheDocument();
+    expect(within(dialog).getByText(/Calculation method: U.S. Navy circumference estimate/)).toBeInTheDocument();
+    expect(within(dialog).getByText("0.465")).toBeInTheDocument();
+    expect(within(dialog).getByText(/Calculation method: Waist divided by height/)).toBeInTheDocument();
+    expect(within(dialog).getByText("30.0 lb")).toBeInTheDocument();
+    expect(within(dialog).getByText("135.0 lb")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /Edit|Delete/ })).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it("opens with Enter, closes with Escape, and restores focus", async () => {
+    const { user, row } = await renderHistory();
+    row.focus();
+
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("dialog", { name: "Measurement session details" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it("opens with Space and closes from the explicit header control", async () => {
+    const { user, row } = await renderHistory();
+    row.focus();
+
+    await user.keyboard(" ");
+    const dialog = screen.getByRole("dialog", { name: "Measurement session details" });
+    await user.click(within(dialog).getByRole("button", { name: "Close session details" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(row).toHaveFocus());
   });
 });
