@@ -1,0 +1,36 @@
+DO $$
+BEGIN
+  CREATE TYPE "BodyCompositionReference" AS ENUM ('MALE', 'FEMALE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  CREATE TYPE "BodyCompositionReferenceBasis" AS ENUM ('BIRTH_SEX', 'HORMONE_THERAPY');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "users"
+  ADD COLUMN IF NOT EXISTS "bodyCompositionReference" "BodyCompositionReference",
+  ADD COLUMN IF NOT EXISTS "bodyCompositionReferenceBasis" "BodyCompositionReferenceBasis",
+  ADD COLUMN IF NOT EXISTS "hasCompletedTwelveMonthsHormoneTherapy" BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE "measurements"
+  ADD COLUMN IF NOT EXISTS "neckCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "abdomenCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "leftBicepCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "rightBicepCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "leftForearmCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "rightForearmCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "leftThighCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "rightThighCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "leftCalfCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "rightCalfCm" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "bodyFatMethod" TEXT,
+  ADD COLUMN IF NOT EXISTS "fatMassKg" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "leanMassKg" DOUBLE PRECISION;
+
+CREATE INDEX IF NOT EXISTS "measurements_userId_bodyFat_idx"
+  ON "measurements"("userId", "bodyFat");
