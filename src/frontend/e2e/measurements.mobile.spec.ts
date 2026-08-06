@@ -24,14 +24,21 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   await page.goto("/measurements");
 
   await expect(page.getByRole("heading", { name: "Body Measurements", exact: true })).toBeVisible();
-  const startButton = page.getByRole("button", { name: "Start measurement session" });
+  const startButton = page.getByRole("button", { name: "Guided" });
   await expect(startButton).toBeVisible();
   await startButton.click();
 
   const dialog = page.getByRole("dialog", { name: "Body measurement session" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Novice" })).toBeVisible();
-  await expect(dialog.getByRole("spinbutton", { name: "Neck in" })).toBeVisible();
+  await expect(dialog.getByText("Entry mode")).toHaveCount(0);
+  await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
+  const firstInput = dialog.getByRole("spinbutton", { name: "Neck in" });
+  await expect(firstInput).toBeVisible();
+  const dialogBox = await dialog.boundingBox();
+  const firstInputBox = await firstInput.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(firstInputBox).not.toBeNull();
+  expect(firstInputBox!.y - dialogBox!.y).toBeLessThan(475);
   await expect(dialog.getByRole("button", { name: "Next" })).toBeVisible();
   await expect(page.getByText("Record daily weight separately from guided body-measurement sessions.")).toHaveCount(0);
 
@@ -65,7 +72,7 @@ test("mobile measurement dialog keeps its header and close control below the mem
     await page.setViewportSize(viewport);
     await page.goto("/measurements");
     await expect(page.getByRole("heading", { name: "Body Measurements", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Start measurement session" }).click();
+    await page.getByRole("button", { name: "Guided" }).click();
 
     const dialog = page.getByRole("dialog", { name: "Body measurement session" });
     const closeButton = dialog.getByRole("button", { name: "Close measurement session" });

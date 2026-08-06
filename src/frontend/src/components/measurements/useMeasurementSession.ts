@@ -14,17 +14,17 @@ import {
 
 interface UseMeasurementSessionOptions {
   isOpen: boolean;
+  entryMode: EntryMode;
   lengthUnit: LengthUnit;
   onSave: (input: CreateMeasurementInput) => Promise<void>;
 }
 
-export function useMeasurementSession({ isOpen, lengthUnit, onSave }: UseMeasurementSessionOptions) {
+export function useMeasurementSession({ isOpen, entryMode, lengthUnit, onSave }: UseMeasurementSessionOptions) {
   const { t } = useLocale();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const inputRefs = useRef<Partial<Record<SessionField, HTMLInputElement | null>>>({});
   const reviewReadyRef = useRef(false);
   const wasOpenRef = useRef(false);
-  const [entryMode, setEntryMode] = useState<EntryMode>("NEWBIE");
   const [noviceStep, setNoviceStep] = useState(0);
   const [measurementDate, setMeasurementDate] = useState(getLocalDateTimeValue());
   const [values, setValues] = useState<Record<SessionField, string>>(createEmptySessionValues);
@@ -164,13 +164,6 @@ export function useMeasurementSession({ isOpen, lengthUnit, onSave }: UseMeasure
     }
   };
 
-  const changeEntryMode = (mode: EntryMode): void => {
-    reviewReadyRef.current = false;
-    setEntryMode(mode);
-    setNoviceStep(0);
-    setError("");
-  };
-
   const goBack = (): void => {
     reviewReadyRef.current = false;
     setNoviceStep((step) => Math.max(0, step - 1));
@@ -189,7 +182,6 @@ export function useMeasurementSession({ isOpen, lengthUnit, onSave }: UseMeasure
     inputRefs,
     setMeasurementDate,
     setField,
-    changeEntryMode,
     advanceNovice,
     editNoviceStep,
     skipNoviceStep,

@@ -46,6 +46,8 @@ test("measurement history loads without raw translation keys", async ({ page }) 
   const history = page.getByRole("table", { name: /Body measurement sessions/ });
   await expect(history.locator("tbody tr")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Compare sessions" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Guided" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Manual" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(RAW_TRANSLATION_KEY);
 });
 
@@ -54,11 +56,13 @@ test("novice keyboard workflow reviews, edits, and saves only deliberately", asy
   const historyRows = page.getByRole("table", { name: /Body measurement sessions/ }).locator("tbody tr");
   await expect(historyRows).toHaveCount(2);
 
-  const startButton = page.getByRole("button", { name: "Start measurement session" });
+  const startButton = page.getByRole("button", { name: "Guided" });
   await startButton.click();
   const dialog = page.getByRole("dialog", { name: "Body measurement session" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Novice" })).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByText("Entry mode")).toHaveCount(0);
+  await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
+  await expect(dialog.getByRole("heading", { name: "Neck" })).toBeVisible();
 
   await continueWithValue(page, "Neck in", "15");
   await expect(dialog.getByRole("heading", { name: "Chest" })).toBeVisible();
@@ -119,6 +123,24 @@ test("novice keyboard workflow reviews, edits, and saves only deliberately", asy
   await expect(dialog).toHaveCount(0);
   await expect(page.getByText("Body measurement session saved successfully.")).toBeVisible();
   await expect(historyRows).toHaveCount(3);
+});
+
+test("manual session opens the full editor without entry mode chrome", async ({ page }) => {
+  await openMeasurements(page);
+  const trigger = page.getByRole("button", { name: "Manual" });
+  await trigger.click();
+
+  const dialog = page.getByRole("dialog", { name: "Body measurement session" });
+  await expect(dialog.getByText("Entry mode")).toHaveCount(0);
+  await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
+  await expect(dialog.getByRole("spinbutton")).toHaveCount(13);
+  await expect(dialog.getByRole("spinbutton", { name: "Right calf in" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Next" })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Save session" })).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
 });
 
 test("historical details are read-only, show missing and calculated values, and restore focus", async ({ page }) => {
@@ -222,7 +244,7 @@ test("entry dialog stays below the member toolbar across desktop and tablet view
     expect(pageHeaderBox).not.toBeNull();
     expect(pageHeaderBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height - 1);
 
-    await page.getByRole("button", { name: "Start measurement session" }).click();
+    await page.getByRole("button", { name: "Guided" }).click();
     const dialog = page.getByRole("dialog", { name: "Body measurement session" });
     const closeButton = dialog.getByRole("button", { name: "Close measurement session" });
     await expectDialogWithinMemberViewport(page, dialog, closeButton);
@@ -241,7 +263,7 @@ test("entry dialog stays below the member toolbar across desktop and tablet view
 
 test("entry dialog traps focus and Escape restores the opener", async ({ page }) => {
   await openMeasurements(page);
-  const trigger = page.getByRole("button", { name: "Start measurement session" });
+  const trigger = page.getByRole("button", { name: "Guided" });
   await trigger.click();
 
   const dialog = page.getByRole("dialog", { name: "Body measurement session" });
@@ -265,7 +287,8 @@ test("English and Brazilian Portuguese measurement views contain localized UI", 
   await page.getByRole("button", { name: /Brasil/ }).click();
   await expect(page.getByRole("heading", { name: "Medidas Corporais", exact: true })).toBeVisible();
   await expect(page.getByText("Registre peso e medidas corporais.")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Iniciar.*medidas/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guiado" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Manual" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(RAW_TRANSLATION_KEY);
 });
 

@@ -6,7 +6,7 @@ import MeasurementComparisonModal from "../components/measurements/MeasurementCo
 import MeasurementHistoryTable from "../components/measurements/MeasurementHistoryTable";
 import MeasurementSessionDetailModal from "../components/measurements/MeasurementSessionDetailModal";
 import MeasurementSessionModal from "../components/measurements/MeasurementSessionModal";
-import { FIELD_LABELS, formatMeasurementValue, getLocalDateTimeValue, optionalNumber, type SessionField } from "../components/measurements/measurementSessionModel";
+import { FIELD_LABELS, formatMeasurementValue, getLocalDateTimeValue, optionalNumber, type EntryMode, type SessionField } from "../components/measurements/measurementSessionModel";
 import { useLocale } from "../i18n/LocaleContext";
 import { createBodyWeight, getBodyWeightError, type BodyWeight } from "../services/bodyWeightService";
 import {
@@ -47,6 +47,7 @@ export default function MeasurementsPage() {
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
   const [analyticsRevision, setAnalyticsRevision] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [sessionEntryMode, setSessionEntryMode] = useState<EntryMode>("NEWBIE");
   const [selectedSession, setSelectedSession] = useState<Measurement | null>(null);
   const detailTriggerRef = useRef<HTMLTableRowElement | null>(null);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -120,7 +121,7 @@ export default function MeasurementsPage() {
     setAnalyticsError("");
     setAnalyticsQuery({ period: "CUSTOM", startDate: analyticsStartDate, endDate: analyticsEndDate });
   };
-  const startSession = (): void => { setMessage(""); setError(""); setIsSessionActive(true); };
+  const startSession = (entryMode: EntryMode): void => { setMessage(""); setError(""); setSessionEntryMode(entryMode); setIsSessionActive(true); };
   const openSessionDetails = (measurement: Measurement, trigger: HTMLTableRowElement): void => {
     detailTriggerRef.current = trigger;
     setSelectedSession(measurement);
@@ -219,7 +220,10 @@ export default function MeasurementsPage() {
       <article className="dashboard-card measurement-session-summary-card">
         <div className="measurement-section-heading"><div><h2>{t("Measurement session")}</h2></div></div>
         <div className="measurement-session-summary"><strong>{latestSession ? new Date(latestSession.measurementDate).toLocaleString(locale) : t("No session yet")}</strong></div>
-        <button type="button" className="measurement-session-jump" onClick={startSession}>{t("Start measurement session")}</button>
+        <div className="measurement-session-launch-actions" role="group" aria-label={t("Start measurement session")}>
+          <button type="button" className="measurement-session-jump" onClick={() => startSession("NEWBIE")}>{t("Guided")}</button>
+          <button type="button" className="measurement-session-jump" onClick={() => startSession("PRO")}>{t("Manual")}</button>
+        </div>
       </article>
     </section>
 
@@ -278,6 +282,7 @@ export default function MeasurementsPage() {
 
     <MeasurementSessionModal
       isOpen={isSessionActive}
+      entryMode={sessionEntryMode}
       lengthUnit={displayUnits.length}
       onCancel={() => setIsSessionActive(false)}
       onSave={handleSessionSave}

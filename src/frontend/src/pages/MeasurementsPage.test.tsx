@@ -141,7 +141,7 @@ async function openPopulatedReview(): Promise<UserEvent> {
   render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
 
   await screen.findByText("No sessions yet");
-  await user.click(screen.getByRole("button", { name: "Start measurement session" }));
+  await user.click(screen.getByRole("button", { name: "Guided" }));
 
   await enterValue(user, "Neck in", "15");
   await skipStep(user);
@@ -181,8 +181,24 @@ describe("Streamlined measurement presentation", () => {
     expect(await screen.findByText("Record weight and body measurements.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Weight" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Measurement session" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guided" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Manual" })).toBeInTheDocument();
     expect(screen.queryByText("Record daily weight separately from guided body-measurement sessions.")).not.toBeInTheDocument();
     expect(screen.queryByText("Complete your first circumference session")).not.toBeInTheDocument();
+  });
+
+  it("launches Manual directly into the full editable interface without mode chrome", async () => {
+    const user = userEvent.setup();
+    render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
+
+    await screen.findByText("No sessions yet");
+    await user.click(screen.getByRole("button", { name: "Manual" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Body measurement session" });
+    expect(within(dialog).queryByText("Entry mode")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("spinbutton")).toHaveLength(13);
+    expect(within(dialog).getByRole("spinbutton", { name: "Right calf in" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Save session" })).toBeInTheDocument();
   });
 });
 
