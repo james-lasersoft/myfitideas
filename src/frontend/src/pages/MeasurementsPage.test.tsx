@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { LocaleProvider } from "../i18n/LocaleContext";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import MeasurementsPage from "./MeasurementsPage";
 import { createMeasurement, getMeasurementData } from "../services/measurementService";
@@ -42,7 +43,7 @@ async function skipStep(user: UserEvent): Promise<void> {
 
 async function openPopulatedReview(): Promise<UserEvent> {
   const user = userEvent.setup();
-  render(<MemoryRouter><MeasurementsPage /></MemoryRouter>);
+  render(<LocaleProvider><MemoryRouter><MeasurementsPage /></MemoryRouter></LocaleProvider>);
 
   await screen.findByText("No sessions yet");
   await user.click(screen.getByRole("button", { name: "Start measurement session" }));
@@ -71,6 +72,7 @@ async function openPopulatedReview(): Promise<UserEvent> {
 }
 
 beforeEach(() => {
+  localStorage.setItem("myfitideas.locale", "en-US");
   vi.clearAllMocks();
   vi.mocked(getMeasurementData).mockResolvedValue(measurementData);
   vi.mocked(createMeasurement).mockResolvedValue({} as Awaited<ReturnType<typeof createMeasurement>>);
