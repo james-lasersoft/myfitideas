@@ -15,6 +15,8 @@ export interface BodyCompositionResult {
   bodyFatMethod: "US_NAVY_CIRCUMFERENCE";
   fatMassKg: number | null;
   leanMassKg: number | null;
+  waistToHeightRatio: number | null;
+  waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM" | null;
 }
 
 const CM_PER_INCH = 2.54;
@@ -22,6 +24,17 @@ const CM_PER_INCH = 2.54;
 function round(value: number, digits = 2): number {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
+}
+
+export function calculateWaistToHeightRatio(
+  waistCm: number | null | undefined,
+  heightCm: number | null | undefined,
+): { value: number; method: "WAIST_CM_DIVIDED_BY_HEIGHT_CM" } | null {
+  if (!waistCm || !heightCm || waistCm <= 0 || heightCm <= 0) return null;
+  return {
+    value: round(waistCm / heightCm, 3),
+    method: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
+  };
 }
 
 export function calculateBodyComposition(input: BodyCompositionInput): BodyCompositionResult | null {
@@ -55,11 +68,14 @@ export function calculateBodyComposition(input: BodyCompositionInput): BodyCompo
   const weightKg = input.weightKg && input.weightKg > 0 ? input.weightKg : null;
   const fatMassKg = weightKg === null ? null : round(weightKg * bodyFat / 100);
   const leanMassKg = weightKg === null || fatMassKg === null ? null : round(weightKg - fatMassKg);
+  const waistRatio = calculateWaistToHeightRatio(input.waistCm ?? input.abdomenCm, input.heightCm);
 
   return {
     bodyFat,
     bodyFatMethod: "US_NAVY_CIRCUMFERENCE",
     fatMassKg,
     leanMassKg,
+    waistToHeightRatio: waistRatio?.value ?? null,
+    waistToHeightRatioMethod: waistRatio?.method ?? null,
   };
 }
