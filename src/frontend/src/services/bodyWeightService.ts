@@ -30,6 +30,7 @@ export interface CreateBodyWeightInput {
   unit: WeightUnit;
   recordedAt?: string;
   notes?: string;
+  timezoneOffsetMinutes?: number;
 }
 
 export async function createBodyWeight(input: CreateBodyWeightInput): Promise<BodyWeight> {
