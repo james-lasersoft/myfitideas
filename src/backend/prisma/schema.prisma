@@ -54,36 +54,49 @@ enum AssignmentType {
   SUPPORT
 }
 
+enum BodyCompositionReference {
+  MALE
+  FEMALE
+}
+
+enum BodyCompositionReferenceBasis {
+  BIRTH_SEX
+  HORMONE_THERAPY
+}
+
 model User {
-  id                     String     @id @default(uuid())
-  email                  String     @unique
-  passwordHash           String
-  firstName              String
-  lastName               String?
-  status                 UserStatus @default(ACTIVE)
-  mustChangePassword     Boolean    @default(false)
-  tokenVersion           Int        @default(0)
-  lastLoginAt            DateTime?
-  emailVerifiedAt        DateTime?
-  mfaEnabled             Boolean    @default(false)
-  mfaSecretEncrypted     String?
-  mfaRecoveryCodeHashes  Json?
-  heightCm               Float?
-  preferredWeightUnit    String     @default("lb")
-  preferredLengthUnit    String     @default("in")
-  preferredHydrationUnit String     @default("oz")
-  preferredLanguage      String     @default("en")
-  preferredDateFormat    String     @default("LOCALE")
-  preferredTimeFormat    String     @default("12")
-  preferredWeekStart     String     @default("SUNDAY")
-  timezone               String     @default("UTC")
-  countryCode            String     @default("US")
-  dailyHydrationGoal     Float      @default(64)
-  dailyHydrationGoalMl   Float      @default(1892.7)
-  targetWeight           Float?
-  targetWeightKg         Float?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
+  id                                       String                         @id @default(uuid())
+  email                                    String                         @unique
+  passwordHash                             String
+  firstName                                String
+  lastName                                 String?
+  status                                   UserStatus                     @default(ACTIVE)
+  mustChangePassword                       Boolean                        @default(false)
+  tokenVersion                             Int                            @default(0)
+  lastLoginAt                              DateTime?
+  emailVerifiedAt                          DateTime?
+  mfaEnabled                               Boolean                        @default(false)
+  mfaSecretEncrypted                       String?
+  mfaRecoveryCodeHashes                    Json?
+  heightCm                                 Float?
+  bodyCompositionReference                 BodyCompositionReference?
+  bodyCompositionReferenceBasis            BodyCompositionReferenceBasis?
+  hasCompletedTwelveMonthsHormoneTherapy   Boolean                        @default(false)
+  preferredWeightUnit                      String                         @default("lb")
+  preferredLengthUnit                      String                         @default("in")
+  preferredHydrationUnit                   String                         @default("oz")
+  preferredLanguage                        String                         @default("en")
+  preferredDateFormat                      String                         @default("LOCALE")
+  preferredTimeFormat                      String                         @default("12")
+  preferredWeekStart                       String                         @default("SUNDAY")
+  timezone                                 String                         @default("UTC")
+  countryCode                              String                         @default("US")
+  dailyHydrationGoal                       Float                          @default(64)
+  dailyHydrationGoalMl                     Float                          @default(1892.7)
+  targetWeight                             Float?
+  targetWeightKg                           Float?
+  createdAt                                DateTime                       @default(now())
+  updatedAt                                DateTime                       @updatedAt
 
   measurements         Measurement[]
   hydrationLogs        Hydration[]
@@ -304,24 +317,40 @@ model TranslationHistory {
 }
 
 model Measurement {
-  id              String   @id @default(uuid())
-  userId          String
-  measurementDate DateTime
-  weight          Float?
-  waist           Float?
-  chest           Float?
-  hips            Float?
-  bodyFat         Float?
-  weightKg        Float?
-  waistCm         Float?
-  chestCm         Float?
-  hipsCm          Float?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                        String   @id @default(uuid())
+  userId                    String
+  measurementDate           DateTime
+  weight                    Float?
+  waist                     Float?
+  chest                     Float?
+  hips                      Float?
+  bodyFat                   Float?
+  weightKg                  Float?
+  waistCm                   Float?
+  chestCm                   Float?
+  hipsCm                    Float?
+  neckCm                    Float?
+  abdomenCm                 Float?
+  leftBicepCm               Float?
+  rightBicepCm              Float?
+  leftForearmCm             Float?
+  rightForearmCm            Float?
+  leftThighCm               Float?
+  rightThighCm              Float?
+  leftCalfCm                Float?
+  rightCalfCm               Float?
+  bodyFatMethod             String?
+  fatMassKg                 Float?
+  leanMassKg                Float?
+  waistToHeightRatio        Float?
+  waistToHeightRatioMethod  String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, measurementDate])
+  @@index([userId, bodyFat])
   @@map("measurements")
 }
 
