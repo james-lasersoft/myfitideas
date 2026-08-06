@@ -38,7 +38,9 @@ export default function GlobalControls() {
   const location = useLocation();
   const { t } = useLocale();
   const isAdminWorkspace = location.pathname.startsWith("/admin");
+  const isSystemWorkspace = location.pathname.startsWith("/system-operations");
   const isMemberWorkspace = isMemberRoute(location.pathname);
+  const isAuthenticatedWorkspace = isAdminWorkspace || isSystemWorkspace || isMemberWorkspace;
   const hasPersistentWorkspaceBar = isAdminWorkspace || isMemberWorkspace;
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function GlobalControls() {
         <WorkspaceSwitcher />
         <ThemeToggle />
         <LanguageSelector />
-        {isMemberWorkspace && <AccountMenu />}
+        {isAuthenticatedWorkspace && <AccountMenu />}
       </div>
     </div>
   );
