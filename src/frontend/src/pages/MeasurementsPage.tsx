@@ -65,6 +65,21 @@ const NOVICE_STEPS: WizardStep[] = [
   { title: "Calves", description: GUIDANCE.leftCalf ?? "", fields: ["leftCalf", "rightCalf"] },
 ];
 
+const CORE_REVIEW_FIELDS: Array<{ field: SessionField; stepIndex: number }> = [
+  { field: "neck", stepIndex: 0 },
+  { field: "chest", stepIndex: 1 },
+  { field: "waist", stepIndex: 2 },
+  { field: "abdomen", stepIndex: 3 },
+  { field: "hips", stepIndex: 4 },
+];
+
+const PAIRED_REVIEW_FIELDS: Array<{ title: string; left: SessionField; right: SessionField; stepIndex: number }> = [
+  { title: "Upper arms", left: "leftBicep", right: "rightBicep", stepIndex: 5 },
+  { title: "Forearms", left: "leftForearm", right: "rightForearm", stepIndex: 6 },
+  { title: "Thighs", left: "leftThigh", right: "rightThigh", stepIndex: 7 },
+  { title: "Calves", left: "leftCalf", right: "rightCalf", stepIndex: 8 },
+];
+
 const MODE_DESCRIPTIONS: Record<EntryMode, string> = {
   NEWBIE: "One guided step at a time with paired left and right measurements.",
   NORMAL: "Balanced weekly tracking with grouped measurements.",
@@ -176,6 +191,7 @@ export default function MeasurementsPage() {
   const latestWithComposition = measurements.find((item) => item.fatMass != null || item.leanMass != null) ?? null;
   const isNoviceReview = noviceStep === NOVICE_STEPS.length;
   const currentNoviceStep = NOVICE_STEPS[Math.min(noviceStep, NOVICE_STEPS.length - 1)];
+  const skippedReviewFields = MODE_FIELDS.NEWBIE.filter((field) => !formValues[field]);
 
   useEffect(() => {
     if (!isSessionActive || entryMode !== "NEWBIE") return;
@@ -242,24 +258,25 @@ export default function MeasurementsPage() {
     setError("");
     if (isNoviceReview) return;
     if (!validateNoviceFields(currentNoviceStep.fields)) return;
-    const nextStep = Math.min(noviceStep + 1, NOVICE_STEPS.length);
-    if (nextStep === NOVICE_STEPS.length) {
-      reviewReadyRef.current = false;
-      setNoviceStep(nextStep);
-      requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
-      return;
-    }
-    setNoviceStep(nextStep);
+    if (noviceStep === NOVICE_STEPS.length - 1) reviewReadyRef.current = false;
+    setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
+  };
+
+  const editNoviceStep = (stepIndex: number): void => {
+    reviewReadyRef.current = false;
+    setError("");
+    setNoviceStep(stepIndex);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    if (entryMode === "NEWBIE") {
-      if (!isNoviceReview) {
-        advanceNovice();
-        return;
-      }
-      if (!reviewReadyRef.current) return;
+    if (entryMode === "NEWBIE" && !isNoviceReview) {
+      advanceNovice();
+      return;
+    }
+    if (entryMode === "NEWBIE" && !reviewReadyRef.current) {
+      reviewReadyRef.current = true;
+      return;
     }
     setMessage(""); setError("");
     const observedAt = new Date(measurementDate);
@@ -277,20 +294,8 @@ export default function MeasurementsPage() {
 
   const skipNoviceStep = (): void => {
     currentNoviceStep.fields.forEach((field) => setField(field, ""));
-    setError("");
-    const nextStep = Math.min(noviceStep + 1, NOVICE_STEPS.length);
-    if (nextStep === NOVICE_STEPS.length) {
-      reviewReadyRef.current = false;
-      setNoviceStep(nextStep);
-      requestAnimationFrame(() => requestAnimationFrame(() => { reviewReadyRef.current = true; }));
-      return;
-    }
-    setNoviceStep(nextStep);
-  };
-
-  const goBackNovice = (): void => {
-    reviewReadyRef.current = false;
-    setNoviceStep((step) => Math.max(0, step - 1));
+    if (noviceStep === NOVICE_STEPS.length - 1) reviewReadyRef.current = false;
+    setError(""); setNoviceStep((step) => Math.min(step + 1, NOVICE_STEPS.length));
   };
 
   const handleNoviceInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>, field: SessionField): void => {
@@ -390,8 +395,37 @@ export default function MeasurementsPage() {
               <p id="novice-enter-instruction" className="sr-only">Press Enter to continue. For paired measurements, Enter moves from the left field to the right field before continuing.</p>
               {isNoviceReview ? <section className="novice-review" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>Review your measurements</h3>
-                <p>Confirm the values below. Body fat and other composition metrics will be calculated after saving when the required profile data is available.</p>
-                <dl>{MODE_FIELDS.NEWBIE.map((field) => formValues[field] ? <div key={field}><dt>{FIELD_LABELS[field]}</dt><dd>{formValues[field]} {displayUnits.length}</dd></div> : null)}</dl>
+                <p>Confirm the observation time and every captured value before saving. Use an Edit button to return directly to that measurement step.</p>
+
+                <section aria-labelledby="review-session-details">
+                  <h4 id="review-session-details">Session details</h4>
+                  <dl><div><dt>Observed at</dt><dd>{new Date(measurementDate).toLocaleString()}</dd></div><div><dt>Entry experience</dt><dd>{modeLabel(entryMode)}</dd></div><div><dt>Measurement unit</dt><dd>{displayUnits.length}</dd></div></dl>
+                </section>
+
+                <section aria-labelledby="review-core-measurements">
+                  <h4 id="review-core-measurements">Core measurements</h4>
+                  <dl>{CORE_REVIEW_FIELDS.map(({ field, stepIndex }) => <div key={field}><dt>{FIELD_LABELS[field]}</dt><dd>{formValues[field] ? `${formValues[field]} ${displayUnits.length}` : "Not entered"}</dd><dd><button type="button" className="secondary-button" onClick={() => editNoviceStep(stepIndex)} aria-label={`Edit ${FIELD_LABELS[field]}`}>Edit</button></dd></div>)}</dl>
+                </section>
+
+                <section aria-labelledby="review-paired-measurements">
+                  <h4 id="review-paired-measurements">Paired measurements</h4>
+                  <dl>{PAIRED_REVIEW_FIELDS.map(({ title, left, right, stepIndex }) => {
+                    const leftValue = optionalNumber(formValues[left]);
+                    const rightValue = optionalNumber(formValues[right]);
+                    const difference = leftValue !== undefined && rightValue !== undefined ? Math.abs(leftValue - rightValue) : null;
+                    return <div key={title}><dt>{title}</dt><dd>Left: {formValues[left] ? `${formValues[left]} ${displayUnits.length}` : "Not entered"}</dd><dd>Right: {formValues[right] ? `${formValues[right]} ${displayUnits.length}` : "Not entered"}</dd>{difference !== null && <dd>Difference: {difference.toFixed(1)} {displayUnits.length}</dd>}<dd><button type="button" className="secondary-button" onClick={() => editNoviceStep(stepIndex)} aria-label={`Edit ${title}`}>Edit</button></dd></div>;
+                  })}</dl>
+                </section>
+
+                <section aria-labelledby="review-skipped-measurements">
+                  <h4 id="review-skipped-measurements">Skipped measurements</h4>
+                  {skippedReviewFields.length === 0 ? <p>None. Every measurement was entered.</p> : <ul>{skippedReviewFields.map((field) => <li key={field}>{FIELD_LABELS[field]}: Not entered</li>)}</ul>}
+                </section>
+
+                <section aria-labelledby="review-calculated-results">
+                  <h4 id="review-calculated-results">Calculated after saving</h4>
+                  <ul><li>Body fat estimate, when required profile and circumference data are available</li><li>Lean mass and fat mass, when body fat and a nearby weight observation are available</li><li>Waist-to-height ratio, when waist and height are available</li></ul>
+                </section>
               </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
                 <h3 id="novice-step-heading" ref={stepHeadingRef} tabIndex={-1}>{currentNoviceStep.title}</h3>
                 <p>{currentNoviceStep.description}</p>
@@ -404,7 +438,7 @@ export default function MeasurementsPage() {
         <footer className="measurement-modal-footer">
           <button type="button" className="secondary-button" onClick={cancelSession} disabled={isSaving}>Cancel</button>
           {entryMode === "NEWBIE" ? <>
-            <button type="button" className="secondary-button" onClick={goBackNovice} disabled={isSaving || noviceStep === 0}>Back</button>
+            <button type="button" className="secondary-button" onClick={() => { reviewReadyRef.current = false; setNoviceStep((step) => Math.max(0, step - 1)); }} disabled={isSaving || noviceStep === 0}>Back</button>
             {!isNoviceReview && <button type="button" className="secondary-button" onClick={skipNoviceStep} disabled={isSaving}>Skip</button>}
             {isNoviceReview ? <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button> : <button type="button" onClick={advanceNovice} disabled={isSaving}>Next</button>}
           </> : <button type="submit" form="measurement-session-form" disabled={isSaving}>{isSaving ? "Saving..." : "Save session"}</button>}
