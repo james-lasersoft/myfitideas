@@ -14,6 +14,7 @@ jest.mock("../src/config/prisma.js", () => ({
       findMany: jest.fn(),
     },
     $executeRaw: jest.fn(),
+    $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   },
 }));
@@ -61,6 +62,7 @@ describe("measurement controller", () => {
     mockedPrisma.user.findUnique.mockResolvedValue(mockUser as never);
     mockedPrisma.measurement.findFirst.mockResolvedValue(null);
     (mockedPrisma.$executeRaw as jest.Mock).mockResolvedValue(1);
+    (mockedPrisma.$queryRaw as jest.Mock).mockResolvedValue([]);
     (mockedPrisma.$transaction as jest.Mock).mockImplementation(
       async (callback: (tx: typeof prisma) => unknown) => callback(mockedPrisma)
     );
@@ -154,7 +156,7 @@ describe("measurement controller", () => {
     });
   });
 
-  test("returns expanded values, composition metrics, and profile metadata", async () => {
+  test("returns separate weight and measurement-session collections with compatibility data", async () => {
     mockedPrisma.measurement.findMany.mockResolvedValue([{
       id: "measurement-002",
       userId: "user-123",
@@ -186,13 +188,29 @@ describe("measurement controller", () => {
       createdAt: new Date("2026-07-19"),
       updatedAt: new Date("2026-07-19"),
     }] as never);
+    (mockedPrisma.$queryRaw as jest.Mock).mockResolvedValue([{
+      id: "weight-001",
+      measurementSessionId: "session-001",
+      recordedAt: new Date("2026-07-19"),
+      weightKg: 90,
+      source: "MEASUREMENT_SESSION",
+      notes: null,
+    }]);
 
     const res = createResponse();
     await getMeasurements(authenticatedRequest({}), res);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
-      measurements: [expect.objectContaining({
+      weights: [expect.objectContaining({
+        id: "weight-001",
+        measurementSessionId: "session-001",
+        weight: expect.closeTo(198.42, 2),
+        weightKg: 90,
+        source: "MEASUREMENT_SESSION",
+        displayUnit: "lb",
+      })],
+      measurementSessions: [expect.objectContaining({
         id: "measurement-002",
         weight: expect.closeTo(198.42, 2),
         waist: expect.closeTo(39.37, 2),
@@ -203,6 +221,7 @@ describe("measurement controller", () => {
         waistToHeightRatioMethod: "WAIST_CM_DIVIDED_BY_HEIGHT_CM",
         displayUnits: { weight: "lb", length: "in" },
       })],
+      measurements: [expect.objectContaining({ id: "measurement-002" })],
       profileMetrics: {
         heightCm: 180,
         height: expect.closeTo(70.87, 2),
