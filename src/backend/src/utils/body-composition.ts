@@ -29,25 +29,26 @@ export function calculateBodyComposition(input: BodyCompositionInput): BodyCompo
 
   const heightIn = input.heightCm / CM_PER_INCH;
   const neckIn = input.neckCm / CM_PER_INCH;
-  let densityDenominator: number;
+  let rawBodyFat: number;
 
   if (input.reference === "MALE") {
     const abdomenCm = input.abdomenCm ?? input.waistCm;
     if (!abdomenCm || abdomenCm <= input.neckCm) return null;
-    const circumferenceDifferenceIn = (abdomenCm - input.neckCm) / CM_PER_INCH;
-    densityDenominator = 1.0324
-      - 0.19077 * Math.log10(circumferenceDifferenceIn)
-      + 0.15456 * Math.log10(heightIn);
+    const circumferenceDifferenceIn = abdomenCm / CM_PER_INCH - neckIn;
+    rawBodyFat = 86.01 * Math.log10(circumferenceDifferenceIn)
+      - 70.041 * Math.log10(heightIn)
+      + 36.76;
   } else {
     if (!input.waistCm || !input.hipsCm) return null;
-    const circumferenceSumIn = (input.waistCm + input.hipsCm - input.neckCm) / CM_PER_INCH;
+    const circumferenceSumIn = input.waistCm / CM_PER_INCH
+      + input.hipsCm / CM_PER_INCH
+      - neckIn;
     if (circumferenceSumIn <= 0) return null;
-    densityDenominator = 1.29579
-      - 0.35004 * Math.log10(circumferenceSumIn)
-      + 0.221 * Math.log10(heightIn);
+    rawBodyFat = 163.205 * Math.log10(circumferenceSumIn)
+      - 97.684 * Math.log10(heightIn)
+      - 78.387;
   }
 
-  const rawBodyFat = 495 / densityDenominator - 450;
   if (!Number.isFinite(rawBodyFat) || rawBodyFat < 2 || rawBodyFat > 75) return null;
 
   const bodyFat = round(rawBodyFat, 1);
