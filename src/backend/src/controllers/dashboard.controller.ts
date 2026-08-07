@@ -1,8 +1,13 @@
 import type { Response } from "express";
 import prisma from "../config/prisma.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import { getBodyWeightHistory } from "../services/body-weight.service.js";
 import { calculateBmi } from "../utils/body-composition.js";
-import { toKilograms } from "../utils/measurements.js";
+import {
+  fromKilograms,
+  roundMeasurement,
+  type WeightUnit,
+} from "../utils/measurements.js";
 
 const ML_PER_OUNCE = 29.5735;
 
@@ -26,7 +31,7 @@ export async function getDashboardSummary(
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    const [user, measurements, hydrationEntries] =
+    const [user, bodyWeights, hydrationEntries] =
       await Promise.all([
         prisma.user.findUnique({
           where: {
@@ -41,18 +46,7 @@ export async function getDashboardSummary(
           },
         }),
 
-        prisma.measurement.findMany({
-          where: {
-            userId,
-            weight: {
-              not: null,
-            },
-          },
-          orderBy: {
-            measurementDate: "desc",
-          },
-          take: 2,
-        }),
+        getBodyWeightHistory(userId, 2),
 
         prisma.hydration.findMany({
           where: {
@@ -72,20 +66,35 @@ export async function getDashboardSummary(
       return;
     }
 
-    const currentMeasurement = measurements[0] ?? null;
-    const previousMeasurement = measurements[1] ?? null;
+    const preferredWeightUnit: WeightUnit =
+      user.preferredWeightUnit === "kg" ? "kg" : "lb";
+    const currentBodyWeight = bodyWeights[0] ?? null;
+    const previousBodyWeight = bodyWeights[1] ?? null;
 
-    const currentWeight = currentMeasurement?.weight ?? null;
-    const previousWeight = previousMeasurement?.weight ?? null;
+    const currentWeight = currentBodyWeight
+      ? roundMeasurement(
+          fromKilograms(currentBodyWeight.weightKg, preferredWeightUnit)
+        )
+      : null;
+    const previousWeight = previousBodyWeight
+      ? roundMeasurement(
+          fromKilograms(previousBodyWeight.weightKg, preferredWeightUnit)
+        )
+      : null;
 
     const weightDifference =
-      currentWeight !== null && previousWeight !== null
-        ? Number((currentWeight - previousWeight).toFixed(2))
+      currentBodyWeight !== null && previousBodyWeight !== null
+        ? roundMeasurement(
+            fromKilograms(
+              currentBodyWeight.weightKg - previousBodyWeight.weightKg,
+              preferredWeightUnit
+            )
+          )
         : null;
 
-    const bmi = currentWeight === null
+    const bmi = currentBodyWeight === null
       ? null
-      : calculateBmi(toKilograms(currentWeight, user.preferredWeightUnit === "kg" ? "kg" : "lb"), user.heightCm);
+      : calculateBmi(currentBodyWeight.weightKg, user.heightCm);
     let bmiCategory: string | null = null;
 
     if (bmi !== null) {
@@ -124,8 +133,8 @@ export async function getDashboardSummary(
       todayWaterOz: Number(todayWaterOz.toFixed(2)),
       todayWaterMl: Number(todayWaterMl.toFixed(2)),
       lastMeasurementDate:
-        currentMeasurement?.measurementDate ?? null,
-      preferredWeightUnit: user.preferredWeightUnit,
+        currentBodyWeight?.recordedAt ?? null,
+      preferredWeightUnit,
       preferredHydrationUnit:
         user.preferredHydrationUnit,
       dailyHydrationGoal: user.dailyHydrationGoal,
