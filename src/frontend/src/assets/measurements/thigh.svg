@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" data-measurement-concept="thigh">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="200" cy="48" r="28" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M158 91 Q200 72 242 91 L263 213 Q232 230 200 230 Q168 230 137 213 Z" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M157 99 L116 199 M243 99 L284 199" stroke="#34483c" stroke-width="17"/>
+    <path d="M176 228 L160 279 M224 228 L240 279" stroke="#34483c" stroke-width="19"/>
+    <path d="M167 248 Q176 255 186 254" stroke="#2f7355" stroke-width="10"/>
+    <path d="M233 248 Q224 255 214 254" stroke="#2f7355" stroke-width="10"/>
+    <circle cx="176" cy="253" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+    <circle cx="224" cy="253" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+  </g>
+</svg>

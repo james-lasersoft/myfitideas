@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" data-measurement-concept="calf">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="200" cy="40" r="25" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M165 82 Q200 69 235 82 L248 188 Q226 202 200 202 Q174 202 152 188 Z" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M175 201 Q168 235 164 279 M225 201 Q232 235 236 279" stroke="#34483c" stroke-width="21"/>
+    <path d="M151 91 L120 182 M249 91 L280 182" stroke="#34483c" stroke-width="15"/>
+    <path d="M156 248 Q166 254 176 250" stroke="#2f7355" stroke-width="10"/>
+    <path d="M244 248 Q234 254 224 250" stroke="#2f7355" stroke-width="10"/>
+    <circle cx="166" cy="252" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+    <circle cx="234" cy="252" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+  </g>
+</svg>

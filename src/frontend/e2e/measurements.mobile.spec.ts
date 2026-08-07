@@ -32,13 +32,17 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Entry mode")).toHaveCount(0);
   await expect(dialog.locator(".measurement-modal-controls")).toHaveCount(0);
+  const illustration = dialog.locator(".measurement-guidance-illustration");
+  const illustrationBox = await illustration.boundingBox();
+  expect(illustrationBox).not.toBeNull();
+  expect(illustrationBox!.width).toBeLessThanOrEqual(241);
+  expect(Math.abs((illustrationBox!.width / illustrationBox!.height) - (4 / 3))).toBeLessThan(.03);
+  await expect(dialog.getByRole("img", {
+    name: "Illustration showing tape placement around the neck.",
+  })).toHaveAttribute("src", /data-measurement-concept=.*neck/);
   const firstInput = dialog.getByRole("spinbutton", { name: "Neck in" });
+  await firstInput.scrollIntoViewIfNeeded();
   await expect(firstInput).toBeVisible();
-  const dialogBox = await dialog.boundingBox();
-  const firstInputBox = await firstInput.boundingBox();
-  expect(dialogBox).not.toBeNull();
-  expect(firstInputBox).not.toBeNull();
-  expect(firstInputBox!.y - dialogBox!.y).toBeLessThan(475);
   await expect(dialog.getByRole("button", { name: "Next" })).toBeVisible();
   await expect(page.getByText("Record daily weight separately from guided body-measurement sessions.")).toHaveCount(0);
 
@@ -55,6 +59,9 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   await page.getByRole("spinbutton", { name: "Neck in" }).fill("15");
   await page.getByRole("spinbutton", { name: "Neck in" }).press("Enter");
   await expect(dialog.getByRole("heading", { name: "Chest" })).toBeVisible();
+  await expect(dialog.getByRole("img", {
+    name: "Illustration showing tape placement around the chest.",
+  })).toHaveAttribute("src", /data-measurement-concept=.*chest/);
   await expect(dialog.getByRole("button", { name: "Skip" })).toBeVisible();
 
   const horizontalOverflow = await page.evaluate(() =>
@@ -63,6 +70,19 @@ test("mobile Chromium keeps the primary measurement workflow usable", async ({ p
   expect(horizontalOverflow).toBe(false);
 });
 
+
+test("mobile Manual entry stays dense and does not render guidance art", async ({ page }) => {
+  await page.goto("/measurements");
+  await expect(page.getByRole("heading", { name: "Body Measurements", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Manual" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Body measurement session" });
+  await expect(dialog.getByRole("img")).toHaveCount(0);
+  await expect(dialog.getByRole("spinbutton")).toHaveCount(13);
+  await dialog.getByRole("spinbutton", { name: "Right calf in" }).scrollIntoViewIfNeeded();
+  await expect(dialog.getByRole("spinbutton", { name: "Right calf in" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Save session" })).toBeVisible();
+});
 
 test("mobile measurement dialog keeps its header and close control below the member toolbar", async ({ page }) => {
   for (const viewport of [
@@ -77,6 +97,13 @@ test("mobile measurement dialog keeps its header and close control below the mem
     const dialog = page.getByRole("dialog", { name: "Body measurement session" });
     const closeButton = dialog.getByRole("button", { name: "Close measurement session" });
     await expectDialogWithinMemberViewport(page, dialog, closeButton);
+    const illustrationBox = await dialog.locator(".measurement-guidance-illustration").boundingBox();
+    expect(illustrationBox).not.toBeNull();
+    expect(illustrationBox!.width).toBeLessThanOrEqual(viewport.height <= 700 ? 201 : 241);
+    const input = dialog.getByRole("spinbutton", { name: "Neck in" });
+    await input.scrollIntoViewIfNeeded();
+    await expect(input).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Next" })).toBeVisible();
 
     await dialog.locator(".measurement-modal-body").evaluate((element) => {
       element.scrollTop = element.scrollHeight;

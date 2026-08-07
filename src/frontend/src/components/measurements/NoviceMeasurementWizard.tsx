@@ -1,6 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent, MutableRefObject, RefObject } from "react";
 import { useLocale } from "../../i18n/LocaleContext";
 import type { LengthUnit } from "../../services/measurementService";
+import MeasurementGuidanceIllustration from "./MeasurementGuidanceIllustration";
 import MeasurementInput from "./MeasurementInput";
 import NoviceReviewTable from "./NoviceReviewTable";
 import { NOVICE_STEPS, type SessionField, type WizardStep } from "./measurementSessionModel";
@@ -28,17 +29,22 @@ export default function NoviceMeasurementWizard({ step, currentStep, isReview, v
       <NoviceReviewTable values={values} lengthUnit={lengthUnit} onEdit={onEdit} />
     </section> : <section className="novice-step" aria-labelledby="novice-step-heading">
       <h3 id="novice-step-heading" ref={headingRef} tabIndex={-1}>{t(currentStep.title)}</h3>
-      <details className="measurement-technique-help">
-        <summary>{t("Technique")}</summary>
-        <p>{t(currentStep.description)}</p>
-      </details>
-      <fieldset><legend className={currentStep.fields.length === 1 ? "sr-only" : undefined}>{currentStep.fields.length === 2 ? `${t(currentStep.title)}: ${t("left and right")}` : t(currentStep.title)}</legend>
-        <div className={currentStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>
-          {currentStep.fields.map((field) => <MeasurementInput key={field} field={field} lengthUnit={lengthUnit} value={values[field]}
-            inputRef={(element) => { inputRefs.current[field] = element; }} onChange={(value) => onFieldChange(field, value)}
-            onKeyDown={(event) => onFieldKeyDown(event, field)} />)}
+      <div className="novice-step-layout">
+        <MeasurementGuidanceIllustration illustration={currentStep.illustration} />
+        <div className="novice-step-entry">
+          <details className="measurement-technique-help">
+            <summary>{t("Technique")}</summary>
+            <p>{t(currentStep.description)}</p>
+          </details>
+          <fieldset><legend className={currentStep.fields.length === 1 ? "sr-only" : undefined}>{currentStep.fields.length === 2 ? `${t(currentStep.title)}: ${t("left and right")}` : t(currentStep.title)}</legend>
+            <div className={currentStep.fields.length === 2 ? "measurement-pair-grid" : "measurement-single-grid"}>
+              {currentStep.fields.map((field) => <MeasurementInput key={field} field={field} lengthUnit={lengthUnit} value={values[field]}
+                inputRef={(element) => { inputRefs.current[field] = element; }} onChange={(value) => onFieldChange(field, value)}
+                onKeyDown={(event) => onFieldKeyDown(event, field)} />)}
+            </div>
+          </fieldset>
         </div>
-      </fieldset>
+      </div>
     </section>}
   </div>;
 }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" data-measurement-concept="neck">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="200" cy="48" r="28" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M157 91 Q200 72 243 91 L270 210 Q238 231 200 231 Q162 231 130 210 Z" fill="#e7efe9" stroke="#34483c" stroke-width="5"/>
+    <path d="M157 98 L112 194 M243 98 L288 194" stroke="#34483c" stroke-width="16"/>
+    <path d="M174 229 L158 278 M226 229 L242 278" stroke="#34483c" stroke-width="18"/>
+    <path d="M174 78 Q200 87 226 78" stroke="#2f7355" stroke-width="10"/>
+    <circle cx="174" cy="78" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+    <circle cx="226" cy="78" r="5" fill="#fff" stroke="#2f7355" stroke-width="3"/>
+  </g>
+</svg>
