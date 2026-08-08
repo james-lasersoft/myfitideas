@@ -187,8 +187,12 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
 
         if (input.dailyWeight && random() <= adherenceChance) {
           await tx.$executeRaw`
-            INSERT INTO "measurements" ("id", "userId", "measurementDate", "weight", "weightKg", "syntheticBatchId", "createdAt", "updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.userId}, ${date}, ${weightKg * 2.2046226218}, ${weightKg}, ${batchId}, NOW(), NOW())`;
+            INSERT INTO "body_weights" (
+              "id", "userId", "recordedAt", "weightKg", "source", "syntheticBatchId", "createdAt", "updatedAt"
+            ) VALUES (
+              ${crypto.randomUUID()}, ${input.userId}, ${date}, ${weightKg},
+              'SYNTHETIC'::"BodyWeightSource", ${batchId}, NOW(), NOW()
+            )`;
           counts.weightEntries += 1;
         }
 
@@ -198,14 +202,33 @@ export async function generateSyntheticData(req: AuthenticatedRequest, res: Resp
           const chestCm = waistCm + (input.sexReference === "MALE" ? 18 : 10) + (random() - 0.5) * 2;
           const hipsCm = waistCm + (input.sexReference === "FEMALE" ? 14 : 5) + (random() - 0.5) * 2;
           const bodyFat = { UNDERWEIGHT: 13, NORMAL: 22, OVERWEIGHT: 31, OBESITY: 39, ATHLETIC: 14 }[input.bodyProfile] + (input.sexReference === "FEMALE" ? 7 : 0) + trendDeltaKg(input.trend, progress) * 0.35;
+          const measurementSessionId = crypto.randomUUID();
+          const bodyWeightId = crypto.randomUUID();
+          const measurementId = crypto.randomUUID();
+
+          await tx.$executeRaw`
+            INSERT INTO "measurement_sessions" (
+              "id", "userId", "recordedAt", "createdAt", "updatedAt"
+            ) VALUES (
+              ${measurementSessionId}, ${input.userId}, ${date}, NOW(), NOW()
+            )`;
+          await tx.$executeRaw`
+            INSERT INTO "body_weights" (
+              "id", "userId", "measurementSessionId", "recordedAt", "weightKg", "source",
+              "syntheticBatchId", "createdAt", "updatedAt"
+            ) VALUES (
+              ${bodyWeightId}, ${input.userId}, ${measurementSessionId}, ${date}, ${weightKg},
+              'SYNTHETIC'::"BodyWeightSource", ${batchId}, NOW(), NOW()
+            )`;
           await tx.$executeRaw`
             INSERT INTO "measurements" (
               "id", "userId", "measurementDate", "weight", "weightKg", "waist", "waistCm", "chest", "chestCm",
-              "hips", "hipsCm", "bodyFat", "syntheticBatchId", "createdAt", "updatedAt"
+              "hips", "hipsCm", "bodyFat", "syntheticBatchId", "measurementSessionId", "bodyWeightId",
+              "calculationWeightKg", "createdAt", "updatedAt"
             ) VALUES (
-              ${crypto.randomUUID()}, ${input.userId}, ${date}, ${weightKg * 2.2046226218}, ${weightKg},
+              ${measurementId}, ${input.userId}, ${date}, ${weightKg * 2.2046226218}, ${weightKg},
               ${waistCm / 2.54}, ${waistCm}, ${chestCm / 2.54}, ${chestCm}, ${hipsCm / 2.54}, ${hipsCm},
-              ${bodyFat}, ${batchId}, NOW(), NOW()
+              ${bodyFat}, ${batchId}, ${measurementSessionId}, ${bodyWeightId}, ${weightKg}, NOW(), NOW()
             )`;
           counts.measurementEntries += 1;
         }
@@ -283,12 +306,45 @@ export async function deleteSyntheticDataBatch(req: AuthenticatedRequest, res: R
       return;
     }
     const deleted = await prisma.$transaction(async (tx) => {
-      const measurementCount = await tx.$executeRaw`DELETE FROM "measurements" WHERE "syntheticBatchId" = ${batchId}`;
-      const hydrationCount = await tx.$executeRaw`DELETE FROM "hydration" WHERE "syntheticBatchId" = ${batchId}`;
+      const sessionRows = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT DISTINCT "measurementSessionId" AS "id"
+        FROM (
+          SELECT "measurementSessionId"
+          FROM "measurements"
+          WHERE "syntheticBatchId" = ${batchId} AND "measurementSessionId" IS NOT NULL
+          UNION
+          SELECT "measurementSessionId"
+          FROM "body_weights"
+          WHERE "syntheticBatchId" = ${batchId} AND "measurementSessionId" IS NOT NULL
+        ) AS "selectedSessions"`;
+
       const batchCount = await tx.$executeRaw`
         UPDATE "synthetic_data_batches" SET "status" = 'DELETED', "deletedAt" = NOW()
         WHERE "id" = ${batchId} AND "deletedAt" IS NULL`;
       if (batchCount === 0) throw new Error("Batch not found");
+
+      const measurementCount = await tx.$executeRaw`
+        DELETE FROM "measurements" WHERE "syntheticBatchId" = ${batchId}`;
+      const bodyWeightCount = await tx.$executeRaw`
+        DELETE FROM "body_weights" WHERE "syntheticBatchId" = ${batchId}`;
+      const hydrationCount = await tx.$executeRaw`
+        DELETE FROM "hydration" WHERE "syntheticBatchId" = ${batchId}`;
+
+      let measurementSessionCount = 0;
+      for (const { id } of sessionRows) {
+        measurementSessionCount += await tx.$executeRaw`
+          DELETE FROM "measurement_sessions" AS "session"
+          WHERE "session"."id" = ${id}
+            AND NOT EXISTS (
+              SELECT 1 FROM "measurements"
+              WHERE "measurementSessionId" = "session"."id"
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM "body_weights"
+              WHERE "measurementSessionId" = "session"."id"
+            )`;
+      }
+
       await tx.auditLog.create({
         data: {
           actorUserId: req.user!.id,
@@ -296,10 +352,10 @@ export async function deleteSyntheticDataBatch(req: AuthenticatedRequest, res: R
           targetType: "SyntheticDataBatch",
           targetId: batchId,
           result: "SUCCESS",
-          metadata: { measurementCount, hydrationCount },
+          metadata: { measurementCount, bodyWeightCount, hydrationCount, measurementSessionCount },
         },
       });
-      return { measurementCount, hydrationCount };
+      return { measurementCount, bodyWeightCount, hydrationCount, measurementSessionCount };
     });
     res.json({ deleted });
   } catch (error) {
