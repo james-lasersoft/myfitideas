@@ -32,3 +32,4 @@ prisma/dev.db
 backups/
 *.dump
 *.sql
+!src/backend/prisma/migrations/**/migration.sql

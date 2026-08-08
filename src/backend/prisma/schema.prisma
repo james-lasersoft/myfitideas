@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -64,52 +65,75 @@ enum BodyCompositionReferenceBasis {
   HORMONE_THERAPY
 }
 
-model User {
-  id                                       String                         @id @default(uuid())
-  email                                    String                         @unique
-  passwordHash                             String
-  firstName                                String
-  lastName                                 String?
-  status                                   UserStatus                     @default(ACTIVE)
-  mustChangePassword                       Boolean                        @default(false)
-  tokenVersion                             Int                            @default(0)
-  lastLoginAt                              DateTime?
-  emailVerifiedAt                          DateTime?
-  mfaEnabled                               Boolean                        @default(false)
-  mfaSecretEncrypted                       String?
-  mfaRecoveryCodeHashes                    Json?
-  heightCm                                 Float?
-  bodyCompositionReference                 BodyCompositionReference?
-  bodyCompositionReferenceBasis            BodyCompositionReferenceBasis?
-  hasCompletedTwelveMonthsHormoneTherapy   Boolean                        @default(false)
-  preferredWeightUnit                      String                         @default("lb")
-  preferredLengthUnit                      String                         @default("in")
-  preferredHydrationUnit                   String                         @default("oz")
-  preferredLanguage                        String                         @default("en")
-  preferredDateFormat                      String                         @default("LOCALE")
-  preferredTimeFormat                      String                         @default("12")
-  preferredWeekStart                       String                         @default("SUNDAY")
-  timezone                                 String                         @default("UTC")
-  countryCode                              String                         @default("US")
-  dailyHydrationGoal                       Float                          @default(64)
-  dailyHydrationGoalMl                     Float                          @default(1892.7)
-  targetWeight                             Float?
-  targetWeightKg                           Float?
-  createdAt                                DateTime                       @default(now())
-  updatedAt                                DateTime                       @updatedAt
+enum BodyWeightSource {
+  MANUAL
+  MEASUREMENT_SESSION
+  SMART_SCALE
+  APPLE_HEALTH
+  HEALTH_CONNECT
+  FITBIT
+  GARMIN
+  WITHINGS
+  IMPORT
+  SYNTHETIC
+}
 
-  measurements         Measurement[]
-  hydrationLogs        Hydration[]
-  translationChanges   TranslationHistory[]
-  translationUpdates   TranslationValue[]         @relation("TranslationValueUpdater")
-  memberships          OrganizationMembership[]
-  createdInvitations   Invitation[]               @relation("InvitationCreator")
-  acceptedInvitations  Invitation[]               @relation("InvitationAcceptor")
-  sessions             UserSession[]
-  auditEvents          AuditLog[]                  @relation("AuditActor")
-  subscriptions        UserSubscription[]
-  assignmentsAsStaff   DataAssignment[]            @relation("AssignmentStaff")
-  assignmentsAsSubject DataAssignment[]            @relation("AssignmentSubject")
+model User {
+  id                                     String                         @id @default(uuid())
+  email                                  String                         @unique
+  passwordHash                           String
+  firstName                              String
+  lastName                               String?
+  status                                 UserStatus                     @default(ACTIVE)
+  mustChangePassword                     Boolean                        @default(false)
+  tokenVersion                           Int                            @default(0)
+  lastLoginAt                            DateTime?
+  emailVerifiedAt                        DateTime?
+  mfaEnabled                             Boolean                        @default(false)
+  mfaSecretEncrypted                     String?
+  mfaRecoveryCodeHashes                  Json?
+  heightCm                               Float?
+  sexAssignedAtBirth                     String?
+  genderIdentity                         String?
+  usesGenderAffirmingHormones            Boolean?
+  hormoneTherapyStartDate                DateTime?
+  bodyCompositionEquationPreference      String                         @default("ASSIGNED_SEX_REFERENCE")
+  bodyCompositionEstimateConsent         Boolean                        @default(false)
+  bodyCompositionReference               BodyCompositionReference?
+  bodyCompositionReferenceBasis          BodyCompositionReferenceBasis?
+  hasCompletedTwelveMonthsHormoneTherapy Boolean                        @default(false)
+  preferredWeightUnit                    String                         @default("lb")
+  preferredLengthUnit                    String                         @default("in")
+  preferredHydrationUnit                 String                         @default("oz")
+  preferredLanguage                      String                         @default("en")
+  preferredDateFormat                    String                         @default("LOCALE")
+  preferredTimeFormat                    String                         @default("12")
+  preferredWeekStart                     String                         @default("SUNDAY")
+  timezone                               String                         @default("UTC")
+  countryCode                            String                         @default("US")
+  dailyHydrationGoal                     Float                          @default(64)
+  dailyHydrationGoalMl                   Float                          @default(1892.7)
+  targetWeight                           Float?
+  targetWeightKg                         Float?
+  createdAt                              DateTime                       @default(now())
+  updatedAt                              DateTime                       @updatedAt
+
+  measurements                 Measurement[]
+  measurementSessions          MeasurementSession[]
+  bodyWeights                  BodyWeight[]
+  targetedSyntheticDataBatches SyntheticDataBatch[]     @relation("SyntheticDataBatchTarget")
+  createdSyntheticDataBatches  SyntheticDataBatch[]     @relation("SyntheticDataBatchCreator")
+  hydrationLogs                Hydration[]
+  translationChanges           TranslationHistory[]
+  translationUpdates           TranslationValue[]       @relation("TranslationValueUpdater")
+  memberships                  OrganizationMembership[]
+  createdInvitations           Invitation[]             @relation("InvitationCreator")
+  acceptedInvitationsByUserId  Invitation[]             @relation("InvitationAcceptorByUserId")
+  sessions                     UserSession[]
+  auditEvents                  AuditLog[]               @relation("AuditActor")
+  subscriptions                UserSubscription[]
+  assignmentsAsStaff           DataAssignment[]         @relation("AssignmentStaff")
+  assignmentsAsSubject         DataAssignment[]         @relation("AssignmentSubject")
 
   @@index([status])
   @@map("users")
@@ -129,6 +153,7 @@ model Organization {
   invitations Invitation[]
   auditLogs   AuditLog[]
   assignments DataAssignment[]
+  settings    OrganizationSetting[]
 
   @@index([isActive])
   @@map("organizations")
@@ -143,8 +168,8 @@ model OrganizationMembership {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   roles        MembershipRole[]
 
   @@unique([userId, organizationId])
@@ -165,7 +190,7 @@ model Role {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   permissions  RolePermission[]
   memberships  MembershipRole[]
   invitations  Invitation[]
@@ -218,24 +243,25 @@ model MembershipRole {
 }
 
 model Invitation {
-  id              String           @id @default(uuid())
-  organizationId  String
-  email           String
-  roleId          String?
-  status          InvitationStatus @default(PENDING)
-  tokenHash       String           @unique
-  expiresAt       DateTime
-  createdByUserId String
-  acceptedById    String?
-  acceptedAt      DateTime?
-  revokedAt       DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  organizationId   String
+  email            String
+  roleId           String?
+  status           InvitationStatus @default(PENDING)
+  tokenHash        String           @unique
+  expiresAt        DateTime
+  createdByUserId  String
+  acceptedByUserId String?
+  acceptedById     String?
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role         Role?        @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  createdBy    User         @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  acceptedBy   User?        @relation("InvitationAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role?        @relation(fields: [roleId], references: [id])
+  createdBy      User         @relation("InvitationCreator", fields: [createdByUserId], references: [id])
+  acceptedByUser User?        @relation("InvitationAcceptorByUserId", fields: [acceptedByUserId], references: [id])
 
   @@index([organizationId, status])
   @@index([email, status])
@@ -244,12 +270,13 @@ model Invitation {
 }
 
 model TranslationKey {
-  id         String   @id @default(uuid())
-  key        String   @unique
-  sourceText String
-  category   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(uuid())
+  key         String   @unique
+  sourceText  String
+  category    String   @default("general")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   translations TranslationValue[]
   history      TranslationHistory[]
@@ -313,92 +340,199 @@ model TranslationHistory {
 
   @@index([translationKeyId, changedAt])
   @@index([languageLocale, changedAt])
+  @@index([changedByUserId, changedAt])
   @@map("translation_history")
 }
 
 model Measurement {
-  id                        String   @id @default(uuid())
-  userId                    String
-  measurementDate           DateTime
-  weight                    Float?
-  waist                     Float?
-  chest                     Float?
-  hips                      Float?
-  bodyFat                   Float?
-  weightKg                  Float?
-  waistCm                   Float?
-  chestCm                   Float?
-  hipsCm                    Float?
-  neckCm                    Float?
-  abdomenCm                 Float?
-  leftBicepCm               Float?
-  rightBicepCm              Float?
-  leftForearmCm             Float?
-  rightForearmCm            Float?
-  leftThighCm               Float?
-  rightThighCm              Float?
-  leftCalfCm                Float?
-  rightCalfCm               Float?
-  bodyFatMethod             String?
-  fatMassKg                 Float?
-  leanMassKg                Float?
-  waistToHeightRatio        Float?
-  waistToHeightRatioMethod  String?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                       String   @id @default(uuid())
+  userId                   String
+  measurementDate          DateTime @default(now())
+  weight                   Float?
+  waist                    Float?
+  chest                    Float?
+  hips                     Float?
+  bodyFat                  Float?
+  weightKg                 Float?
+  waistCm                  Float?
+  chestCm                  Float?
+  hipsCm                   Float?
+  neck                     Float?
+  abdomen                  Float?
+  leftBicep                Float?
+  rightBicep               Float?
+  leftForearm              Float?
+  rightForearm             Float?
+  leftThigh                Float?
+  rightThigh               Float?
+  leftCalf                 Float?
+  rightCalf                Float?
+  neckCm                   Float?
+  abdomenCm                Float?
+  leftBicepCm              Float?
+  rightBicepCm             Float?
+  leftForearmCm            Float?
+  rightForearmCm           Float?
+  leftThighCm              Float?
+  rightThighCm             Float?
+  leftCalfCm               Float?
+  rightCalfCm              Float?
+  calculationMethod        String?
+  calculationVersion       String?
+  fatFreeMassKg            Float?
+  equationReference        String?
+  calculationInputs        Json?
+  syntheticBatchId         String?
+  bodyFatMethod            String?
+  fatMassKg                Float?
+  leanMassKg               Float?
+  waistToHeightRatio       Float?
+  waistToHeightRatioMethod String?
+  measurementSessionId     String?  @unique(map: "measurements_measurementSessionId_key", where: raw("(\"measurementSessionId\" IS NOT NULL)"))
+  bodyWeightId             String?  @unique(map: "measurements_bodyWeightId_key", where: raw("(\"bodyWeightId\" IS NOT NULL)"))
+  calculationWeightKg      Float?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syntheticDataBatch SyntheticDataBatch? @relation(fields: [syntheticBatchId], references: [id], onDelete: Cascade)
+  measurementSession MeasurementSession? @relation(fields: [measurementSessionId], references: [id])
+  bodyWeight         BodyWeight?         @relation(fields: [bodyWeightId], references: [id])
 
+  @@index([userId], map: "measurements_userId_idx")
   @@index([userId, measurementDate])
   @@index([userId, bodyFat])
+  @@index([syntheticBatchId])
   @@map("measurements")
 }
 
+model MeasurementSession {
+  id         String   @id
+  userId     String
+  recordedAt DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  measurement Measurement?
+  bodyWeight  BodyWeight?
+
+  @@index([userId, recordedAt])
+  @@map("measurement_sessions")
+}
+
+model BodyWeight {
+  id                   String           @id
+  userId               String
+  measurementSessionId String?          @unique(map: "body_weights_measurementSessionId_key", where: raw("(\"measurementSessionId\" IS NOT NULL)"))
+  recordedAt           DateTime
+  weightKg             Float
+  source               BodyWeightSource @default(MANUAL)
+  notes                String?
+  syntheticBatchId     String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @default(now())
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  measurementSession MeasurementSession? @relation(fields: [measurementSessionId], references: [id])
+  measurement        Measurement?
+
+  @@index([userId, recordedAt])
+  @@index([source, recordedAt])
+  @@index([syntheticBatchId])
+  @@map("body_weights")
+}
+
+model SyntheticDataBatch {
+  id               String    @id
+  targetUserId     String
+  createdByUserId  String
+  seed             Int
+  periodDays       Int
+  sexReference     String
+  simulatedAge     Int
+  bodyProfile      String
+  trend            String
+  adherence        String    @default("REALISTIC")
+  hydrationPattern String    @default("AVERAGE")
+  dataTypes        Json
+  recordCounts     Json
+  status           String    @default("COMPLETED")
+  createdAt        DateTime  @default(now())
+  deletedAt        DateTime?
+
+  targetUser   User          @relation("SyntheticDataBatchTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation("SyntheticDataBatchCreator", fields: [createdByUserId], references: [id])
+  measurements Measurement[]
+  hydration    Hydration[]
+
+  @@index([targetUserId, createdAt])
+  @@index([createdByUserId, createdAt])
+  @@map("synthetic_data_batches")
+}
+
 model Hydration {
-  id                    String   @id @default(uuid())
-  userId                String
-  amount                Float
-  unit                  String
-  loggedAt              DateTime
-  amountMl              Float
-  beverageType          String   @default("water")
-  hydrationCoefficient  Float    @default(1)
-  effectiveAmountMl     Float
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id(map: "hydration_logs_pkey") @default(uuid())
+  userId               String
+  amount               Float
+  unit                 String   @default("oz")
+  loggedAt             DateTime @default(now())
+  amountMl             Float
+  beverageType         String   @default("water")
+  hydrationCoefficient Float    @default(1)
+  effectiveAmountMl    Float
+  syntheticBatchId     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade, map: "hydration_logs_userId_fkey")
+  syntheticDataBatch SyntheticDataBatch? @relation(fields: [syntheticBatchId], references: [id], onDelete: Cascade)
 
-  @@index([userId, loggedAt])
-  @@index([userId, beverageType, loggedAt])
+  @@index([userId], map: "hydration_logs_userId_idx")
+  @@index([userId, loggedAt], map: "hydration_logs_userId_loggedAt_idx")
+  @@index([syntheticBatchId])
+  @@index([userId, beverageType, loggedAt], map: "hydration_user_beverage_loggedAt_idx")
   @@map("hydration")
 }
 
 model UserSession {
-  id                 String   @id @default(uuid())
-  userId             String
-  tokenHash          String   @unique
-  refreshTokenHash   String?  @unique
-  userAgent          String?
-  ipAddress          String?
-  countryCode        String?
-  region             String?
-  city               String?
-  latitude           Float?
-  longitude          Float?
-  locationSource     String?
-  locationCapturedAt DateTime?
-  expiresAt          DateTime
-  refreshExpiresAt   DateTime?
-  revokedAt          DateTime?
-  lastSeenAt         DateTime @default(now())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  userId              String
+  tokenHash           String    @unique
+  refreshTokenHash    String?   @unique
+  userAgent           String?
+  ipAddress           String?
+  locationCity        String?
+  locationRegion      String?
+  locationCountry     String?
+  locationCountryCode String?
+  locationTimezone    String?
+  locationLatitude    Float?
+  locationLongitude   Float?
+  locationProvider    String?
+  locationLookedUpAt  DateTime?
+  countryCode         String?
+  region              String?
+  city                String?
+  latitude            Float?
+  longitude           Float?
+  locationSource      String?
+  locationCapturedAt  DateTime?
+  expiresAt           DateTime
+  refreshExpiresAt    DateTime?
+  revokedAt           DateTime?
+  lastSeenAt          DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, revokedAt, expiresAt])
   @@index([refreshExpiresAt])
+  @@index([expiresAt])
+  @@index([locationCountryCode])
+  @@index([userId, revokedAt])
   @@map("user_sessions")
 }
 
@@ -424,6 +558,7 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([actorUserId, createdAt])
   @@index([action, createdAt])
+  @@index([targetType, targetId])
   @@map("audit_logs")
 }
 
@@ -458,6 +593,7 @@ model UserSubscription {
 
   @@index([userId, status])
   @@index([planId, status])
+  @@index([userId, status, startedAt, endsAt])
   @@map("user_subscriptions")
 }
 
@@ -499,14 +635,17 @@ model DataAssignment {
   startsAt       DateTime       @default(now())
   endsAt         DateTime?
   createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   staff        User         @relation("AssignmentStaff", fields: [staffUserId], references: [id], onDelete: Cascade)
   subject      User         @relation("AssignmentSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, staffUserId, subjectUserId, assignmentType])
+  @@unique([organizationId, staffUserId, subjectUserId, assignmentType], map: "data_assignments_org_staff_subject_type_key")
   @@index([subjectUserId, isActive, endsAt])
   @@index([staffUserId, isActive, endsAt])
+  @@index([staffUserId, isActive], map: "data_assignments_staff_active_idx")
+  @@index([subjectUserId, isActive], map: "data_assignments_subject_active_idx")
   @@map("data_assignments")
 }
 
@@ -517,7 +656,9 @@ model OrganizationSetting {
   key            String
   value          Json
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, key])
   @@index([organizationId, category])
